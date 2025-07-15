@@ -1,58 +1,80 @@
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Health App Design System - สีสำหรับแอปสุขภาพ */
 
 @layer base {
   :root {
+    /* สีพื้นหลัง */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 210 12% 16%;
 
+    /* สีการ์ด */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 210 12% 16%;
 
+    /* สีป๊อปโอเวอร์ */
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 210 12% 16%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* สีหลัก - ฟ้าอ่อน */
+    --primary: 197 76% 64%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 197 76% 58%;
+    --primary-light: 197 76% 85%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* สีรอง - เขียวมิ้นต์ */
+    --secondary: 149 38% 76%;
+    --secondary-foreground: 210 12% 16%;
+    --secondary-hover: 149 38% 70%;
+    --secondary-light: 149 38% 90%;
 
-    --muted: 210 40% 96.1%;
+    /* สีเน้น - เขียวสุขภาพ */
+    --accent: 142 69% 58%;
+    --accent-foreground: 0 0% 100%;
+    --accent-hover: 142 69% 52%;
+
+    /* สีแจ้งเตือน */
+    --warning: 43 89% 62%;
+    --warning-foreground: 0 0% 100%;
+
+    /* สีเงา */
+    --muted: 210 40% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* สีขอบ */
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 197 76% 64%;
 
+    /* สีอันตราย */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* รัศมีโค้ง */
+    --radius: 0.75rem;
 
-    --radius: 0.5rem;
+    /* เงาและไล่สี */
+    --shadow-soft: 0 4px 6px -1px hsl(210 40% 96% / 0.1), 0 2px 4px -2px hsl(210 40% 96% / 0.1);
+    --shadow-medium: 0 10px 15px -3px hsl(210 40% 96% / 0.1), 0 4px 6px -4px hsl(210 40% 96% / 0.1);
+    --shadow-health: 0 8px 30px -12px hsl(197 76% 64% / 0.25);
+    
+    --gradient-primary: linear-gradient(135deg, hsl(197 76% 64%), hsl(149 38% 76%));
+    --gradient-success: linear-gradient(135deg, hsl(142 69% 58%), hsl(149 38% 76%));
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(210 40% 98%));
 
+    /* ตัวแปรสำหรับ sidebar */
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
+    --sidebar-primary: 197 76% 64%;
     --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
+    --sidebar-accent: 149 38% 90%;
+    --sidebar-accent-foreground: 210 12% 16%;
     --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 197 76% 64%;
   }
 
   .dark {
@@ -100,6 +122,88 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-prompt;
+  }
+}
+
+@layer components {
+  /* Health App Components */
+  .health-card {
+    @apply bg-card border border-border rounded-lg p-6 shadow-soft;
+  }
+
+  .health-button {
+    @apply bg-gradient-to-r from-primary to-secondary text-primary-foreground 
+           px-6 py-3 rounded-lg font-medium transition-all duration-200
+           hover:shadow-health hover:scale-105 active:scale-95;
+  }
+
+  .health-input {
+    @apply bg-background border border-input rounded-lg px-4 py-3 
+           focus:border-primary focus:ring-1 focus:ring-primary
+           transition-colors duration-200;
+  }
+
+  .health-gradient {
+    @apply bg-gradient-to-br from-primary-light to-secondary-light;
+  }
+
+  .health-stat-card {
+    @apply bg-gradient-to-br from-card to-muted border-0 
+           rounded-xl p-6 shadow-medium hover:shadow-health
+           transition-all duration-300;
+  }
+
+  .pulse-animation {
+    @apply animate-pulse;
+  }
+
+  .fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+
+  .slide-up {
+    animation: slideUp 0.4s ease-out;
+  }
+
+  .bounce-in {
+    animation: bounceIn 0.6s ease-out;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
   }
 }

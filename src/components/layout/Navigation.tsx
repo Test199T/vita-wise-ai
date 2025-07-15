@@ -1,0 +1,50 @@
+import { NavLink } from "react-router-dom";
+import { 
+  Home, 
+  Heart, 
+  MessageCircle, 
+  User, 
+  PlusCircle,
+  BarChart3 
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const navItems = [
+  { icon: Home, label: "หน้าหลัก", path: "/dashboard" },
+  { icon: PlusCircle, label: "บันทึกสุขภาพ", path: "/health-form" },
+  { icon: MessageCircle, label: "คุยกับ AI", path: "/chat" },
+  { icon: BarChart3, label: "สถิติ", path: "/stats" },
+  { icon: User, label: "โปรไฟล์", path: "/profile" },
+];
+
+interface NavigationProps {
+  className?: string;
+}
+
+export function Navigation({ className }: NavigationProps) {
+  return (
+    <nav className={cn("bg-card border-r border-border", className)}>
+      <div className="p-4">
+        <div className="space-y-2">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={({ isActive }) =>
+                cn(
+                  "flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200",
+                  isActive
+                    ? "bg-gradient-primary text-primary-foreground shadow-health"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                )
+              }
+            >
+              <item.icon className="h-5 w-5" />
+              <span className="font-medium">{item.label}</span>
+            </NavLink>
+          ))}
+        </div>
+      </div>
+    </nav>
+  );
+}
