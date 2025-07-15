@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { ChatMessage } from "@/components/chat/ChatMessage";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,9 @@ import {
   Activity, 
   Brain,
   Sparkles,
-  MessageCircle
+  MessageCircle,
+  Plus,
+  Paperclip
 } from "lucide-react";
 
 interface Message {
@@ -56,6 +58,15 @@ export default function Chat() {
   ]);
   const [inputMessage, setInputMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -111,96 +122,146 @@ export default function Chat() {
 
   return (
     <MainLayout>
-      <div className="max-w-4xl mx-auto h-[calc(100vh-200px)] flex flex-col fade-in">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-            <MessageCircle className="h-8 w-8" />
-            คุยกับ AI สุขภาพ
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            ปรึกษาเกี่ยวกับสุขภาพและรับคำแนะนำส่วนตัว
-          </p>
-        </div>
-
-        {/* Quick Questions */}
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-            <Sparkles className="h-5 w-5" />
-            คำถามแนะนำ
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {quickQuestions.map((question, index) => (
-              <Button
-                key={index}
-                variant="outline"
-                className="justify-start h-auto p-3 text-left"
-                onClick={() => handleQuickQuestion(question.text)}
-              >
-                <question.icon className="h-4 w-4 mr-2 flex-shrink-0" />
-                <span className="text-sm">{question.text}</span>
-              </Button>
-            ))}
+      <div className="flex h-screen max-w-7xl mx-auto">
+        {/* Sidebar - Hidden on mobile */}
+        <div className="hidden md:flex md:w-64 bg-card border-r border-border flex-col">
+          <div className="p-4 border-b border-border">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full justify-start"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              การสนทนาใหม่
+            </Button>
           </div>
+          
+          <ScrollArea className="flex-1 p-4">
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-muted-foreground mb-2">
+                ประวัติการสนทนา
+              </div>
+              <div className="text-sm text-muted-foreground">
+                ยังไม่มีประวัติการสนทนา
+              </div>
+            </div>
+          </ScrollArea>
         </div>
 
-        {/* Chat Area */}
-        <Card className="flex-1 flex flex-col health-stat-card">
-          <CardHeader>
-            <CardTitle className="text-lg">การสนทนา</CardTitle>
-            <CardDescription>
-              AI จะวิเคราะห์ข้อมูลสุขภาพของคุณและให้คำแนะนำที่เหมาะสม
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex-1 flex flex-col">
-            {/* Messages */}
-            <ScrollArea className="flex-1 pr-4">
-              <div className="space-y-4">
-                {messages.map((message) => (
-                  <ChatMessage
-                    key={message.id}
-                    message={message.text}
-                    isUser={message.isUser}
-                    timestamp={message.timestamp}
-                  />
-                ))}
-                {isTyping && (
-                  <div className="flex gap-3 mb-4">
-                    <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
-                      <div className="w-2 h-2 bg-primary-foreground rounded-full animate-bounce" />
-                    </div>
-                    <div className="bg-card border border-border rounded-lg p-3">
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+        {/* Main Chat Area */}
+        <div className="flex-1 flex flex-col">
+          {/* Header */}
+          <div className="border-b border-border p-4 md:p-6">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
+                <MessageCircle className="h-4 w-4 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold">AI สุขภาพ</h1>
+                <p className="text-sm text-muted-foreground">
+                  ผู้ช่วยด้านสุขภาพส่วนตัว
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Messages Area */}
+          <div className="flex-1 flex flex-col min-h-0">
+            {messages.length === 1 && (
+              <div className="flex-1 flex items-center justify-center p-4 md:p-6">
+                <div className="text-center max-w-md">
+                  <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Sparkles className="h-8 w-8 text-primary-foreground" />
+                  </div>
+                  <h2 className="text-xl font-semibold mb-2">
+                    เริ่มต้นการสนทนา
+                  </h2>
+                  <p className="text-muted-foreground mb-6">
+                    เลือกหัวข้อที่สนใจหรือพิมพ์คำถามของคุณ
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {quickQuestions.map((question, index) => (
+                      <Button
+                        key={index}
+                        variant="outline"
+                        className="h-auto p-4 text-left flex flex-col items-start gap-2"
+                        onClick={() => handleQuickQuestion(question.text)}
+                      >
+                        <question.icon className="h-5 w-5" />
+                        <span className="text-sm font-medium">{question.text}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {messages.length > 1 && (
+              <ScrollArea className="flex-1 px-4 md:px-6">
+                <div className="max-w-3xl mx-auto py-6 space-y-6">
+                  {messages.map((message) => (
+                    <ChatMessage
+                      key={message.id}
+                      message={message.text}
+                      isUser={message.isUser}
+                      timestamp={message.timestamp}
+                    />
+                  ))}
+                  {isTyping && (
+                    <div className="flex gap-3">
+                      <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
+                        <div className="w-2 h-2 bg-primary-foreground rounded-full animate-bounce" />
+                      </div>
+                      <div className="bg-card border border-border rounded-lg p-4">
+                        <div className="flex space-x-1">
+                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
+                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+              </ScrollArea>
+            )}
+          </div>
 
-            {/* Input Area */}
-            <div className="flex gap-2 mt-4">
-              <Input
-                placeholder="พิมพ์ข้อความของคุณ..."
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                className="flex-1 health-input"
-                disabled={isTyping}
-              />
-              <Button
-                onClick={handleSendMessage}
-                disabled={!inputMessage.trim() || isTyping}
-                className="health-button"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
+          {/* Input Area */}
+          <div className="border-t border-border p-4 md:p-6">
+            <div className="max-w-3xl mx-auto">
+              <div className="flex gap-2 items-end">
+                <div className="flex-1 relative">
+                  <Input
+                    placeholder="พิมพ์ข้อความของคุณ..."
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    className="resize-none pr-12 min-h-[44px] rounded-lg border-border focus:border-primary"
+                    disabled={isTyping}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+                  >
+                    <Paperclip className="h-4 w-4" />
+                  </Button>
+                </div>
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={!inputMessage.trim() || isTyping}
+                  className="h-11 w-11 rounded-lg p-0"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="text-xs text-muted-foreground mt-2 text-center">
+                AI อาจให้ข้อมูลที่ไม่ถูกต้อง โปรดตรวจสอบข้อมูลสำคัญ
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </MainLayout>
   );
