@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Activity, Eye, EyeOff, Mail, Lock, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { MainLayout } from "@/components/layout/MainLayout";
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -55,8 +56,9 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-light to-secondary-light flex items-center justify-center p-4">
-      <div className="w-full max-w-md fade-in">
+    <MainLayout>
+      {/* Main Register Content */}
+      <div className="max-w-md mx-auto">
         <Card className="shadow-health border-0">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
@@ -227,8 +229,8 @@ export default function Register() {
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
                 มีบัญชีอยู่แล้ว?{" "}
-                <Link 
-                  to="/login" 
+                <Link
+                  to="/login"
                   className="text-primary hover:text-primary-hover font-medium underline"
                 >
                   เข้าสู่ระบบ
@@ -238,6 +240,6 @@ export default function Register() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </MainLayout>
   );
 }

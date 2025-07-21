@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity, Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { MainLayout } from "@/components/layout/MainLayout";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -39,8 +40,9 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-light to-secondary-light flex items-center justify-center p-4">
-      <div className="w-full max-w-md fade-in">
+    <MainLayout>
+      {/* Main Login Content */}
+      <div className="max-w-md mx-auto">
         <Card className="shadow-health border-0">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
@@ -105,8 +107,8 @@ export default function Login() {
               </div>
 
               <div className="text-right">
-                <Link 
-                  to="/forgot-password" 
+                <Link
+                  to="/forgot-password"
                   className="text-sm text-primary hover:text-primary-hover underline"
                 >
                   ลืมรหัสผ่าน?
@@ -125,8 +127,8 @@ export default function Login() {
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
                 ยังไม่มีบัญชี?{" "}
-                <Link 
-                  to="/register" 
+                <Link
+                  to="/register"
                   className="text-primary hover:text-primary-hover font-medium underline"
                 >
                   สมัครสมาชิก
@@ -136,6 +138,6 @@ export default function Login() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </MainLayout>
   );
 }
