@@ -82,14 +82,7 @@ export default function Dashboard() {
             trend={mockHealthData.sleep.trend as "up" | "down" | "stable"}
             color="primary"
           />
-          <HealthCard
-            title="จำนวนก้าว"
-            value={mockHealthData.steps.count.toLocaleString()}
-            description={`เป้าหมาย ${mockHealthData.steps.target.toLocaleString()} ก้าว`}
-            icon={Footprints}
-            trend={mockHealthData.steps.trend as "up" | "down" | "stable"}
-            color="accent"
-          />
+          
           <HealthCard
             title="น้ำดื่ม"
             value={`${mockHealthData.water.liters} ลิตร`}

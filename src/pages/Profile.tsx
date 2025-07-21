@@ -9,11 +9,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  User, 
-  Settings, 
-  Target, 
-  Bell, 
+import {
+  User,
+  Settings,
+  Target,
+  Bell,
   LogOut,
   Edit,
   Save,
@@ -41,7 +41,7 @@ export default function Profile() {
 
   const handleSave = async () => {
     setLoading(true);
-    
+
     // จำลองการบันทึกข้อมูล
     setTimeout(() => {
       toast({
@@ -68,7 +68,8 @@ export default function Profile() {
 
   return (
     <MainLayout>
-      <div className="max-w-4xl mx-auto space-y-6 fade-in">
+      {/* Main Profile Content */}
+      <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
@@ -85,14 +86,14 @@ export default function Profile() {
               </Button>
             ) : (
               <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => setIsEditing(false)}
                   disabled={loading}
                 >
                   ยกเลิก
                 </Button>
-                <Button 
+                <Button
                   onClick={handleSave}
                   disabled={loading}
                   className="health-button"
@@ -181,8 +182,8 @@ export default function Profile() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="gender">เพศ</Label>
-                    <Select 
-                      value={profileData.gender} 
+                    <Select
+                      value={profileData.gender}
                       onValueChange={(value) => handleInputChange("gender", value)}
                       disabled={!isEditing}
                     >
@@ -324,8 +325,8 @@ export default function Profile() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <Button 
-                  variant="destructive" 
+                <Button
+                  variant="destructive"
                   className="w-full"
                   onClick={handleLogout}
                 >
