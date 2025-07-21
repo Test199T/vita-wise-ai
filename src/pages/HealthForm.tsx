@@ -8,12 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Moon, 
-  Footprints, 
-  Utensils, 
-  Droplets, 
-  Heart, 
+import {
+  Moon,
+  Footprints,
+  Utensils,
+  Droplets,
+  Heart,
   Smile,
   Save,
   Calendar,
@@ -86,7 +86,8 @@ export default function HealthForm() {
 
   return (
     <MainLayout>
-      <div className="max-w-2xl mx-auto space-y-6 fade-in">
+      {/* Main Health Form Content */}
+      <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center">
           <h1 className="text-3xl font-bold text-foreground">บันทึกข้อมูลสุขภาพ</h1>
@@ -158,49 +159,38 @@ export default function HealthForm() {
                   <Activity className="h-5 w-5 text-accent" />
                   <h3 className="text-lg font-semibold">กิจกรรมร่างกาย</h3>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="steps">จำนวนก้าวเดิน</Label>
-                    <Input
-                      id="steps"
-                      type="number"
-                      placeholder="เช่น 8000"
-                      value={formData.steps}
-                      onChange={(e) => handleInputChange("steps", e.target.value)}
-                      className="health-input"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="exercise">ประเภทการออกกำลังกาย</Label>
-                    <Select onValueChange={(value) => handleInputChange("exercise", value)}>
-                      <SelectTrigger className="health-input">
-                        <SelectValue placeholder="เลือกประเภทการออกกำลังกาย" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">ไม่ได้ออกกำลังกาย</SelectItem>
-                        <SelectItem value="walking">เดิน</SelectItem>
-                        <SelectItem value="running">วิ่ง</SelectItem>
-                        <SelectItem value="cycling">ปั่นจักรยาน</SelectItem>
-                        <SelectItem value="swimming">ว่ายน้ำ</SelectItem>
-                        <SelectItem value="gym">ยิม</SelectItem>
-                        <SelectItem value="yoga">โยคะ</SelectItem>
-                        <SelectItem value="other">อื่นๆ</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="exerciseDuration">ระยะเวลาออกกำลังกาย (นาที)</Label>
-                  <Input
-                    id="exerciseDuration"
-                    type="number"
-                    placeholder="เช่น 30"
-                    value={formData.exerciseDuration}
-                    onChange={(e) => handleInputChange("exerciseDuration", e.target.value)}
-                    className="health-input"
-                  />
+                  <Label htmlFor="exercise">ประเภทการออกกำลังกาย</Label>
+                  <Select onValueChange={(value) => handleInputChange("exercise", value)}>
+                    <SelectTrigger className="health-input">
+                      <SelectValue placeholder="เลือกประเภทการออกกำลังกาย" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">ไม่ได้ออกกำลังกาย</SelectItem>
+                      <SelectItem value="walking">เดิน</SelectItem>
+                      <SelectItem value="running">วิ่ง</SelectItem>
+                      <SelectItem value="cycling">ปั่นจักรยาน</SelectItem>
+                      <SelectItem value="swimming">ว่ายน้ำ</SelectItem>
+                      <SelectItem value="gym">ยิม</SelectItem>
+                      <SelectItem value="yoga">โยคะ</SelectItem>
+                      <SelectItem value="other">อื่นๆ</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="exerciseDuration">ระยะเวลาออกกำลังกาย (นาที)</Label>
+                <Input
+                  id="exerciseDuration"
+                  type="number"
+                  placeholder="เช่น 30"
+                  value={formData.exerciseDuration}
+                  onChange={(e) => handleInputChange("exerciseDuration", e.target.value)}
+                  className="health-input"
+                />
+              </div>
+
 
               {/* Food & Water Section */}
               <div className="space-y-4">

@@ -1,21 +1,19 @@
 import { useState, useRef, useEffect } from "react";
-import { MainLayout } from "@/components/layout/MainLayout";
-import { ChatMessage } from "@/components/chat/ChatMessage";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  Send, 
-  Moon, 
-  Utensils, 
-  Activity, 
+import {
+  Send,
+  Moon,
+  Utensils,
+  Activity,
   Brain,
   Sparkles,
   MessageCircle,
-  Plus,
-  Paperclip
+  Menu,
+  X,
+  Mic,
+  Camera,
+  ArrowLeft
 } from "lucide-react";
+import { MainLayout } from "@/components/layout/MainLayout";
 
 interface Message {
   id: string;
@@ -28,22 +26,22 @@ const quickQuestions = [
   {
     icon: Moon,
     text: "ช่วยแนะนำการปรับปรุงการนอนหลับ",
-    color: "primary"
+    color: "bg-blue-500"
   },
   {
     icon: Utensils,
     text: "แนะนำอาหารเช้าสำหรับวันนี้",
-    color: "warning"
+    color: "bg-orange-500"
   },
   {
     icon: Activity,
     text: "แนะนำการออกกำลังกายเบื้องต้น",
-    color: "accent"
+    color: "bg-green-500"
   },
   {
     icon: Brain,
     text: "วิธีลดความเครียด",
-    color: "secondary"
+    color: "bg-purple-500"
   },
 ];
 
@@ -58,7 +56,9 @@ export default function Chat() {
   ]);
   const [inputMessage, setInputMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -68,6 +68,13 @@ export default function Chat() {
     scrollToBottom();
   }, [messages]);
 
+  const adjustTextareaHeight = () => {
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 120) + 'px';
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
@@ -75,9 +82,9 @@ export default function Chat() {
       id: Date.now().toString(),
       text: inputMessage,
       isUser: true,
-      timestamp: new Date().toLocaleTimeString('th-TH', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
+      timestamp: new Date().toLocaleTimeString('th-TH', {
+        hour: '2-digit',
+        minute: '2-digit'
       })
     };
 
@@ -85,32 +92,41 @@ export default function Chat() {
     setInputMessage("");
     setIsTyping(true);
 
+    // รีเซ็ตความสูงของ textarea
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+    }
+
     // จำลองการตอบกลับของ AI
     setTimeout(() => {
       const aiResponses = [
-        "ขอบคุณสำหรับข้อมูล! จากข้อมูลที่คุณให้มา ฉันแนะนำให้คุณ...",
-        "เป็นคำถามที่ดีเลย! สำหรับเรื่องนี้ ฉันขอแนะนำให้คุณลองทำแบบนี้...",
-        "ตามข้อมูลสุขภาพของคุณ ฉันคิดว่าคุณควรจะ...",
-        "ขอให้ฉันวิเคราะห์ข้อมูลของคุณก่อน... ฉันแนะนำให้คุณ...",
+        "ขอบคุณสำหรับข้อมูล! จากข้อมูลที่คุณให้มา ฉันแนะนำให้คุณลองดื่มน้ำให้เพียงพอ พักผ่อนให้เพียงพอ และออกกำลังกายเบาๆ อย่างสม่ำเสมอ",
+        "เป็นคำถามที่ดีเลย! สำหรับเรื่องนี้ ฉันขอแนะนำให้คุณลองเริ่มจากการปรับเปลี่ยนนิสัยเล็กๆ น้อยๆ ก่อน เช่น การกินผักผลไม้เพิ่มขึ้น",
+        "ตามข้อมูลสุขภาพของคุณ ฉันคิดว่าคุณควรจะให้ความสำคัญกับการจัดการความเครียดและการนอนหลับให้เพียงพอ",
+        "ขอให้ฉันวิเคราะห์ข้อมูลของคุณก่อน... ฉันแนะนำให้คุณลองทำสมาธิหายใจลึกๆ วันละ 10 นาที และเดินเร็วๆ วันละ 30 นาที",
       ];
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: aiResponses[Math.floor(Math.random() * aiResponses.length)],
         isUser: false,
-        timestamp: new Date().toLocaleTimeString('th-TH', { 
-          hour: '2-digit', 
-          minute: '2-digit' 
+        timestamp: new Date().toLocaleTimeString('th-TH', {
+          hour: '2-digit',
+          minute: '2-digit'
         })
       };
 
       setMessages(prev => [...prev, aiMessage]);
       setIsTyping(false);
-    }, 1500);
+    }, 2000);
   };
 
   const handleQuickQuestion = (question: string) => {
     setInputMessage(question);
+    if (inputRef.current) {
+      inputRef.current.focus();
+      setTimeout(adjustTextareaHeight, 0);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -120,146 +136,160 @@ export default function Chat() {
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputMessage(e.target.value);
+    adjustTextareaHeight();
+  };
+
   return (
     <MainLayout>
-      <div className="flex h-screen max-w-7xl mx-auto">
-        {/* Sidebar - Hidden on mobile */}
-        <div className="hidden md:flex md:w-64 bg-card border-r border-border flex-col">
-          <div className="p-4 border-b border-border">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="w-full justify-start"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              การสนทนาใหม่
-            </Button>
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
+          <button
+            onClick={() => window.history.back()}
+            className="p-2 hover:bg-gray-100 rounded-lg -ml-2 transition-colors duration-200"
+            title="ย้อนกลับ"
+          >
+            <ArrowLeft className="h-5 w-5 text-gray-600" />
+          </button>
+          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+            <MessageCircle className="h-4 w-4 text-white" />
           </div>
-          
-          <ScrollArea className="flex-1 p-4">
-            <div className="space-y-2">
-              <div className="text-sm font-medium text-muted-foreground mb-2">
-                ประวัติการสนทนา
-              </div>
-              <div className="text-sm text-muted-foreground">
-                ยังไม่มีประวัติการสนทนา
-              </div>
-            </div>
-          </ScrollArea>
+          <div className="flex-1">
+            <h1 className="font-semibold text-gray-900">AI สุขภาพ</h1>
+            <p className="text-sm text-gray-500">ออนไลน์</p>
+          </div>
+          <button
+            onClick={() => setShowSidebar(true)}
+            className="md:hidden p-2 hover:bg-gray-100 rounded-lg"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
         </div>
 
-        {/* Main Chat Area */}
-        <div className="flex-1 flex flex-col">
-          {/* Header */}
-          <div className="border-b border-border p-4 md:p-6">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
-                <MessageCircle className="h-4 w-4 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="text-lg font-semibold">AI สุขภาพ</h1>
-                <p className="text-sm text-muted-foreground">
-                  ผู้ช่วยด้านสุขภาพส่วนตัว
+        {/* Messages Area */}
+        <div className="flex-1 overflow-hidden flex flex-col">
+          {messages.length === 1 ? (
+            <div className="flex-1 flex items-center justify-center p-4">
+              <div className="text-center max-w-sm">
+                <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Sparkles className="h-10 w-10 text-white" />
+                </div>
+                <h2 className="text-xl font-semibold mb-2 text-gray-900">
+                  เริ่มต้นการสนทนา
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  เลือกหัวข้อด้านล่างหรือพิมพ์คำถามของคุณ
                 </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Messages Area */}
-          <div className="flex-1 flex flex-col min-h-0">
-            {messages.length === 1 && (
-              <div className="flex-1 flex items-center justify-center p-4 md:p-6">
-                <div className="text-center max-w-md">
-                  <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Sparkles className="h-8 w-8 text-primary-foreground" />
-                  </div>
-                  <h2 className="text-xl font-semibold mb-2">
-                    เริ่มต้นการสนทนา
-                  </h2>
-                  <p className="text-muted-foreground mb-6">
-                    เลือกหัวข้อที่สนใจหรือพิมพ์คำถามของคุณ
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {quickQuestions.map((question, index) => (
-                      <Button
-                        key={index}
-                        variant="outline"
-                        className="h-auto p-4 text-left flex flex-col items-start gap-2"
-                        onClick={() => handleQuickQuestion(question.text)}
-                      >
-                        <question.icon className="h-5 w-5" />
-                        <span className="text-sm font-medium">{question.text}</span>
-                      </Button>
-                    ))}
-                  </div>
+                <div className="space-y-3">
+                  {quickQuestions.map((question, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleQuickQuestion(question.text)}
+                      className="w-full bg-white border border-gray-200 rounded-xl p-4 text-left hover:border-blue-300 hover:shadow-sm transition-all duration-200 flex items-center gap-3"
+                    >
+                      <div className={`w-8 h-8 ${question.color} rounded-lg flex items-center justify-center`}>
+                        <question.icon className="h-4 w-4 text-white" />
+                      </div>
+                      <span className="text-sm font-medium text-gray-800">{question.text}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
-            )}
-
-            {messages.length > 1 && (
-              <ScrollArea className="flex-1 px-4 md:px-6">
-                <div className="max-w-3xl mx-auto py-6 space-y-6">
-                  {messages.map((message) => (
-                    <ChatMessage
-                      key={message.id}
-                      message={message.text}
-                      isUser={message.isUser}
-                      timestamp={message.timestamp}
-                    />
-                  ))}
-                  {isTyping && (
-                    <div className="flex gap-3">
-                      <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
-                        <div className="w-2 h-2 bg-primary-foreground rounded-full animate-bounce" />
+            </div>
+          ) : (
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+              <div className="max-w-2xl mx-auto space-y-4">
+                {messages.slice(1).map((message) => (
+                  <div key={message.id} className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`flex gap-2 max-w-[85%] sm:max-w-[75%] ${message.isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${message.isUser
+                          ? 'bg-blue-500'
+                          : 'bg-gradient-to-r from-blue-500 to-purple-600'
+                        }`}>
+                        {message.isUser ? (
+                          <div className="w-4 h-4 bg-white rounded-full" />
+                        ) : (
+                          <MessageCircle className="h-4 w-4 text-white" />
+                        )}
                       </div>
-                      <div className="bg-card border border-border rounded-lg p-4">
+                      <div className={`rounded-2xl px-4 py-3 ${message.isUser
+                          ? 'bg-blue-500 text-white'
+                          : 'bg-white border border-gray-200 text-gray-800'
+                        }`}>
+                        <p className="text-sm leading-relaxed">{message.text}</p>
+                        <p className={`text-xs mt-2 ${message.isUser ? 'text-blue-100' : 'text-gray-500'
+                          }`}>
+                          {message.timestamp}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {isTyping && (
+                  <div className="flex justify-start">
+                    <div className="flex gap-2 max-w-[75%]">
+                      <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                        <MessageCircle className="h-4 w-4 text-white" />
+                      </div>
+                      <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3">
                         <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
-                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
                         </div>
                       </div>
                     </div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-              </ScrollArea>
-            )}
-          </div>
-
-          {/* Input Area */}
-          <div className="border-t border-border p-4 md:p-6">
-            <div className="max-w-3xl mx-auto">
-              <div className="flex gap-2 items-end">
-                <div className="flex-1 relative">
-                  <Input
-                    placeholder="พิมพ์ข้อความของคุณ..."
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    className="resize-none pr-12 min-h-[44px] rounded-lg border-border focus:border-primary"
-                    disabled={isTyping}
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
-                  >
-                    <Paperclip className="h-4 w-4" />
-                  </Button>
-                </div>
-                <Button
-                  onClick={handleSendMessage}
-                  disabled={!inputMessage.trim() || isTyping}
-                  className="h-11 w-11 rounded-lg p-0"
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="text-xs text-muted-foreground mt-2 text-center">
-                AI อาจให้ข้อมูลที่ไม่ถูกต้อง โปรดตรวจสอบข้อมูลสำคัญ
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
               </div>
             </div>
+          )}
+        </div>
+
+        {/* Input Area */}
+        <div className="bg-white border-t border-gray-200 p-4">
+          <div className="max-w-2xl mx-auto">
+            <div className="flex gap-3 items-end">
+              <div className="flex-1 relative">
+                <textarea
+                  ref={inputRef}
+                  placeholder="พิมพ์ข้อความของคุณ..."
+                  value={inputMessage}
+                  onChange={handleInputChange}
+                  onKeyPress={handleKeyPress}
+                  disabled={isTyping}
+                  rows={1}
+                  className="w-full resize-none bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 pr-20 focus:outline-none focus:border-blue-400 focus:bg-white transition-all duration-200 text-sm leading-relaxed"
+                  style={{ minHeight: '48px' }}
+                />
+                <div className="absolute right-2 bottom-2 flex gap-1">
+                  <button className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors duration-200">
+                    <Camera className="h-4 w-4" />
+                  </button>
+                  <button className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors duration-200">
+                    <Mic className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+              <button
+                onClick={handleSendMessage}
+                disabled={!inputMessage.trim() || isTyping}
+                className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-200 ${inputMessage.trim() && !isTyping
+                    ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-md hover:shadow-lg'
+                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  }`}
+              >
+                <Send className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-2 text-center">
+              AI อาจให้ข้อมูลที่ไม่ถูกต้อง โปรดตรวจสอบข้อมูลสำคัญ
+            </p>
           </div>
         </div>
       </div>

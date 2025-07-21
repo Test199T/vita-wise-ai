@@ -13,38 +13,34 @@ export function MainLayout({ children }: MainLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} showMenu />
-      
-      <div className="flex">
-        {/* Desktop Sidebar */}
-        <div className="hidden md:block w-64 min-h-[calc(100vh-73px)]">
+      {/* Fixed Sidebar for Desktop */}
+      <div className="hidden md:block">
+        <div className="fixed left-0 top-0 h-screen w-64 z-30 bg-card border-r border-border">
           <Navigation />
         </div>
-
-        {/* Mobile Sidebar */}
-        <div
-          className={cn(
-            "fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out md:hidden",
-            sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          )}
-        >
-          <Navigation className="h-full" />
-        </div>
-
-        {/* Overlay */}
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-
-        {/* Main Content */}
-        <main className="flex-1 min-h-[calc(100vh-73px)]">
-          <div className="container mx-auto px-4 py-6">
-            {children}
-          </div>
-        </main>
       </div>
+      {/* Mobile Sidebar */}
+      <div
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out md:hidden",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        <Navigation className="h-full" />
+      </div>
+      {/* Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      {/* Main Content */}
+      <main className="flex-1 min-h-[calc(100vh-73px)] md:ml-64">
+        <div className="container mx-auto px-4 py-6">
+          {children}
+        </div>
+      </main>
     </div>
   );
 }

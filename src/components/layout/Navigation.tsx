@@ -1,11 +1,11 @@
 import { NavLink } from "react-router-dom";
-import { 
-  Home, 
-  Heart, 
-  MessageCircle, 
-  User, 
+import {
+  Home,
+  Heart,
+  MessageCircle,
+  User,
   PlusCircle,
-  BarChart3 
+  BarChart3
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,7 +23,7 @@ interface NavigationProps {
 
 export function Navigation({ className }: NavigationProps) {
   return (
-    <nav className={cn("bg-card border-r border-border", className)}>
+    <nav className={cn("bg-card border-r border-border h-full", className)}>
       <div className="p-4">
         <div className="space-y-2">
           {navItems.map((item) => (
