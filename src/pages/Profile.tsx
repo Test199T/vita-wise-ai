@@ -31,7 +31,7 @@ export default function Profile() {
     gender: "female",
     weight: "60",
     height: "165",
-    stepGoal: "10000",
+    exerciseGoal: "30",
     waterGoal: "2.5",
     sleepGoal: "8",
     notifications: true,
@@ -41,8 +41,6 @@ export default function Profile() {
 
   const handleSave = async () => {
     setLoading(true);
-
-    // จำลองการบันทึกข้อมูล
     setTimeout(() => {
       toast({
         title: "บันทึกข้อมูลสำเร็จ",
@@ -62,41 +60,41 @@ export default function Profile() {
       title: "ออกจากระบบ",
       description: "คุณได้ออกจากระบบเรียบร้อยแล้ว",
     });
-    // Navigate to login page
     window.location.href = "/login";
   };
 
   return (
     <MainLayout>
       {/* Main Profile Content */}
-      <div className="max-w-2xl mx-auto">
+      <div className="w-full mx-auto px-4 sm:px-10 pb-8">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">โปรไฟล์</h1>
-            <p className="text-muted-foreground mt-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">โปรไฟล์</h1>
+            <p className="text-muted-foreground mt-2 text-sm sm:text-base">
               จัดการข้อมูลส่วนตัวและการตั้งค่า
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             {!isEditing ? (
-              <Button onClick={() => setIsEditing(true)} className="health-button">
+              <Button onClick={() => setIsEditing(true)} className="health-button w-full sm:w-auto">
                 <Edit className="h-4 w-4 mr-2" />
                 แก้ไขโปรไฟล์
               </Button>
             ) : (
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 <Button
                   variant="outline"
                   onClick={() => setIsEditing(false)}
                   disabled={loading}
+                  className="w-full sm:w-auto"
                 >
                   ยกเลิก
                 </Button>
                 <Button
                   onClick={handleSave}
                   disabled={loading}
-                  className="health-button"
+                  className="health-button w-full sm:w-auto"
                 >
                   <Save className="h-4 w-4 mr-2" />
                   {loading ? "กำลังบันทึก..." : "บันทึก"}
@@ -106,9 +104,9 @@ export default function Profile() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           {/* Profile Info */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 md:space-y-6">
             <Card className="health-stat-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -119,9 +117,9 @@ export default function Profile() {
                   ข้อมูลพื้นฐานของคุณ
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4 md:space-y-6">
                 {/* Avatar */}
-                <div className="flex items-center space-x-4">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-4">
                   <Avatar className="h-20 w-20">
                     <AvatarImage src="/placeholder-avatar.jpg" alt="Profile" />
                     <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xl">
@@ -129,7 +127,7 @@ export default function Profile() {
                     </AvatarFallback>
                   </Avatar>
                   {isEditing && (
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" className="mt-2 sm:mt-0">
                       <Camera className="h-4 w-4 mr-2" />
                       เปลี่ยนรูปภาพ
                     </Button>
@@ -137,7 +135,7 @@ export default function Profile() {
                 </div>
 
                 {/* Basic Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">ชื่อ</Label>
                     <Input
@@ -224,7 +222,7 @@ export default function Profile() {
             </Card>
 
             {/* Health Goals */}
-            <Card className="health-stat-card">
+            <Card className="health-stat-card mb-4">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Target className="h-5 w-5" />
@@ -235,18 +233,7 @@ export default function Profile() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="stepGoal">เป้าหมายก้าวเดิน</Label>
-                    <Input
-                      id="stepGoal"
-                      type="number"
-                      value={profileData.stepGoal}
-                      onChange={(e) => handleInputChange("stepGoal", e.target.value)}
-                      disabled={!isEditing}
-                      className="health-input"
-                    />
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="waterGoal">เป้าหมายน้ำ (ลิตร)</Label>
                     <Input
@@ -270,13 +257,24 @@ export default function Profile() {
                       className="health-input"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="exerciseGoal">เป้าหมายออกกำลังกาย (นาที/วัน)</Label>
+                    <Input
+                      id="exerciseGoal"
+                      type="number"
+                      value={profileData.exerciseGoal}
+                      onChange={(e) => handleInputChange("exerciseGoal", e.target.value)}
+                      disabled={!isEditing}
+                      className="health-input"
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
           {/* Settings & Actions */}
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             <Card className="health-stat-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -284,7 +282,7 @@ export default function Profile() {
                   การตั้งค่า
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3 md:space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label className="text-sm font-medium">การแจ้งเตือน</Label>
@@ -327,7 +325,7 @@ export default function Profile() {
               <CardContent>
                 <Button
                   variant="destructive"
-                  className="w-full"
+                  className="w-full mt-2"
                   onClick={handleLogout}
                 >
                   <LogOut className="h-4 w-4 mr-2" />

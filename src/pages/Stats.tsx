@@ -22,13 +22,6 @@ const sleepWeeklyData = [
   { name: "สัปดาห์ 4", value: 7.8 },
 ];
 
-const stepsMonthlyData = [
-  { name: "มกราคม", value: 8500 },
-  { name: "กุมภาพันธ์", value: 9200 },
-  { name: "มีนาคม", value: 8900 },
-  { name: "เมษายน", value: 9500 },
-];
-
 const waterWeeklyData = [
   { name: "จันทร์", value: 2.1 },
   { name: "อังคาร", value: 1.8 },
@@ -49,6 +42,16 @@ const moodWeeklyData = [
   { name: "อาทิตย์", value: 4 },
 ];
 
+const exerciseWeeklyData = [
+  { name: "จันทร์", value: 30 },
+  { name: "อังคาร", value: 40 },
+  { name: "พุธ", value: 35 },
+  { name: "พฤหัส", value: 38 },
+  { name: "ศุกร์", value: 32 },
+  { name: "เสาร์", value: 45 },
+  { name: "อาทิตย์", value: 37 },
+];
+
 const achievements = [
   { title: "นักเดินทางแห่งสุขภาพ", description: "เดินครบเป้าหมาย 7 วันติดต่อกัน", icon: "🏃‍♂️" },
   { title: "ผู้ดื่มน้ำมาสเตอร์", description: "ดื่มน้ำครบเป้าหมาย 30 วันติดต่อกัน", icon: "💧" },
@@ -62,22 +65,22 @@ export default function Stats() {
   return (
     <MainLayout>
       {/* Main Stats Content */}
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto px-4 sm:px-10 pb-8">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-              <BarChart3 className="h-8 w-8" />
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
+              <BarChart3 className="h-7 w-7 sm:h-8 sm:w-8" />
               สถิติสุขภาพ
             </h1>
-            <p className="text-muted-foreground mt-2">
+            <p className="text-muted-foreground mt-2 text-sm sm:text-base">
               วิเคราะห์แนวโน้มและความก้าวหน้าของสุขภาพ
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <Select value={period} onValueChange={setPeriod}>
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-full sm:w-32">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -90,8 +93,8 @@ export default function Stats() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="health-stat-card">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <Card className="min-h-[140px] flex flex-col justify-between">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">การปรับปรุงโดยรวม</CardTitle>
               <TrendingUp className="h-4 w-4 text-accent" />
@@ -104,7 +107,7 @@ export default function Stats() {
             </CardContent>
           </Card>
 
-          <Card className="health-stat-card">
+          <Card className="min-h-[140px] flex flex-col justify-between">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">วันที่บันทึกข้อมูล</CardTitle>
               <Activity className="h-4 w-4 text-primary" />
@@ -117,7 +120,7 @@ export default function Stats() {
             </CardContent>
           </Card>
 
-          <Card className="health-stat-card">
+          <Card className="min-h-[140px] flex flex-col justify-between">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">เป้าหมายที่บรรลุ</CardTitle>
               <Target className="h-4 w-4 text-secondary" />
@@ -129,23 +132,29 @@ export default function Stats() {
               </p>
             </CardContent>
           </Card>
+
+          <Card className="min-h-[140px] flex flex-col justify-between">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">การออกกำลังกายเฉลี่ย</CardTitle>
+              <Activity className="h-4 w-4 text-accent" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-accent">36 นาที</div>
+              <p className="text-xs text-muted-foreground">
+                ต่อวันในสัปดาห์นี้
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-8">
           <HealthChart
             title="แนวโน้มการนอนหลับ"
             description="ชั่วโมงการนอนหลับเฉลี่ยในแต่ละสัปดาห์"
             data={sleepWeeklyData}
             type="line"
             color="hsl(197, 76%, 64%)"
-          />
-          <HealthChart
-            title="จำนวนก้าวเดิน"
-            description="จำนวนก้าวเดินเฉลี่ยต่อเดือน"
-            data={stepsMonthlyData}
-            type="bar"
-            color="hsl(142, 69%, 58%)"
           />
           <HealthChart
             title="การดื่มน้ำ"
@@ -161,10 +170,17 @@ export default function Stats() {
             type="line"
             color="hsl(43, 89%, 62%)"
           />
+          <HealthChart
+            title="การออกกำลังกาย"
+            description="นาทีออกกำลังกายเฉลี่ยในแต่ละวัน"
+            data={exerciseWeeklyData}
+            type="bar"
+            color="hsl(142, 69%, 58%)"
+          />
         </div>
 
         {/* Health Insights */}
-        <Card className="health-stat-card">
+        <Card className="health-stat-card mb-8 bg-white rounded-lg shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
@@ -175,7 +191,7 @@ export default function Stats() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Badge className="bg-accent/10 text-accent">ข้อมูลดี</Badge>
@@ -216,7 +232,7 @@ export default function Stats() {
         </Card>
 
         {/* Achievements */}
-        <Card className="health-stat-card">
+        <Card className="health-stat-card bg-white rounded-lg shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Award className="h-5 w-5" />
@@ -227,13 +243,13 @@ export default function Stats() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
               {achievements.map((achievement, index) => (
-                <div key={index} className="flex items-center gap-4 p-4 bg-muted rounded-lg">
+                <div key={index} className="flex items-center gap-3 p-3 bg-muted rounded-lg flex-wrap">
                   <div className="text-2xl">{achievement.icon}</div>
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-sm">{achievement.title}</h4>
-                    <p className="text-xs text-muted-foreground">{achievement.description}</p>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-sm truncate">{achievement.title}</h4>
+                    <p className="text-xs text-muted-foreground truncate">{achievement.description}</p>
                   </div>
                 </div>
               ))}

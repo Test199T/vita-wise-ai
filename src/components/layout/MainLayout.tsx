@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Header } from "./Header";
 import { Navigation } from "./Navigation";
 import { cn } from "@/lib/utils";
+import { useLocation } from "react-router-dom";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -10,10 +11,13 @@ interface MainLayoutProps {
 
 export function MainLayout({ children, hideSidebar }: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
+  const isChatPage = location.pathname.endsWith("/chat");
 
   return (
     <div className="min-h-screen bg-background">
-      <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} showMenu />
+      {/* Header อยู่บนสุด, hamburger อยู่ใน header (showMenu) */}
+      <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)}  />
       {!hideSidebar && (
         <>
           {/* Fixed Sidebar for Desktop */}
