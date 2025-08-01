@@ -12,6 +12,11 @@ import Chat from "./pages/Chat";
 import Stats from "./pages/Stats";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import HealthGoals from "./pages/HealthGoals";
+import ExerciseLog from "./pages/ExerciseLog";
+import FoodLog from "./pages/FoodLog";
+import Settings from "./pages/Settings";
+import AIInsights from "./pages/AIInsights";
 
 const queryClient = new QueryClient();
 
@@ -27,10 +32,14 @@ const App = () => (
           <Route path="/register" element={<Register />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/health-form" element={<HealthForm />} />
+          <Route path="/health-goals" element={<HealthGoals />} />
+          <Route path="/exercise-log" element={<ExerciseLog />} />
+          <Route path="/food-log" element={<FoodLog />} />
+          <Route path="/ai-insights" element={<AIInsights />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/stats" element={<Stats />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/profile" element={<Profile />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
