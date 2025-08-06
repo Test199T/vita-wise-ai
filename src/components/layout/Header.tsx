@@ -18,7 +18,7 @@ export function Header({ onMenuClick, showMenu = false }: HeaderProps) {
                 variant="ghost"
                 size="icon"
                 onClick={onMenuClick}
-                className="md:hidden"
+                className="hover:bg-muted/50 transition-colors"
               >
                 <Menu className="h-5 w-5" />
               </Button>
@@ -34,13 +34,13 @@ export function Header({ onMenuClick, showMenu = false }: HeaderProps) {
           </div>
 
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon" className="relative">
+            <Button variant="ghost" size="icon" className="relative hover:bg-muted/50">
               <Bell className="h-5 w-5" />
               <span className="absolute -top-1 -right-1 bg-warning text-warning-foreground text-xs rounded-full h-4 w-4 flex items-center justify-center">
                 3
               </span>
             </Button>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" className="hover:bg-muted/50">
               <User className="h-5 w-5" />
             </Button>
           </div>

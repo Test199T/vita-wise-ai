@@ -45,7 +45,7 @@ export default function Register() {
         title: "สมัครสมาชิกสำเร็จ",
         description: "ยินดีต้อนรับสู่แอปสุขภาพดี AI",
       });
-      navigate("/dashboard");
+      navigate("/onboarding");
       setLoading(false);
     }, 1000);
   };
