@@ -10,7 +10,6 @@ import {
   Droplets,
   Activity,
   TrendingUp,
-  Plus,
   MessageCircle,
   Calendar
 } from "lucide-react";
@@ -57,12 +56,6 @@ export default function Dashboard() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button asChild variant="outline">
-              <Link to="/health-form">
-                <Plus className="h-4 w-4 mr-2" />
-                เพิ่มข้อมูล
-              </Link>
-            </Button>
             <Button asChild className="health-button">
               <Link to="/chat">
                 <MessageCircle className="h-4 w-4 mr-2" />
