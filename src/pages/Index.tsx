@@ -14,18 +14,25 @@ import {
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-light to-secondary-light">
+    <div
+      className="relative min-h-screen bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: "url(/shutterstock_639818752-696x466.jpg)" }}
+    >
+      <div className="absolute inset-0 bg-black/30" />
       {/* Header */}
-      <header className="container mx-auto px-4 py-6">
+      <header className="container mx-auto px-4 py-6 relative z-10">
         <nav className="flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <div className="bg-gradient-primary p-2 rounded-lg">
-              <Activity className="h-6 w-6 text-primary-foreground" />
+            <div className="bg-white/20 p-2 rounded-lg backdrop-blur">
+              <Activity className="h-6 w-6 text-white" />
             </div>
-            <span className="text-2xl font-bold text-foreground">สุขภาพดี AI</span>
+            <span className="text-2xl font-bold text-white">สุขภาพดี AI</span>
           </div>
-          <div className="flex space-x-4">
-            <Button asChild variant="outline">
+          <div className="flex gap-3">
+            <Button asChild variant="outline" className="rounded-full px-5 text-white border-white/70 hover:bg-white/10 bg-transparent">
+              <Link to="/register">สมัครสมาชิก</Link>
+            </Button>
+            <Button asChild className="rounded-full px-5 bg-blue-500 text-white hover:bg-blue-600">
               <Link to="/login">เข้าสู่ระบบ</Link>
             </Button>
           </div>
@@ -33,40 +40,43 @@ const Index = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="container mx-auto px-4 py-16 text-center">
+      <section className="container mx-auto px-4 py-16 text-center relative z-10">
         <div className="max-w-4xl mx-auto fade-in">
-          <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6">
+          <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
             ดูแลสุขภาพ
-            <span className="bg-gradient-primary bg-clip-text text-transparent"> อย่างสมาร์ท</span>
+            <span className="text-white"> อย่างสมาร์ท</span>
           </h1>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
             ติดตามสุขภาพ บันทึกข้อมูล และรับคำแนะนำจาก AI ส่วนตัว
             เพื่อสุขภาพที่ดีกว่าทุกวัน
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button asChild size="lg" className="health-button text-lg px-8">
-              <Link to="/login">
-                เข้าสู่ระบบ
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button asChild size="lg" variant="outline" className="rounded-full px-8 text-white border-white/70 hover:bg-white/10 bg-transparent">
+              <Link to="/register">
+                สมัครสมาชิก
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
+            </Button>
+            <Button asChild size="lg" variant="outline" className="rounded-full px-8 text-white border-white/70 hover:bg-white/10 bg-transparent">
+              <Link to="/login">เข้าสู่ระบบ</Link>
             </Button>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="container mx-auto px-4 py-16">
+      <section className="container mx-auto px-4 py-16 relative z-10">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-foreground mb-4">ฟีเจอร์หลัก</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-3xl font-bold text-white mb-4">ฟีเจอร์หลัก</h2>
+          <p className="text-white/80">
             เครื่องมือครบครันสำหรับการดูแลสุขภาพแบบองค์รวม
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <Card className="health-stat-card bounce-in">
+          <Card className="bounce-in rounded-xl bg-white/60 backdrop-blur border border-white/20">
             <CardHeader>
-              <Heart className="h-8 w-8 text-primary mb-2" />
+              <Heart className="h-8 w-8 text-white mb-2" />
               <CardTitle>ติดตามสุขภาพ</CardTitle>
               <CardDescription>
                 บันทึกข้อมูลการนอน การกิน การออกกำลังกาย และอารมณ์
@@ -74,9 +84,9 @@ const Index = () => {
             </CardHeader>
           </Card>
 
-          <Card className="health-stat-card bounce-in" style={{ animationDelay: '0.1s' }}>
+          <Card className="bounce-in rounded-xl bg-white/60 backdrop-blur border border-white/20" style={{ animationDelay: '0.1s' }}>
             <CardHeader>
-              <Brain className="h-8 w-8 text-accent mb-2" />
+              <Brain className="h-8 w-8 text-white mb-2" />
               <CardTitle>AI ส่วนตัว</CardTitle>
               <CardDescription>
                 ปรึกษาและรับคำแนะนำเกี่ยวกับสุขภาพจาก AI ที่เข้าใจคุณ
@@ -84,9 +94,9 @@ const Index = () => {
             </CardHeader>
           </Card>
 
-          <Card className="health-stat-card bounce-in" style={{ animationDelay: '0.2s' }}>
+          <Card className="bounce-in rounded-xl bg-white/60 backdrop-blur border border-white/20" style={{ animationDelay: '0.2s' }}>
             <CardHeader>
-              <Zap className="h-8 w-8 text-warning mb-2" />
+              <Zap className="h-8 w-8 text-white mb-2" />
               <CardTitle>วิเคราะห์แนวโน้ม</CardTitle>
               <CardDescription>
                 ดูแนวโน้มสุขภาพและรับรายงานที่ช่วยปรับปรุงคุณภาพชีวิต
@@ -94,9 +104,9 @@ const Index = () => {
             </CardHeader>
           </Card>
 
-          <Card className="health-stat-card bounce-in" style={{ animationDelay: '0.3s' }}>
+          <Card className="bounce-in rounded-xl bg-white/60 backdrop-blur border border-white/20" style={{ animationDelay: '0.3s' }}>
             <CardHeader>
-              <Users className="h-8 w-8 text-secondary mb-2" />
+              <Users className="h-8 w-8 text-white mb-2" />
               <CardTitle>ใช้งานง่าย</CardTitle>
               <CardDescription>
                 อินเทอร์เฟซที่เข้าใจง่าย เหมาะกับทุกเพศทุกวัย
@@ -104,9 +114,9 @@ const Index = () => {
             </CardHeader>
           </Card>
 
-          <Card className="health-stat-card bounce-in" style={{ animationDelay: '0.4s' }}>
+          <Card className="bounce-in rounded-xl bg-white/60 backdrop-blur border border-white/20" style={{ animationDelay: '0.4s' }}>
             <CardHeader>
-              <Shield className="h-8 w-8 text-destructive mb-2" />
+              <Shield className="h-8 w-8 text-white mb-2" />
               <CardTitle>ปลอดภัย</CardTitle>
               <CardDescription>
                 ข้อมูลของคุณได้รับการปกป้องด้วยความปลอดภัยระดับสูง
@@ -114,9 +124,9 @@ const Index = () => {
             </CardHeader>
           </Card>
 
-          <Card className="health-stat-card bounce-in" style={{ animationDelay: '0.5s' }}>
+          <Card className="bounce-in rounded-xl bg-white/60 backdrop-blur border border-white/20" style={{ animationDelay: '0.5s' }}>
             <CardHeader>
-              <Star className="h-8 w-8 text-accent mb-2" />
+              <Star className="h-8 w-8 text-white mb-2" />
               <CardTitle>ผลลัพธ์จริง</CardTitle>
               <CardDescription>
                 ผู้ใช้รายงานการปรับปรุงสุขภาพที่ดีขึ้นอย่างเห็นได้ชัด
@@ -127,15 +137,15 @@ const Index = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="container mx-auto px-4 py-16 text-center">
+      <section className="container mx-auto px-4 py-16 text-center relative z-10">
         <div className="max-w-2xl mx-auto">
-          <h2 className="text-3xl font-bold text-foreground mb-4">
+          <h2 className="text-3xl font-bold text-white mb-4">
             พร้อมเริ่มดูแลสุขภาพแล้วหรือยัง?
           </h2>
-          <p className="text-muted-foreground mb-8">
+          <p className="text-white/80 mb-8">
             เข้าร่วมกับผู้ใช้หลายพันคนที่เลือกใช้ AI ในการดูแลสุขภาพ
           </p>
-          <Button asChild size="lg" className="health-button text-lg px-8">
+          <Button asChild size="lg" variant="outline" className="rounded-full text-lg px-8 text-white border-white/70 hover:bg-white/10 bg-transparent">
             <Link to="/login">
               เข้าสู่ระบบ
               <ArrowRight className="ml-2 h-5 w-5" />
@@ -145,16 +155,16 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-card border-t border-border">
+      <footer className="bg-black/30 backdrop-blur border-0 text-white">
         <div className="container mx-auto px-4 py-8">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-2">
-              <div className="bg-gradient-primary p-2 rounded-lg">
-                <Activity className="h-5 w-5 text-primary-foreground" />
+              <div className="bg-white/20 p-2 rounded-lg">
+                <Activity className="h-5 w-5 text-white" />
               </div>
-              <span className="text-lg font-bold text-foreground">สุขภาพดี AI</span>
+              <span className="text-lg font-bold text-white">สุขภาพดี AI</span>
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-white/80">
               © 2024 สุขภาพดี AI. สงวนสิทธิ์ทั้งหมด
             </p>
           </div>

@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useOnboarding } from "@/contexts/OnboardingContext";
 
 interface FoodLog {
@@ -154,6 +155,8 @@ export default function FoodLog() {
   });
 
   const mealTimes = ["เช้า", "สาย", "กลางวัน", "บ่าย", "เย็น", "ดึก", "อื่นๆ"];
+
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -316,7 +319,34 @@ export default function FoodLog() {
       total_sodium: String(log.total_sodium || ""),
       notes: log.notes || "",
     });
-    setShowForm(true);
+    setIsEditOpen(true);
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingId) return;
+    const next = foodLogs.map(l => l.food_log_id === editingId ? {
+      ...l,
+      log_date: formData.log_date,
+      meal_time: formData.meal_time,
+      food_items: formData.food_items ? [{ name: formData.food_items, amount: '', calories: Number(formData.total_calories || 0) }] : l.food_items,
+      total_calories: Number(formData.total_calories || 0),
+      total_protein: Number(formData.total_protein || 0),
+      total_carbs: Number(formData.total_carbs || 0),
+      total_fats: Number(formData.total_fats || 0),
+      total_fiber: Number(formData.total_fiber || 0),
+      total_vitaminC: Number(formData.total_vitaminC || 0),
+      total_vitaminD: Number(formData.total_vitaminD || 0),
+      total_calcium: Number(formData.total_calcium || 0),
+      total_iron: Number(formData.total_iron || 0),
+      total_potassium: Number(formData.total_potassium || 0),
+      total_sodium: Number(formData.total_sodium || 0),
+      notes: formData.notes,
+    } : l);
+    setFoodLogs(next);
+    toast({ title: "อัปเดตบันทึกแล้ว" });
+    setIsEditOpen(false);
+    setEditingId(null);
   };
 
   const deleteLog = (log: FoodLog) => {
@@ -596,9 +626,9 @@ export default function FoodLog() {
               </TabsList>
 
               <TabsContent value="macros" className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
                   {/* Macronutrients */}
-                  <div className="space-y-4">
+                  <div className="space-y-4 h-full">
                     <h4 className="font-semibold text-lg flex items-center gap-2">
                       <Beef className="h-5 w-5" />
                       สารอาหารหลัก (Macronutrients)
@@ -636,13 +666,13 @@ export default function FoodLog() {
                     </div>
                   </div>
 
-                  {/* Calories Summary */}
-                  <div className="space-y-4">
+                  {/* Calories Summary (match height with macronutrients) */}
+                  <div className="space-y-4 flex flex-col h-full">
                     <h4 className="font-semibold text-lg flex items-center gap-2">
                       <Flame className="h-5 w-5" />
                       แคลอรี่รวม
                     </h4>
-                    <div className="text-center p-6 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg">
+                    <div className="text-center p-6 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg flex-1 flex flex-col justify-center">
                       <div className="text-3xl font-bold text-orange-600">{totalNutrition.calories}</div>
                       <div className="text-sm text-muted-foreground">แคลอรี่</div>
                       <div className="text-xs text-muted-foreground mt-2">
@@ -659,48 +689,43 @@ export default function FoodLog() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="micros" className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Micronutrients */}
-                  <div className="space-y-4">
-                    <h4 className="font-semibold text-lg flex items-center gap-2">
-                      <Pill className="h-5 w-5" />
-                      วิตามินและแร่ธาตุ (Micronutrients)
-                    </h4>
-                    <div className="space-y-3">
-                      {[
-                        { key: 'vitaminC', label: 'วิตามิน C', current: totalNutrition.vitaminC, target: nutritionTargets.vitaminC.target, unit: 'mg' },
-                        { key: 'vitaminD', label: 'วิตามิน D', current: totalNutrition.vitaminD, target: nutritionTargets.vitaminD.target, unit: 'mcg' },
-                        { key: 'calcium', label: 'แคลเซียม', current: totalNutrition.calcium, target: nutritionTargets.calcium.target, unit: 'mg' },
-                        { key: 'iron', label: 'เหล็ก', current: totalNutrition.iron, target: nutritionTargets.iron.target, unit: 'mg' },
-                        { key: 'potassium', label: 'โพแทสเซียม', current: totalNutrition.potassium, target: nutritionTargets.potassium.target, unit: 'mg' },
-                        { key: 'sodium', label: 'โซเดียม', current: totalNutrition.sodium, target: nutritionTargets.sodium.target, unit: 'mg' },
-                      ].map((item) => {
-                        const status = getNutritionStatus(item.current, item.target);
-                        return (
-                          <div key={item.key} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                            <div className="flex items-center gap-3">
-                              {getNutritionIcon(status)}
-                              <div>
-                                <div className="font-medium">{item.label}</div>
-                                <div className="text-sm text-muted-foreground">
-                                  {item.current}/{item.target} {item.unit}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {getNutritionBadge(status)}
-                              <div className="text-xs text-muted-foreground">
-                                {status === 'deficient' ? `ขาด ${item.target - item.current} ${item.unit}` :
-                                 status === 'excessive' ? `เกิน ${item.current - item.target} ${item.unit}` :
-                                 'เหมาะสม'}
-                              </div>
+              <TabsContent value="micros" className="space-y-4">
+                <h4 className="font-semibold text-lg flex items-center gap-2">
+                  <Pill className="h-5 w-5" />
+                  วิตามินและแร่ธาตุ (Micronutrients)
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {[
+                    { key: 'vitaminC', label: 'วิตามิน C', current: totalNutrition.vitaminC, target: nutritionTargets.vitaminC.target, unit: 'mg' },
+                    { key: 'vitaminD', label: 'วิตามิน D', current: totalNutrition.vitaminD, target: nutritionTargets.vitaminD.target, unit: 'mcg' },
+                    { key: 'calcium', label: 'แคลเซียม', current: totalNutrition.calcium, target: nutritionTargets.calcium.target, unit: 'mg' },
+                    { key: 'iron', label: 'เหล็ก', current: totalNutrition.iron, target: nutritionTargets.iron.target, unit: 'mg' },
+                    { key: 'potassium', label: 'โพแทสเซียม', current: totalNutrition.potassium, target: nutritionTargets.potassium.target, unit: 'mg' },
+                    { key: 'sodium', label: 'โซเดียม', current: totalNutrition.sodium, target: nutritionTargets.sodium.target, unit: 'mg' },
+                  ].map((item) => {
+                    const status = getNutritionStatus(item.current, item.target);
+                    return (
+                      <div key={item.key} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          {getNutritionIcon(status)}
+                          <div>
+                            <div className="font-medium">{item.label}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {item.current}/{item.target} {item.unit}
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {getNutritionBadge(status)}
+                          <div className="text-xs text-muted-foreground">
+                            {status === 'deficient' ? `ขาด ${item.target - item.current} ${item.unit}` :
+                             status === 'excessive' ? `เกิน ${item.current - item.target} ${item.unit}` :
+                             'เหมาะสม'}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </TabsContent>
             </Tabs>
@@ -801,6 +826,69 @@ export default function FoodLog() {
             </Card>
           ))}
         </div>
+
+        {/* Edit Dialog */}
+        <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+          <DialogContent className="sm:max-w-xl">
+            <DialogHeader>
+              <DialogTitle>แก้ไขบันทึกอาหาร</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit_date">วันที่</Label>
+                  <Input id="edit_date" type="date" value={formData.log_date} onChange={(e)=>setFormData({...formData, log_date: e.target.value})} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit_meal">มื้ออาหาร</Label>
+                  <Select value={formData.meal_time} onValueChange={(value)=>setFormData({...formData, meal_time: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="เลือกมื้อ" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {mealTimes.map((time) => (
+                        <SelectItem key={time} value={time}>{time}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit_time">เวลา</Label>
+                  <Input id="edit_time" type="time" value={formData.meal_clock_time} onChange={(e)=>setFormData({...formData, meal_clock_time: e.target.value})} />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit_items">รายการอาหาร</Label>
+                <Textarea id="edit_items" value={formData.food_items} onChange={(e)=>setFormData({...formData, food_items: e.target.value})} />
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit_cal">แคลอรี</Label>
+                  <Input id="edit_cal" type="number" value={formData.total_calories} onChange={(e)=>setFormData({...formData, total_calories: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit_pro">โปรตีน (g)</Label>
+                  <Input id="edit_pro" type="number" value={formData.total_protein} onChange={(e)=>setFormData({...formData, total_protein: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit_carbs">คาร์โบ (g)</Label>
+                  <Input id="edit_carbs" type="number" value={formData.total_carbs} onChange={(e)=>setFormData({...formData, total_carbs: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit_fats">ไขมัน (g)</Label>
+                  <Input id="edit_fats" type="number" value={formData.total_fats} onChange={(e)=>setFormData({...formData, total_fats: e.target.value})} />
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={()=>setIsEditOpen(false)}>ยกเลิก</Button>
+                <Button type="submit">บันทึก</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   );

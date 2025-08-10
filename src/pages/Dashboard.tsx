@@ -200,12 +200,6 @@ export default function Dashboard() {
                 เป้าหมายสุขภาพ
               </Link>
             </Button>
-            <Button asChild className="health-button">
-              <Link to="/chat">
-                <MessageCircle className="h-4 w-4 mr-2" />
-                คุยกับ AI
-              </Link>
-            </Button>
           </div>
         </div>
 
@@ -337,16 +331,6 @@ export default function Dashboard() {
             trend={mockHealthData.exercise.trend as "up" | "down" | "stable"}
             color="accent"
           />
-        </div>
-
-        {/* Quick actions */}
-        <div className="flex flex-wrap gap-2">
-          <Button asChild variant="secondary" size="sm">
-            <Link to="/sleep-log">บันทึกการนอน</Link>
-          </Button>
-          <Button asChild variant="secondary" size="sm">
-            <Link to="/water-log">บันทึกน้ำดื่ม</Link>
-          </Button>
         </div>
 
         {/* BMR / TDEE Overview */}

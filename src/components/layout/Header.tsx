@@ -1,4 +1,4 @@
-import { Bell, Activity, ChevronDown } from "lucide-react";
+import { Bell, Activity, ChevronDown, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, NavLink } from "react-router-dom";
 import {
@@ -82,6 +82,14 @@ export function Header() {
                   </DropdownMenu>
                 );
               })}
+              {/* Chat with AI – placed next to the nav, right after "AI และการวิเคราะห์" */}
+              <Button asChild className="group relative overflow-visible rounded-full px-3 sm:px-4 py-1.5 sm:py-2 ml-1 bg-gradient-to-r from-sky-500 to-indigo-500 text-white shadow-md hover:shadow-lg hover:scale-[1.02] transition-all">
+                <Link to="/chat" className="flex items-center gap-2">
+                  <span className="pointer-events-none absolute -inset-1 rounded-full bg-sky-400/40 blur-md opacity-60 group-hover:opacity-80" />
+                  <MessageCircle className="h-4 w-4" />
+                  <span className="hidden lg:inline font-medium">คุยกับ AI</span>
+                </Link>
+              </Button>
             </nav>
           </div>
 
