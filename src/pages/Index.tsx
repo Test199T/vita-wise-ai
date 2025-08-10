@@ -28,9 +28,6 @@ const Index = () => {
             <Button asChild variant="outline">
               <Link to="/login">เข้าสู่ระบบ</Link>
             </Button>
-            <Button asChild className="health-button">
-              <Link to="/register">สมัครสมาชิก</Link>
-            </Button>
           </div>
         </nav>
       </header>
@@ -48,13 +45,10 @@ const Index = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button asChild size="lg" className="health-button text-lg px-8">
-              <Link to="/register">
-                เริ่มต้นใช้งาน
+              <Link to="/login">
+                เข้าสู่ระบบ
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="text-lg px-8">
-              <Link to="/login">เข้าสู่ระบบ</Link>
             </Button>
           </div>
         </div>
@@ -142,8 +136,8 @@ const Index = () => {
             เข้าร่วมกับผู้ใช้หลายพันคนที่เลือกใช้ AI ในการดูแลสุขภาพ
           </p>
           <Button asChild size="lg" className="health-button text-lg px-8">
-            <Link to="/register">
-              สมัครสมาชิกฟรี
+            <Link to="/login">
+              เข้าสู่ระบบ
               <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
           </Button>

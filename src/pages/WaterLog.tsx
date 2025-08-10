@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Droplets, Calendar, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface WaterLogItem {
   id: string;
@@ -20,10 +21,23 @@ interface WaterLogItem {
 export default function WaterLog() {
   const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
-  const [logs] = useState<WaterLogItem[]>([
-    { id: "1", date: "2024-01-05", time: "09:30", amount_ml: 350, notes: "หลังอาหารเช้า" },
-    { id: "2", date: "2024-01-05", time: "13:00", amount_ml: 500 },
-  ]);
+  const [logs, setLogs] = useState<WaterLogItem[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const raw = localStorage.getItem('water_logs');
+    if (raw) {
+      try { setLogs(JSON.parse(raw)); } catch { setLogs([]); }
+    } else {
+      setLogs([]);
+      localStorage.setItem('water_logs', JSON.stringify([]));
+    }
+  }, []);
+
+  const saveLogs = (items: WaterLogItem[]) => {
+    setLogs(items);
+    localStorage.setItem('water_logs', JSON.stringify(items));
+  };
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -34,9 +48,40 @@ export default function WaterLog() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    toast({ title: "บันทึกสำเร็จ", description: "บันทึกน้ำดื่มเรียบร้อยแล้ว" });
+    if (editingId) {
+      const next = logs.map(l => l.id === editingId ? {
+        ...l,
+        date: formData.date,
+        time: formData.time,
+        amount_ml: Number(formData.amount_ml||0),
+        notes: formData.notes,
+      } : l);
+      saveLogs(next);
+      toast({ title: 'อัปเดตบันทึกแล้ว' });
+    } else {
+      const newLog: WaterLogItem = {
+        id: crypto.randomUUID(),
+        date: formData.date,
+        time: formData.time,
+        amount_ml: Number(formData.amount_ml||0),
+        notes: formData.notes,
+      };
+      saveLogs([newLog, ...logs]);
+      toast({ title: "บันทึกสำเร็จ", description: "บันทึกน้ำดื่มเรียบร้อยแล้ว" });
+    }
+    setEditingId(null);
     setShowForm(false);
     setFormData({ date: new Date().toISOString().split('T')[0], time: "", amount_ml: "", notes: "" });
+  };
+  const startEdit = (l: WaterLogItem) => {
+    setEditingId(l.id);
+    setFormData({ date: l.date, time: l.time, amount_ml: String(l.amount_ml||''), notes: l.notes || '' });
+    setShowForm(true);
+  };
+
+  const deleteLog = (l: WaterLogItem) => {
+    saveLogs(logs.filter(x => x.id !== l.id));
+    toast({ title: 'ลบรายการแล้ว' });
   };
 
   return (
@@ -99,6 +144,24 @@ export default function WaterLog() {
                       <h3 className="font-semibold">{item.amount_ml} มล.</h3>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground"><Calendar className="h-4 w-4" />{new Date(item.date).toLocaleDateString('th-TH')} • <Clock className="h-4 w-4" />{item.time}</div>
                     </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => startEdit(item)}>แก้ไข</Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">ลบ</Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
+                          <AlertDialogDescription>ต้องการลบรายการนี้หรือไม่?</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => deleteLog(item)}>ลบ</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
                 {item.notes && (

@@ -45,6 +45,9 @@ interface OnboardingData {
   waist: number;
   bloodPressure: string;
   bloodSugar: string;
+  // Added for BMR/TDEE
+  sex: 'male' | 'female';
+  birthDate: string;
   
   // Step 3: Lifestyle
   exerciseFrequency: string;
@@ -52,6 +55,8 @@ interface OnboardingData {
   mealsPerDay: number;
   smoking: boolean;
   alcoholFrequency: string;
+  // Added for BMR/TDEE
+  activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very-active';
   
   // Step 4: Medical History
   medicalConditions: string[];
@@ -62,6 +67,9 @@ interface OnboardingData {
   notifications: string[];
   trackingItems: string[];
   reminderTime: string;
+  // Added user nutrition targets
+  fiberTarget: number;
+  sodiumTarget: number;
 }
 
 const Onboarding = () => {
@@ -158,6 +166,29 @@ const Onboarding = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="sex">เพศ</Label>
+                  <Select value={data.sex} onValueChange={(value) => updateData("sex", value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="เลือกเพศ" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">ชาย</SelectItem>
+                      <SelectItem value="female">หญิง</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="birthDate">วันเกิด</Label>
+                  <Input
+                    id="birthDate"
+                    type="date"
+                    value={data.birthDate || ""}
+                    onChange={(e) => updateData("birthDate", e.target.value)}
+                  />
+                </div>
+              </div>
               <div className="text-center space-y-4">
                 <p className="text-muted-foreground">
                   การตั้งค่าจะใช้เวลาเพียง 2-3 นาที และจะช่วยให้เราแนะนำคุณได้ตรงเป้าหมายมากขึ้น
@@ -334,6 +365,22 @@ const Onboarding = () => {
                     </div>
                   ))}
                 </RadioGroup>
+              </div>
+
+              <div className="space-y-4">
+                <Label>ระดับกิจกรรม (สำหรับคำนวณ TDEE)</Label>
+                <Select value={data.activityLevel} onValueChange={(value) => updateData("activityLevel", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="เลือกระดับกิจกรรม" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sedentary">นั่งทำงาน/ไม่ค่อยขยับตัว</SelectItem>
+                    <SelectItem value="light">ออกกำลังกายเบาๆ 1-3 วัน/สัปดาห์</SelectItem>
+                    <SelectItem value="moderate">ออกกำลังกายปานกลาง 3-5 วัน/สัปดาห์</SelectItem>
+                    <SelectItem value="active">ออกกำลังกายหนัก 6-7 วัน/สัปดาห์</SelectItem>
+                    <SelectItem value="very-active">ออกกำลังกายหนักมาก/ใช้แรงงาน</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-4">
@@ -525,6 +572,32 @@ const Onboarding = () => {
                       </Label>
                     </div>
                   ))}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <Label>ตั้งค่าเป้าหมายโภชนาการเฉพาะ</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="fiberTarget">ไฟเบอร์เป้าหมาย (g/วัน)</Label>
+                    <Input
+                      id="fiberTarget"
+                      type="number"
+                      placeholder="25"
+                      value={data.fiberTarget || ""}
+                      onChange={(e) => updateData("fiberTarget", parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="sodiumTarget">โซเดียมเป้าหมาย (mg/วัน)</Label>
+                    <Input
+                      id="sodiumTarget"
+                      type="number"
+                      placeholder="2300"
+                      value={data.sodiumTarget || ""}
+                      onChange={(e) => updateData("sodiumTarget", parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
                 </div>
               </div>
 

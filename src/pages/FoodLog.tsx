@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,8 @@ import {
   BarChart3
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useOnboarding } from "@/contexts/OnboardingContext";
 
 interface FoodLog {
   food_log_id: string;
@@ -45,8 +47,8 @@ interface FoodLog {
   notes: string;
 }
 
-// ข้อมูลโภชนาการเป้าหมาย
-const nutritionTargets = {
+// ข้อมูลโภชนาการเป้าหมาย (ใช้ค่าผู้ใช้ หากไม่มีใช้ค่าเริ่มต้นทั่วไป)
+const defaultNutritionTargets = {
   protein: { target: 80, unit: "g" },
   carbs: { target: 250, unit: "g" },
   fats: { target: 65, unit: "g" },
@@ -76,7 +78,9 @@ const foodCatalog = [
 
 export default function FoodLog() {
   const { toast } = useToast();
+  const { onboardingData } = useOnboarding();
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const filteredFoods = foodCatalog.filter((f) => f.name.includes(query.trim())).slice(0, 8);
   const addSuggestedFood = (name: string) => {
@@ -84,7 +88,7 @@ export default function FoodLog() {
     setFormData({ ...formData, food_items: `${prefix}${name} 1 ที่` });
     setQuery("");
   };
-  const [foodLogs] = useState<FoodLog[]>([
+  const [foodLogs, setFoodLogs] = useState<FoodLog[]>([
     {
       food_log_id: "1",
       log_date: "2024-01-01",
@@ -153,10 +157,50 @@ export default function FoodLog() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "บันทึกสำเร็จ",
-      description: "บันทึกอาหารเรียบร้อยแล้ว"
-    });
+    if (editingId) {
+      const next = foodLogs.map(l => l.food_log_id === editingId ? {
+        ...l,
+        log_date: formData.log_date,
+        meal_time: formData.meal_time,
+        food_items: formData.food_items ? [{ name: formData.food_items, amount: '', calories: Number(formData.total_calories || 0) }] : l.food_items,
+        total_calories: Number(formData.total_calories || 0),
+        total_protein: Number(formData.total_protein || 0),
+        total_carbs: Number(formData.total_carbs || 0),
+        total_fats: Number(formData.total_fats || 0),
+        total_fiber: Number(formData.total_fiber || 0),
+        total_vitaminC: Number(formData.total_vitaminC || 0),
+        total_vitaminD: Number(formData.total_vitaminD || 0),
+        total_calcium: Number(formData.total_calcium || 0),
+        total_iron: Number(formData.total_iron || 0),
+        total_potassium: Number(formData.total_potassium || 0),
+        total_sodium: Number(formData.total_sodium || 0),
+        notes: formData.notes,
+      } : l);
+      setFoodLogs(next);
+      toast({ title: "อัปเดตบันทึกแล้ว" });
+    } else {
+      const newLog: FoodLog = {
+        food_log_id: crypto.randomUUID(),
+        log_date: formData.log_date,
+        meal_time: formData.meal_time,
+        food_items: formData.food_items ? [{ name: formData.food_items, amount: '', calories: Number(formData.total_calories || 0) }] : [],
+        total_calories: Number(formData.total_calories || 0),
+        total_protein: Number(formData.total_protein || 0),
+        total_carbs: Number(formData.total_carbs || 0),
+        total_fats: Number(formData.total_fats || 0),
+        total_fiber: Number(formData.total_fiber || 0),
+        total_vitaminC: Number(formData.total_vitaminC || 0),
+        total_vitaminD: Number(formData.total_vitaminD || 0),
+        total_calcium: Number(formData.total_calcium || 0),
+        total_iron: Number(formData.total_iron || 0),
+        total_potassium: Number(formData.total_potassium || 0),
+        total_sodium: Number(formData.total_sodium || 0),
+        notes: formData.notes,
+      };
+      setFoodLogs([newLog, ...foodLogs]);
+      toast({ title: "บันทึกสำเร็จ", description: "บันทึกอาหารเรียบร้อยแล้ว" });
+    }
+    setEditingId(null);
     setShowForm(false);
     setFormData({
       log_date: new Date().toISOString().split('T')[0],
@@ -251,6 +295,45 @@ export default function FoodLog() {
   };
 
   const totalNutrition = calculateTotalNutrition();
+
+  const startEdit = (log: FoodLog) => {
+    setEditingId(log.food_log_id);
+    setFormData({
+      log_date: log.log_date,
+      meal_time: log.meal_time,
+      meal_clock_time: "",
+      food_items: log.food_items?.map((it: any) => it.name).join(", "),
+      total_calories: String(log.total_calories || ""),
+      total_protein: String(log.total_protein || ""),
+      total_carbs: String(log.total_carbs || ""),
+      total_fats: String(log.total_fats || ""),
+      total_fiber: String(log.total_fiber || ""),
+      total_vitaminC: String(log.total_vitaminC || ""),
+      total_vitaminD: String(log.total_vitaminD || ""),
+      total_calcium: String(log.total_calcium || ""),
+      total_iron: String(log.total_iron || ""),
+      total_potassium: String(log.total_potassium || ""),
+      total_sodium: String(log.total_sodium || ""),
+      notes: log.notes || "",
+    });
+    setShowForm(true);
+  };
+
+  const deleteLog = (log: FoodLog) => {
+    setFoodLogs(prev => prev.filter(l => l.food_log_id !== log.food_log_id));
+    toast({ title: "ลบรายการแล้ว" });
+  };
+
+  const nutritionTargets = useMemo(() => {
+    // Override with user's fiber/sodium targets if provided (>0)
+    const fiberTarget = onboardingData.fiberTarget && onboardingData.fiberTarget > 0 ? onboardingData.fiberTarget : defaultNutritionTargets.fiber.target;
+    const sodiumTarget = onboardingData.sodiumTarget && onboardingData.sodiumTarget > 0 ? onboardingData.sodiumTarget : defaultNutritionTargets.sodium.target;
+    return {
+      ...defaultNutritionTargets,
+      fiber: { ...defaultNutritionTargets.fiber, target: fiberTarget },
+      sodium: { ...defaultNutritionTargets.sodium, target: sodiumTarget },
+    };
+  }, [onboardingData]);
 
   return (
     <MainLayout>
@@ -644,8 +727,22 @@ export default function FoodLog() {
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    <Flame className="h-4 w-4 text-orange-500" />
-                    <span className="font-semibold">{log.total_calories} แคล</span>
+                    <Button variant="outline" size="sm" onClick={() => startEdit(log)}>แก้ไข</Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">ลบ</Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
+                          <AlertDialogDescription>ต้องการลบรายการมื้อ{log.meal_time} นี้หรือไม่?</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => deleteLog(log)}>ลบ</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
                 

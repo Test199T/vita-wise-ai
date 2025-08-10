@@ -6,33 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Moon,
-  Footprints,
-  Utensils,
-  Droplets,
-  Activity,
-  TrendingUp,
-  MessageCircle,
-  Calendar,
-  Beef,
-  Wheat,
-  Zap,
-  Apple,
-  Pill,
-  AlertTriangle,
-  CheckCircle,
-  XCircle,
-  BarChart3,
-  TrendingDown,
-  Award,
-  Target,
-  Clock,
-  LineChart,
-  Brain
-} from "lucide-react";
+// lucide-react kept for inlined status icons/badges; main tiles use Iconify via HealthCard
+import { AlertTriangle, CheckCircle, XCircle, TrendingUp, MessageCircle, Calendar, Pill, BarChart3, Target, Clock, LineChart } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useOnboarding } from "@/contexts/OnboardingContext";
 
 // จำลองข้อมูลสุขภาพ
 const mockHealthData = {
@@ -160,6 +138,46 @@ const getNutritionBadge = (status: string) => {
 
 export default function Dashboard() {
   const [period, setPeriod] = useState("week");
+  const { onboardingData } = useOnboarding();
+
+  const { bmr, tdee } = useMemo(() => {
+    const height = onboardingData.height || 0; // cm
+    const weight = onboardingData.weight || 0; // kg
+    const birthDate = onboardingData.birthDate;
+    const sex = onboardingData.sex;
+    const activityLevel = onboardingData.activityLevel;
+
+    const age = (() => {
+      if (!birthDate) return 0;
+      const birth = new Date(birthDate);
+      if (Number.isNaN(birth.getTime())) return 0;
+      const today = new Date();
+      let years = today.getFullYear() - birth.getFullYear();
+      const m = today.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) years--;
+      return Math.max(0, years);
+    })();
+
+    // Mifflin-St Jeor Equation
+    let calculatedBmr = 0;
+    if (sex === 'male') {
+      calculatedBmr = 10 * weight + 6.25 * height - 5 * age + 5;
+    } else if (sex === 'female') {
+      calculatedBmr = 10 * weight + 6.25 * height - 5 * age - 161;
+    }
+
+    const activityFactors: Record<string, number> = {
+      'sedentary': 1.2,
+      'light': 1.375,
+      'moderate': 1.55,
+      'active': 1.725,
+      'very-active': 1.9,
+    };
+    const factor = activityFactors[activityLevel] || 1.2;
+    const calculatedTdee = calculatedBmr > 0 ? calculatedBmr * factor : 0;
+
+    return { bmr: Math.round(calculatedBmr), tdee: Math.round(calculatedTdee) };
+  }, [onboardingData]);
 
   return (
     <MainLayout>
@@ -176,6 +194,12 @@ export default function Dashboard() {
             </p>
           </div>
           <div className="flex gap-2 items-center">
+            <Button asChild variant="outline">
+              <Link to="/health-goals">
+                <Target className="h-4 w-4 mr-2" />
+                เป้าหมายสุขภาพ
+              </Link>
+            </Button>
             <Button asChild className="health-button">
               <Link to="/chat">
                 <MessageCircle className="h-4 w-4 mr-2" />
@@ -187,10 +211,10 @@ export default function Dashboard() {
 
         {/* AI Insight สรุปรวม (ภาพรวม) */}
         <Card className="border-primary/20">
-          <CardHeader className="flex flex-row items-start justify-between gap-4">
+          <CardHeader className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-lg text-primary">
-                <Brain className="h-5 w-5" />
+                <iconify-icon icon="lucide:brain" width="20" height="20"></iconify-icon>
               </div>
               <div>
                 <CardTitle className="text-lg">ภาพรวมสุขภาพจาก AI</CardTitle>
@@ -241,7 +265,7 @@ export default function Dashboard() {
           <Card className="min-h-[140px] flex flex-col justify-between">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">วันที่บันทึกข้อมูล</CardTitle>
-              <Activity className="h-4 w-4 text-primary" />
+              <iconify-icon icon="lucide:activity" width="16" height="16" className="text-primary"></iconify-icon>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">24/30</div>
@@ -267,7 +291,7 @@ export default function Dashboard() {
           <Card className="min-h-[140px] flex flex-col justify-between">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">การออกกำลังกายเฉลี่ย</CardTitle>
-              <Activity className="h-4 w-4 text-accent" />
+              <iconify-icon icon="lucide:activity" width="16" height="16" className="text-accent"></iconify-icon>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-accent">36 นาที</div>
@@ -284,7 +308,7 @@ export default function Dashboard() {
             title="การนอนหลับ"
             value={`${mockHealthData.sleep.hours} ชั่วโมง`}
             description={`เป้าหมาย ${mockHealthData.sleep.target} ชั่วโมง`}
-            icon={Moon}
+            icon="lucide:moon"
             trend={mockHealthData.sleep.trend as "up" | "down" | "stable"}
             color="primary"
           />
@@ -293,7 +317,7 @@ export default function Dashboard() {
             title="น้ำดื่ม"
             value={`${mockHealthData.water.liters} ลิตร`}
             description={`เป้าหมาย ${mockHealthData.water.target} ลิตร`}
-            icon={Droplets}
+            icon="lucide:droplets"
             trend={mockHealthData.water.trend as "up" | "down" | "stable"}
             color="secondary"
           />
@@ -301,7 +325,7 @@ export default function Dashboard() {
             title="แคลอรี่"
             value={`${mockHealthData.calories.count} แคล`}
             description={`เป้าหมาย ${mockHealthData.calories.target} แคล`}
-            icon={Utensils}
+            icon="lucide:utensils"
             trend={mockHealthData.calories.trend as "up" | "down" | "stable"}
             color="warning"
           />
@@ -309,7 +333,7 @@ export default function Dashboard() {
             title="การออกกำลังกาย"
             value={`${mockHealthData.exercise.minutes} นาที`}
             description={`เป้าหมาย ${mockHealthData.exercise.target} นาที`}
-            icon={Activity}
+            icon="lucide:activity"
             trend={mockHealthData.exercise.trend as "up" | "down" | "stable"}
             color="accent"
           />
@@ -332,20 +356,37 @@ export default function Dashboard() {
             <CardDescription>ปรับข้อมูลร่างกายในโปรไฟล์เพื่อคำนวณอย่างแม่นยำ</CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 rounded-lg bg-muted/50">
-              <div className="text-sm text-muted-foreground">ประมาณการ BMR</div>
-              <div className="text-2xl font-semibold">1,520 kcal</div>
-            </div>
-            <div className="p-4 rounded-lg bg-muted/50">
-              <div className="text-sm text-muted-foreground">ประมาณการ TDEE</div>
-              <div className="text-2xl font-semibold">2,100 kcal</div>
-            </div>
+            {(() => {
+              const sampleBmr = 1520;
+              const sampleTdee = 2100;
+              const bmrDisplay = bmr > 0 ? bmr : sampleBmr;
+              const tdeeDisplay = tdee > 0 ? tdee : sampleTdee;
+              const isSample = !(bmr > 0 && tdee > 0);
+              return (
+                <>
+                  <div className="p-4 rounded-lg bg-muted/50">
+                    <div className="text-sm text-muted-foreground">ประมาณการ BMR</div>
+                    <div className="text-2xl font-semibold">{bmrDisplay.toLocaleString()} kcal</div>
+                    {isSample && (
+                      <div className="text-xs text-muted-foreground mt-1">ตัวอย่างค่า (ตั้งค่าข้อมูลเพื่อคำนวณจริง)</div>
+                    )}
+                  </div>
+                  <div className="p-4 rounded-lg bg-muted/50">
+                    <div className="text-sm text-muted-foreground">ประมาณการ TDEE</div>
+                    <div className="text-2xl font-semibold">{tdeeDisplay.toLocaleString()} kcal</div>
+                    {isSample && (
+                      <div className="text-xs text-muted-foreground mt-1">ตัวอย่างค่า (ตั้งค่าข้อมูลเพื่อคำนวณจริง)</div>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
           </CardContent>
         </Card>
 
         {/* Charts with Tabs */}
         <Card className="health-stat-card">
-          <CardHeader>
+          <CardHeader className="flex flex-col md:flex-row md:items-start md:justify-between gap-2">
             <CardTitle className="flex items-center gap-2">
               <LineChart className="h-5 w-5" />
               แนวโน้มและสถิติ
@@ -366,7 +407,7 @@ export default function Dashboard() {
                   รายสัปดาห์
                 </TabsTrigger>
                 <TabsTrigger value="nutrition" className="flex items-center gap-2">
-                  <Apple className="h-4 w-4" />
+                  <iconify-icon icon="lucide:apple" width="16" height="16"></iconify-icon>
                   โภชนาการ
                 </TabsTrigger>
                 <TabsTrigger value="insights" className="flex items-center gap-2">
@@ -449,7 +490,7 @@ export default function Dashboard() {
                   {/* Macronutrients */}
                   <div className="space-y-4">
                     <h4 className="font-semibold text-lg flex items-center gap-2">
-                      <Beef className="h-5 w-5" />
+                      <iconify-icon icon="lucide:beef" width="20" height="20"></iconify-icon>
                       สารอาหารหลัก (Macronutrients)
                     </h4>
                     <div className="space-y-3">
@@ -574,7 +615,7 @@ export default function Dashboard() {
         <Card className="health-stat-card bg-white rounded-lg shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Award className="h-5 w-5" />
+              <iconify-icon icon="lucide:award" width="20" height="20"></iconify-icon>
               ความสำเร็จ
             </CardTitle>
             <CardDescription>
@@ -600,7 +641,7 @@ export default function Dashboard() {
         <Card className="health-stat-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
+              <iconify-icon icon="lucide:activity" width="20" height="20"></iconify-icon>
               สรุปประจำวัน
             </CardTitle>
             <CardDescription>

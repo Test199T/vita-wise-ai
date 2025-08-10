@@ -117,12 +117,26 @@
 }
 
 @layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
   * {
     @apply border-border;
   }
 
   body {
     @apply bg-background text-foreground font-prompt;
+  }
+
+  a {
+    @apply text-foreground underline-offset-4;
+  }
+
+  a:hover {
+    @apply text-primary;
   }
 }
 

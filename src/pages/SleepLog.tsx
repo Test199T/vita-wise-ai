@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Moon, Calendar, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface SleepLogItem {
   id: string;
@@ -22,16 +23,23 @@ interface SleepLogItem {
 export default function SleepLog() {
   const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
-  const [logs] = useState<SleepLogItem[]>([
-    {
-      id: "1",
-      date: "2024-01-05",
-      sleep_time: "22:45",
-      wake_time: "06:30",
-      sleep_quality: "ดี",
-      notes: "ตื่นมาสดชื่น"
+  const [logs, setLogs] = useState<SleepLogItem[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const raw = localStorage.getItem('sleep_logs');
+    if (raw) {
+      try { setLogs(JSON.parse(raw)); } catch { setLogs([]); }
+    } else {
+      setLogs([]);
+      localStorage.setItem('sleep_logs', JSON.stringify([]));
     }
-  ]);
+  }, []);
+
+  const saveLogs = (items: SleepLogItem[]) => {
+    setLogs(items);
+    localStorage.setItem('sleep_logs', JSON.stringify(items));
+  };
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -45,9 +53,42 @@ export default function SleepLog() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    toast({ title: "บันทึกสำเร็จ", description: "บันทึกการนอนเรียบร้อยแล้ว" });
+    if (editingId) {
+      const next = logs.map(l => l.id === editingId ? {
+        ...l,
+        date: formData.date,
+        sleep_time: formData.sleep_time,
+        wake_time: formData.wake_time,
+        sleep_quality: formData.sleep_quality,
+        notes: formData.notes,
+      } : l);
+      saveLogs(next);
+      toast({ title: 'อัปเดตบันทึกแล้ว' });
+    } else {
+      const newLog: SleepLogItem = {
+        id: crypto.randomUUID(),
+        date: formData.date,
+        sleep_time: formData.sleep_time,
+        wake_time: formData.wake_time,
+        sleep_quality: formData.sleep_quality,
+        notes: formData.notes,
+      };
+      saveLogs([newLog, ...logs]);
+      toast({ title: "บันทึกสำเร็จ", description: "บันทึกการนอนเรียบร้อยแล้ว" });
+    }
+    setEditingId(null);
     setShowForm(false);
     setFormData({ date: new Date().toISOString().split('T')[0], sleep_time: "", wake_time: "", sleep_quality: "", notes: "" });
+  };
+  const startEdit = (l: SleepLogItem) => {
+    setEditingId(l.id);
+    setFormData({ date: l.date, sleep_time: l.sleep_time, wake_time: l.wake_time, sleep_quality: l.sleep_quality, notes: l.notes || '' });
+    setShowForm(true);
+  };
+
+  const deleteLog = (l: SleepLogItem) => {
+    saveLogs(logs.filter(x => x.id !== l.id));
+    toast({ title: 'ลบรายการแล้ว' });
   };
 
   return (
@@ -122,7 +163,25 @@ export default function SleepLog() {
                       <div className="flex items-center gap-2 text-sm text-muted-foreground"><Calendar className="h-4 w-4" />{new Date(item.date).toLocaleDateString('th-TH')}</div>
                     </div>
                   </div>
-                  <Badge>{item.sleep_quality}</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge>{item.sleep_quality}</Badge>
+                    <Button variant="outline" size="sm" onClick={() => startEdit(item)}>แก้ไข</Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">ลบ</Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
+                          <AlertDialogDescription>ต้องการลบรายการนี้หรือไม่?</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => deleteLog(item)}>ลบ</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
                 {item.notes && (
                   <div className="mt-3 p-2 bg-muted rounded-md text-sm text-muted-foreground">{item.notes}</div>

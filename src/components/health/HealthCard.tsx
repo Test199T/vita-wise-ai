@@ -1,12 +1,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { LucideIcon } from "lucide-react";
+// Replace Lucide types with generic icon via Iconify web component
 
 interface HealthCardProps {
   title: string;
   value: string | number;
   description?: string;
-  icon: LucideIcon;
+  icon?: string; // iconify icon name, e.g. "lucide:moon"
   trend?: "up" | "down" | "stable";
   color?: "primary" | "secondary" | "accent" | "warning";
   className?: string;
@@ -16,7 +16,7 @@ export function HealthCard({
   title,
   value,
   description,
-  icon: Icon,
+  icon,
   trend = "stable",
   color = "primary",
   className,
@@ -41,7 +41,10 @@ export function HealthCard({
           {title}
         </CardTitle>
         <div className={cn("p-2 rounded-full", colorClasses[color])}>
-          <Icon className="h-4 w-4" />
+          {icon ? (
+            // eslint-disable-next-line react/no-unknown-property
+            <iconify-icon icon={icon} width="16" height="16"></iconify-icon>
+          ) : null}
         </div>
       </CardHeader>
       <CardContent>

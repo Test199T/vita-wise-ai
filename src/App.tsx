@@ -18,6 +18,7 @@ import AIInsights from "./pages/AIInsights";
 import Onboarding from "./pages/Onboarding";
 import SleepLog from "./pages/SleepLog";
 import WaterLog from "./pages/WaterLog";
+import Notifications from "./pages/Notifications";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/ai-insights" element={<AIInsights />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/notifications" element={<Notifications />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

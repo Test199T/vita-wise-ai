@@ -12,6 +12,9 @@ interface OnboardingData {
   waist: number;
   bloodPressure: string;
   bloodSugar: string;
+  // Added for BMR/TDEE
+  sex: 'male' | 'female';
+  birthDate: string; // ISO date string YYYY-MM-DD
   
   // Step 3: Lifestyle
   exerciseFrequency: string;
@@ -19,6 +22,8 @@ interface OnboardingData {
   mealsPerDay: number;
   smoking: boolean;
   alcoholFrequency: string;
+  // Added for BMR/TDEE
+  activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very-active';
   
   // Step 4: Medical History
   medicalConditions: string[];
@@ -29,6 +34,9 @@ interface OnboardingData {
   notifications: string[];
   trackingItems: string[];
   reminderTime: string;
+  // Added nutrition targets (user-defined)
+  fiberTarget: number; // grams/day
+  sodiumTarget: number; // mg/day
   
   // Onboarding status
   isCompleted: boolean;
@@ -51,17 +59,22 @@ const defaultOnboardingData: OnboardingData = {
   waist: 80,
   bloodPressure: "120/80",
   bloodSugar: "95",
+  sex: 'male',
+  birthDate: '1990-01-01',
   exerciseFrequency: "3-5",
   sleepHours: 7,
   mealsPerDay: 3,
   smoking: false,
   alcoholFrequency: "rarely",
+  activityLevel: 'moderate',
   medicalConditions: ["hypertension"],
   surgeries: "ไม่เคยผ่าตัด",
   allergies: "แพ้ยาเพนิซิลลิน",
   notifications: ["water", "exercise", "sleep"],
   trackingItems: ["weight", "blood-pressure"],
   reminderTime: "08:00",
+  fiberTarget: 25,
+  sodiumTarget: 2300,
   isCompleted: false
 };
 
@@ -85,7 +98,9 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
     const saved = localStorage.getItem('onboardingData');
     if (saved) {
       try {
-        return { ...JSON.parse(saved), isCompleted: false };
+        const parsed = JSON.parse(saved);
+        // Merge with defaults to ensure newly added fields exist
+        return { ...defaultOnboardingData, ...parsed, isCompleted: parsed.isCompleted ?? false } as OnboardingData;
       } catch {
         return defaultOnboardingData;
       }

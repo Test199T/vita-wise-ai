@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dumbbell, Clock, Flame, Plus, Calendar } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 
 interface ExerciseSession {
@@ -23,26 +24,23 @@ interface ExerciseSession {
 export default function ExerciseLog() {
   const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
-  const [sessions] = useState<ExerciseSession[]>([
-    {
-      session_id: "1",
-      session_date: "2024-01-01",
-      exercise_type: "วิ่ง",
-      duration_minutes: 30,
-      intensity_level: "ปานกลาง",
-      calories_burned: 250,
-      notes: "วิ่งในสวน อากาศดี"
-    },
-    {
-      session_id: "2", 
-      session_date: "2024-01-02",
-      exercise_type: "ยกน้ำหนัก",
-      duration_minutes: 45,
-      intensity_level: "สูง",
-      calories_burned: 180,
-      notes: "เน้นกล้ามเนื้อแขน"
+  const [sessions, setSessions] = useState<ExerciseSession[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const raw = localStorage.getItem('exercise_logs');
+    if (raw) {
+      try { setSessions(JSON.parse(raw)); } catch { setSessions([]); }
+    } else {
+      setSessions([]);
+      localStorage.setItem('exercise_logs', JSON.stringify([]));
     }
-  ]);
+  }, []);
+
+  const saveSessions = (items: ExerciseSession[]) => {
+    setSessions(items);
+    localStorage.setItem('exercise_logs', JSON.stringify(items));
+  };
 
   const [formData, setFormData] = useState({
     session_date: new Date().toISOString().split('T')[0],
@@ -79,10 +77,32 @@ export default function ExerciseLog() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "บันทึกสำเร็จ",
-      description: "บันทึกการออกกำลังกายเรียบร้อยแล้ว"
-    });
+    if (editingId) {
+      const next = sessions.map(s => s.session_id === editingId ? {
+        ...s,
+        session_date: formData.session_date,
+        exercise_type: formData.exercise_type,
+        duration_minutes: Number(formData.duration_minutes||0),
+        intensity_level: formData.intensity_level,
+        calories_burned: Number(formData.calories_burned||0),
+        notes: formData.notes,
+      } : s);
+      saveSessions(next);
+      toast({ title: 'อัปเดตบันทึกแล้ว' });
+    } else {
+      const newSession: ExerciseSession = {
+        session_id: crypto.randomUUID(),
+        session_date: formData.session_date,
+        exercise_type: formData.exercise_type,
+        duration_minutes: Number(formData.duration_minutes||0),
+        intensity_level: formData.intensity_level,
+        calories_burned: Number(formData.calories_burned||0),
+        notes: formData.notes,
+      };
+      saveSessions([newSession, ...sessions]);
+      toast({ title: 'บันทึกสำเร็จ', description: 'บันทึกการออกกำลังกายเรียบร้อยแล้ว' });
+    }
+    setEditingId(null);
     setShowForm(false);
     setFormData({
       session_date: new Date().toISOString().split('T')[0],
@@ -94,6 +114,26 @@ export default function ExerciseLog() {
       avg_pace_min_per_km: "",
       notes: ""
     });
+  };
+  const startEdit = (s: ExerciseSession) => {
+    setEditingId(s.session_id);
+    setFormData({
+      session_date: s.session_date,
+      exercise_type: s.exercise_type,
+      duration_minutes: String(s.duration_minutes||''),
+      intensity_level: s.intensity_level,
+      calories_burned: String(s.calories_burned||''),
+      distance_km: '',
+      avg_pace_min_per_km: '',
+      notes: s.notes || ''
+    });
+    setShowForm(true);
+  };
+
+  const deleteSession = (s: ExerciseSession) => {
+    const next = sessions.filter(x => x.session_id !== s.session_id);
+    saveSessions(next);
+    toast({ title: 'ลบรายการแล้ว' });
   };
 
   return (
@@ -286,7 +326,7 @@ export default function ExerciseLog() {
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
                     <Badge 
                       className={`${
                         intensityLevels.find(l => l.value === session.intensity_level)?.color || 'bg-gray-500'
@@ -294,6 +334,22 @@ export default function ExerciseLog() {
                     >
                       {session.intensity_level}
                     </Badge>
+                    <Button variant="outline" size="sm" onClick={() => startEdit(session)}>แก้ไข</Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">ลบ</Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
+                          <AlertDialogDescription>ต้องการลบรายการนี้หรือไม่?</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => deleteSession(session)}>ลบ</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
                 
