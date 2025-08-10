@@ -7,7 +7,23 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Utensils, Plus, Calendar, Flame } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  Utensils, 
+  Plus, 
+  Calendar, 
+  Flame, 
+  Beef, 
+  Apple, 
+  Pill, 
+  AlertTriangle, 
+  CheckCircle, 
+  XCircle,
+  Activity,
+  Droplets,
+  Target,
+  BarChart3
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface FoodLog {
@@ -19,8 +35,29 @@ interface FoodLog {
   total_protein: number;
   total_carbs: number;
   total_fats: number;
+  total_fiber: number;
+  total_vitaminC: number;
+  total_vitaminD: number;
+  total_calcium: number;
+  total_iron: number;
+  total_potassium: number;
+  total_sodium: number;
   notes: string;
 }
+
+// ข้อมูลโภชนาการเป้าหมาย
+const nutritionTargets = {
+  protein: { target: 80, unit: "g" },
+  carbs: { target: 250, unit: "g" },
+  fats: { target: 65, unit: "g" },
+  fiber: { target: 25, unit: "g" },
+  vitaminC: { target: 90, unit: "mg" },
+  vitaminD: { target: 15, unit: "mcg" },
+  calcium: { target: 1000, unit: "mg" },
+  iron: { target: 18, unit: "mg" },
+  potassium: { target: 3500, unit: "mg" },
+  sodium: { target: 2300, unit: "mg" },
+};
 
 export default function FoodLog() {
   const { toast } = useToast();
@@ -38,6 +75,13 @@ export default function FoodLog() {
       total_protein: 12,
       total_carbs: 20,
       total_fats: 8,
+      total_fiber: 3,
+      total_vitaminC: 15,
+      total_vitaminD: 2,
+      total_calcium: 120,
+      total_iron: 2,
+      total_potassium: 300,
+      total_sodium: 400,
       notes: "อิ่มดี มีพลังงาน"
     },
     {
@@ -53,6 +97,13 @@ export default function FoodLog() {
       total_protein: 25,
       total_carbs: 45,
       total_fats: 12,
+      total_fiber: 8,
+      total_vitaminC: 45,
+      total_vitaminD: 3,
+      total_calcium: 180,
+      total_iron: 4,
+      total_potassium: 600,
+      total_sodium: 800,
       notes: "อร่อย สมดุล"
     }
   ]);
@@ -65,6 +116,13 @@ export default function FoodLog() {
     total_protein: "",
     total_carbs: "",
     total_fats: "",
+    total_fiber: "",
+    total_vitaminC: "",
+    total_vitaminD: "",
+    total_calcium: "",
+    total_iron: "",
+    total_potassium: "",
+    total_sodium: "",
     notes: ""
   });
 
@@ -85,6 +143,13 @@ export default function FoodLog() {
       total_protein: "",
       total_carbs: "",
       total_fats: "",
+      total_fiber: "",
+      total_vitaminC: "",
+      total_vitaminD: "",
+      total_calcium: "",
+      total_iron: "",
+      total_potassium: "",
+      total_sodium: "",
       notes: ""
     });
   };
@@ -100,6 +165,68 @@ export default function FoodLog() {
     };
     return mealColors[mealTime as keyof typeof mealColors] || "bg-gray-500";
   };
+
+  // ฟังก์ชันสำหรับตรวจสอบสถานะสารอาหาร
+  const getNutritionStatus = (current: number, target: number) => {
+    const percentage = (current / target) * 100;
+    if (percentage >= 90 && percentage <= 110) return "optimal";
+    if (percentage < 90) return "deficient";
+    if (percentage > 110) return "excessive";
+    return "optimal";
+  };
+
+  const getNutritionIcon = (status: string) => {
+    switch (status) {
+      case "optimal": return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case "deficient": return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
+      case "excessive": return <XCircle className="h-4 w-4 text-red-500" />;
+      default: return <CheckCircle className="h-4 w-4 text-green-500" />;
+    }
+  };
+
+  const getNutritionBadge = (status: string) => {
+    switch (status) {
+      case "optimal": return <Badge variant="secondary" className="bg-green-100 text-green-800">เหมาะสม</Badge>;
+      case "deficient": return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">ขาด</Badge>;
+      case "excessive": return <Badge variant="secondary" className="bg-red-100 text-red-800">เกิน</Badge>;
+      default: return <Badge variant="secondary">เหมาะสม</Badge>;
+    }
+  };
+
+  // คำนวณยอดรวมโภชนาการ
+  const calculateTotalNutrition = () => {
+    const totals = {
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fats: 0,
+      fiber: 0,
+      vitaminC: 0,
+      vitaminD: 0,
+      calcium: 0,
+      iron: 0,
+      potassium: 0,
+      sodium: 0,
+    };
+
+    foodLogs.forEach(log => {
+      totals.calories += log.total_calories;
+      totals.protein += log.total_protein;
+      totals.carbs += log.total_carbs;
+      totals.fats += log.total_fats;
+      totals.fiber += log.total_fiber;
+      totals.vitaminC += log.total_vitaminC;
+      totals.vitaminD += log.total_vitaminD;
+      totals.calcium += log.total_calcium;
+      totals.iron += log.total_iron;
+      totals.potassium += log.total_potassium;
+      totals.sodium += log.total_sodium;
+    });
+
+    return totals;
+  };
+
+  const totalNutrition = calculateTotalNutrition();
 
   return (
     <MainLayout>
@@ -160,61 +287,154 @@ export default function FoodLog() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="calories">แคลอรี</Label>
-                    <Input
-                      id="calories"
-                      type="number"
-                      placeholder="450"
-                      value={formData.total_calories}
-                      onChange={(e) => setFormData({...formData, total_calories: e.target.value})}
-                    />
-                  </div>
+                <Tabs defaultValue="macros" className="w-full">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="macros">สารอาหารหลัก</TabsTrigger>
+                    <TabsTrigger value="micros">วิตามินและแร่ธาตุ</TabsTrigger>
+                    <TabsTrigger value="notes">หมายเหตุ</TabsTrigger>
+                  </TabsList>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="protein">โปรตีน (g)</Label>
-                    <Input
-                      id="protein"
-                      type="number"
-                      placeholder="25"
-                      value={formData.total_protein}
-                      onChange={(e) => setFormData({...formData, total_protein: e.target.value})}
-                    />
-                  </div>
+                  <TabsContent value="macros" className="space-y-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="calories">แคลอรี</Label>
+                        <Input
+                          id="calories"
+                          type="number"
+                          placeholder="450"
+                          value={formData.total_calories}
+                          onChange={(e) => setFormData({...formData, total_calories: e.target.value})}
+                        />
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="carbs">คาร์โบ (g)</Label>
-                    <Input
-                      id="carbs"
-                      type="number"
-                      placeholder="45"
-                      value={formData.total_carbs}
-                      onChange={(e) => setFormData({...formData, total_carbs: e.target.value})}
-                    />
-                  </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="protein">โปรตีน (g)</Label>
+                        <Input
+                          id="protein"
+                          type="number"
+                          placeholder="25"
+                          value={formData.total_protein}
+                          onChange={(e) => setFormData({...formData, total_protein: e.target.value})}
+                        />
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="fats">ไขมัน (g)</Label>
-                    <Input
-                      id="fats"
-                      type="number"
-                      placeholder="12"
-                      value={formData.total_fats}
-                      onChange={(e) => setFormData({...formData, total_fats: e.target.value})}
-                    />
-                  </div>
-                </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="carbs">คาร์โบ (g)</Label>
+                        <Input
+                          id="carbs"
+                          type="number"
+                          placeholder="45"
+                          value={formData.total_carbs}
+                          onChange={(e) => setFormData({...formData, total_carbs: e.target.value})}
+                        />
+                      </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="notes">หมายเหตุ</Label>
-                  <Textarea
-                    id="notes"
-                    placeholder="รสชาติ, ความรู้สึกหลังกิน..."
-                    value={formData.notes}
-                    onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                  />
-                </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="fats">ไขมัน (g)</Label>
+                        <Input
+                          id="fats"
+                          type="number"
+                          placeholder="12"
+                          value={formData.total_fats}
+                          onChange={(e) => setFormData({...formData, total_fats: e.target.value})}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="fiber">ไฟเบอร์ (g)</Label>
+                        <Input
+                          id="fiber"
+                          type="number"
+                          placeholder="8"
+                          value={formData.total_fiber}
+                          onChange={(e) => setFormData({...formData, total_fiber: e.target.value})}
+                        />
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="micros" className="space-y-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="vitaminC">วิตามิน C (mg)</Label>
+                        <Input
+                          id="vitaminC"
+                          type="number"
+                          placeholder="45"
+                          value={formData.total_vitaminC}
+                          onChange={(e) => setFormData({...formData, total_vitaminC: e.target.value})}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="vitaminD">วิตามิน D (mcg)</Label>
+                        <Input
+                          id="vitaminD"
+                          type="number"
+                          placeholder="3"
+                          value={formData.total_vitaminD}
+                          onChange={(e) => setFormData({...formData, total_vitaminD: e.target.value})}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="calcium">แคลเซียม (mg)</Label>
+                        <Input
+                          id="calcium"
+                          type="number"
+                          placeholder="180"
+                          value={formData.total_calcium}
+                          onChange={(e) => setFormData({...formData, total_calcium: e.target.value})}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="iron">เหล็ก (mg)</Label>
+                        <Input
+                          id="iron"
+                          type="number"
+                          placeholder="4"
+                          value={formData.total_iron}
+                          onChange={(e) => setFormData({...formData, total_iron: e.target.value})}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="potassium">โพแทสเซียม (mg)</Label>
+                        <Input
+                          id="potassium"
+                          type="number"
+                          placeholder="600"
+                          value={formData.total_potassium}
+                          onChange={(e) => setFormData({...formData, total_potassium: e.target.value})}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="sodium">โซเดียม (mg)</Label>
+                        <Input
+                          id="sodium"
+                          type="number"
+                          placeholder="800"
+                          value={formData.total_sodium}
+                          onChange={(e) => setFormData({...formData, total_sodium: e.target.value})}
+                        />
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="notes" className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="notes">หมายเหตุ</Label>
+                      <Textarea
+                        id="notes"
+                        placeholder="รสชาติ, ความรู้สึกหลังกิน..."
+                        value={formData.notes}
+                        onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                      />
+                    </div>
+                  </TabsContent>
+                </Tabs>
 
                 <div className="flex gap-2">
                   <Button type="submit">บันทึก</Button>
@@ -226,6 +446,136 @@ export default function FoodLog() {
             </CardContent>
           </Card>
         )}
+
+        {/* Nutrition Summary */}
+        <Card className="health-stat-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              สรุปโภชนาการวันนี้
+            </CardTitle>
+            <CardDescription>
+              ข้อมูลโภชนาการรวมจากทุกมื้ออาหาร
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="macros" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="macros">สารอาหารหลัก</TabsTrigger>
+                <TabsTrigger value="micros">วิตามินและแร่ธาตุ</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="macros" className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Macronutrients */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-lg flex items-center gap-2">
+                      <Beef className="h-5 w-5" />
+                      สารอาหารหลัก (Macronutrients)
+                    </h4>
+                    <div className="space-y-3">
+                      {[
+                        { key: 'protein', label: 'โปรตีน', current: totalNutrition.protein, target: nutritionTargets.protein.target, unit: 'g' },
+                        { key: 'carbs', label: 'คาร์โบไฮเดรต', current: totalNutrition.carbs, target: nutritionTargets.carbs.target, unit: 'g' },
+                        { key: 'fats', label: 'ไขมัน', current: totalNutrition.fats, target: nutritionTargets.fats.target, unit: 'g' },
+                        { key: 'fiber', label: 'ไฟเบอร์', current: totalNutrition.fiber, target: nutritionTargets.fiber.target, unit: 'g' },
+                      ].map((item) => {
+                        const status = getNutritionStatus(item.current, item.target);
+                        return (
+                          <div key={item.key} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              {getNutritionIcon(status)}
+                              <div>
+                                <div className="font-medium">{item.label}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  {item.current}/{item.target} {item.unit}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {getNutritionBadge(status)}
+                              <div className="text-xs text-muted-foreground">
+                                {status === 'deficient' ? `ขาด ${item.target - item.current} ${item.unit}` :
+                                 status === 'excessive' ? `เกิน ${item.current - item.target} ${item.unit}` :
+                                 'เหมาะสม'}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Calories Summary */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-lg flex items-center gap-2">
+                      <Flame className="h-5 w-5" />
+                      แคลอรี่รวม
+                    </h4>
+                    <div className="text-center p-6 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg">
+                      <div className="text-3xl font-bold text-orange-600">{totalNutrition.calories}</div>
+                      <div className="text-sm text-muted-foreground">แคลอรี่</div>
+                      <div className="text-xs text-muted-foreground mt-2">
+                        จากเป้าหมาย 2,000 แคลอรี่
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-2 mt-3">
+                        <div
+                          className="bg-orange-500 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${Math.min((totalNutrition.calories / 2000) * 100, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="micros" className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Micronutrients */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-lg flex items-center gap-2">
+                      <Pill className="h-5 w-5" />
+                      วิตามินและแร่ธาตุ (Micronutrients)
+                    </h4>
+                    <div className="space-y-3">
+                      {[
+                        { key: 'vitaminC', label: 'วิตามิน C', current: totalNutrition.vitaminC, target: nutritionTargets.vitaminC.target, unit: 'mg' },
+                        { key: 'vitaminD', label: 'วิตามิน D', current: totalNutrition.vitaminD, target: nutritionTargets.vitaminD.target, unit: 'mcg' },
+                        { key: 'calcium', label: 'แคลเซียม', current: totalNutrition.calcium, target: nutritionTargets.calcium.target, unit: 'mg' },
+                        { key: 'iron', label: 'เหล็ก', current: totalNutrition.iron, target: nutritionTargets.iron.target, unit: 'mg' },
+                        { key: 'potassium', label: 'โพแทสเซียม', current: totalNutrition.potassium, target: nutritionTargets.potassium.target, unit: 'mg' },
+                        { key: 'sodium', label: 'โซเดียม', current: totalNutrition.sodium, target: nutritionTargets.sodium.target, unit: 'mg' },
+                      ].map((item) => {
+                        const status = getNutritionStatus(item.current, item.target);
+                        return (
+                          <div key={item.key} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              {getNutritionIcon(status)}
+                              <div>
+                                <div className="font-medium">{item.label}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  {item.current}/{item.target} {item.unit}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {getNutritionBadge(status)}
+                              <div className="text-xs text-muted-foreground">
+                                {status === 'deficient' ? `ขาด ${item.target - item.current} ${item.unit}` :
+                                 status === 'excessive' ? `เกิน ${item.current - item.target} ${item.unit}` :
+                                 'เหมาะสม'}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
 
         <div className="grid gap-4">
           <h2 className="text-xl font-semibold">ประวัติการรับประทานอาหาร</h2>
@@ -276,6 +626,25 @@ export default function FoodLog() {
                   <div className="text-center p-2 bg-orange-50 rounded">
                     <div className="font-semibold text-orange-600">{log.total_fats}g</div>
                     <div className="text-orange-500">ไขมัน</div>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                  <div className="text-center p-2 bg-purple-50 rounded">
+                    <div className="font-semibold text-purple-600">{log.total_fiber}g</div>
+                    <div className="text-purple-500">ไฟเบอร์</div>
+                  </div>
+                  <div className="text-center p-2 bg-yellow-50 rounded">
+                    <div className="font-semibold text-yellow-600">{log.total_vitaminC}mg</div>
+                    <div className="text-yellow-500">วิตามิน C</div>
+                  </div>
+                  <div className="text-center p-2 bg-indigo-50 rounded">
+                    <div className="font-semibold text-indigo-600">{log.total_calcium}mg</div>
+                    <div className="text-indigo-500">แคลเซียม</div>
+                  </div>
+                  <div className="text-center p-2 bg-red-50 rounded">
+                    <div className="font-semibold text-red-600">{log.total_iron}mg</div>
+                    <div className="text-red-500">เหล็ก</div>
                   </div>
                 </div>
                 
