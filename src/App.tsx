@@ -14,9 +14,10 @@ import NotFound from "./pages/NotFound";
 import HealthGoals from "./pages/HealthGoals";
 import ExerciseLog from "./pages/ExerciseLog";
 import FoodLog from "./pages/FoodLog";
-
 import AIInsights from "./pages/AIInsights";
 import Onboarding from "./pages/Onboarding";
+import SleepLog from "./pages/SleepLog";
+import WaterLog from "./pages/WaterLog";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,8 @@ const App = () => (
             <Route path="/health-goals" element={<HealthGoals />} />
             <Route path="/exercise-log" element={<ExerciseLog />} />
             <Route path="/food-log" element={<FoodLog />} />
+            <Route path="/sleep-log" element={<SleepLog />} />
+            <Route path="/water-log" element={<WaterLog />} />
             <Route path="/ai-insights" element={<AIInsights />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/profile" element={<Profile />} />

@@ -315,6 +315,34 @@ export default function Dashboard() {
           />
         </div>
 
+        {/* Quick actions */}
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="secondary" size="sm">
+            <Link to="/sleep-log">บันทึกการนอน</Link>
+          </Button>
+          <Button asChild variant="secondary" size="sm">
+            <Link to="/water-log">บันทึกน้ำดื่ม</Link>
+          </Button>
+        </div>
+
+        {/* BMR / TDEE Overview */}
+        <Card className="mt-2">
+          <CardHeader>
+            <CardTitle className="text-base">สรุปพลังงานพื้นฐาน (BMR) และพลังงานที่ใช้ต่อวัน (TDEE)</CardTitle>
+            <CardDescription>ปรับข้อมูลร่างกายในโปรไฟล์เพื่อคำนวณอย่างแม่นยำ</CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-4 rounded-lg bg-muted/50">
+              <div className="text-sm text-muted-foreground">ประมาณการ BMR</div>
+              <div className="text-2xl font-semibold">1,520 kcal</div>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/50">
+              <div className="text-sm text-muted-foreground">ประมาณการ TDEE</div>
+              <div className="text-2xl font-semibold">2,100 kcal</div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Charts with Tabs */}
         <Card className="health-stat-card">
           <CardHeader>

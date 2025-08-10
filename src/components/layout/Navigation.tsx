@@ -16,7 +16,9 @@ import {
   Activity,
   Calendar,
   TrendingUp,
-  Settings
+  Settings,
+  Moon,
+  Droplets
 } from "lucide-react";
 
 interface NavItem {
@@ -50,6 +52,16 @@ const navItems: NavItem[] = [
         title: "เป้าหมายสุขภาพ",
         href: "/health-goals",
         icon: Target,
+      },
+      {
+        title: "บันทึกการนอน",
+        href: "/sleep-log",
+        icon: Moon,
+      },
+      {
+        title: "บันทึกน้ำดื่ม",
+        href: "/water-log",
+        icon: Droplets,
       },
     ],
   },

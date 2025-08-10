@@ -59,9 +59,31 @@ const nutritionTargets = {
   sodium: { target: 2300, unit: "mg" },
 };
 
+// รายการเมนูแนะนำอย่างง่าย (ตัวอย่าง)
+const foodCatalog = [
+  { name: "ข้าวผัด", calories: 520 },
+  { name: "กะเพราไก่", calories: 450 },
+  { name: "ต้มยำกุ้ง", calories: 320 },
+  { name: "ส้มตำ", calories: 180 },
+  { name: "ไก่ย่าง", calories: 220 },
+  { name: "หมูทอด", calories: 380 },
+  { name: "ปลาเผา", calories: 250 },
+  { name: "ผัดผักรวม", calories: 200 },
+  { name: "ไข่ต้ม", calories: 70 },
+  { name: "โยเกิร์ต", calories: 90 },
+  { name: "กล้วย", calories: 105 },
+];
+
 export default function FoodLog() {
   const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
+  const [query, setQuery] = useState("");
+  const filteredFoods = foodCatalog.filter((f) => f.name.includes(query.trim())).slice(0, 8);
+  const addSuggestedFood = (name: string) => {
+    const prefix = formData.food_items ? formData.food_items + ", " : "";
+    setFormData({ ...formData, food_items: `${prefix}${name} 1 ที่` });
+    setQuery("");
+  };
   const [foodLogs] = useState<FoodLog[]>([
     {
       food_log_id: "1",
@@ -297,6 +319,19 @@ export default function FoodLog() {
                     onChange={(e) => setFormData({...formData, food_items: e.target.value})}
                     required
                   />
+                  <div className="space-y-2">
+                    <Label htmlFor="food_search">ค้นหาเมนู (แนะนำ)</Label>
+                    <Input id="food_search" placeholder="พิมพ์ชื่อเมนู..." value={query} onChange={(e) => setQuery(e.target.value)} />
+                    {filteredFoods.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {filteredFoods.map((f) => (
+                          <Button key={f.name} type="button" variant="outline" size="sm" onClick={() => addSuggestedFood(f.name)}>
+                            {f.name}
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <Tabs defaultValue="macros" className="w-full">

@@ -23,6 +23,8 @@ interface HealthGoal {
   daily_protein_goal?: number;
   daily_carb_goal?: number;
   daily_fat_goal?: number;
+  daily_fiber_goal?: number;
+  daily_sodium_goal?: number;
 }
 
 export default function HealthGoals() {
@@ -67,7 +69,9 @@ export default function HealthGoals() {
     daily_calorie_goal: "",
     daily_protein_goal: "",
     daily_carb_goal: "",
-    daily_fat_goal: ""
+    daily_fat_goal: "",
+    daily_fiber_goal: "",
+    daily_sodium_goal: ""
   });
 
   const goalTypes = [
@@ -90,7 +94,9 @@ export default function HealthGoals() {
       daily_calorie_goal: "",
       daily_protein_goal: "",
       daily_carb_goal: "",
-      daily_fat_goal: ""
+      daily_fat_goal: "",
+      daily_fiber_goal: "",
+      daily_sodium_goal: ""
     });
   };
 
@@ -199,7 +205,7 @@ export default function HealthGoals() {
                 {formData.goal_type === "ลดน้ำหนัก" && (
                   <div className="space-y-4 p-4 bg-muted rounded-lg">
                     <h3 className="font-semibold">เป้าหมายโภชนาการรายวัน</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="daily_calorie_goal">แคลอรี</Label>
                         <Input
@@ -241,6 +247,28 @@ export default function HealthGoals() {
                           placeholder="60"
                           value={formData.daily_fat_goal}
                           onChange={(e) => setFormData({...formData, daily_fat_goal: e.target.value})}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="daily_fiber_goal">ไฟเบอร์ (g)</Label>
+                        <Input
+                          id="daily_fiber_goal"
+                          type="number"
+                          placeholder="25"
+                          value={formData.daily_fiber_goal}
+                          onChange={(e) => setFormData({...formData, daily_fiber_goal: e.target.value})}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="daily_sodium_goal">โซเดียม (mg)</Label>
+                        <Input
+                          id="daily_sodium_goal"
+                          type="number"
+                          placeholder="2300"
+                          value={formData.daily_sodium_goal}
+                          onChange={(e) => setFormData({...formData, daily_sodium_goal: e.target.value})}
                         />
                       </div>
                     </div>
@@ -318,7 +346,7 @@ export default function HealthGoals() {
                 {goal.daily_calorie_goal && (
                   <div className="mt-4 p-3 bg-muted rounded-lg">
                     <h4 className="text-sm font-medium mb-2">เป้าหมายโภชนาการรายวัน</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 text-sm">
                       <div className="text-center">
                         <div className="font-semibold">{goal.daily_calorie_goal}</div>
                         <div className="text-muted-foreground">แคลอรี</div>
@@ -339,6 +367,18 @@ export default function HealthGoals() {
                         <div className="text-center">
                           <div className="font-semibold">{goal.daily_fat_goal}g</div>
                           <div className="text-muted-foreground">ไขมัน</div>
+                        </div>
+                      )}
+                      {goal.daily_fiber_goal && (
+                        <div className="text-center">
+                          <div className="font-semibold">{goal.daily_fiber_goal}g</div>
+                          <div className="text-muted-foreground">ไฟเบอร์</div>
+                        </div>
+                      )}
+                      {goal.daily_sodium_goal && (
+                        <div className="text-center">
+                          <div className="font-semibold">{goal.daily_sodium_goal}mg</div>
+                          <div className="text-muted-foreground">โซเดียม</div>
                         </div>
                       )}
                     </div>
