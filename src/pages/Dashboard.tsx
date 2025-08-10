@@ -28,7 +28,8 @@ import {
   Award,
   Target,
   Clock,
-  LineChart
+  LineChart,
+  Brain
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
@@ -183,6 +184,44 @@ export default function Dashboard() {
             </Button>
           </div>
         </div>
+
+        {/* AI Insight สรุปรวม (ภาพรวม) */}
+        <Card className="border-primary/20">
+          <CardHeader className="flex flex-row items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                <Brain className="h-5 w-5" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">ภาพรวมสุขภาพจาก AI</CardTitle>
+                <CardDescription>
+                  ภาพรวมล่าสุดของการนอน โภชนาการ การออกกำลังกาย และน้ำดื่มของคุณ
+                </CardDescription>
+              </div>
+            </div>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/ai-insights">ดูรายละเอียด</Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <div className="text-sm text-muted-foreground">การนอน</div>
+              <div className="font-semibold">{mockHealthData.sleep.hours} ชม. • เป้าหมาย {mockHealthData.sleep.target}</div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground">โภชนาการ</div>
+              <div className="font-semibold">แคลอรี่วันนี้ {caloriesData[caloriesData.length-1].value} แคล</div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground">ออกกำลังกาย</div>
+              <div className="font-semibold">เฉลี่ย {mockHealthData.exercise.minutes} นาที/วัน</div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground">น้ำดื่ม</div>
+              <div className="font-semibold">{mockHealthData.water.liters} ลิตร/วัน</div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -50,8 +50,21 @@ export default function ExerciseLog() {
     duration_minutes: "",
     intensity_level: "",
     calories_burned: "",
+    distance_km: "",
+    avg_pace_min_per_km: "",
     notes: ""
   });
+
+  const [weightExercises, setWeightExercises] = useState<Array<{ name: string; sets: string; reps: string; weight: string; rpe?: string }>>([
+    { name: "", sets: "", reps: "", weight: "", rpe: "" }
+  ]);
+  const addWeightExercise = () => setWeightExercises(prev => [...prev, { name: "", sets: "", reps: "", weight: "", rpe: "" }]);
+  const updateWeightExercise = (index: number, field: keyof (typeof weightExercises)[number], value: string) => {
+    setWeightExercises(prev => prev.map((ex, i) => i === index ? { ...ex, [field]: value } : ex));
+  };
+  const removeWeightExercise = (index: number) => setWeightExercises(prev => prev.filter((_, i) => i !== index));
+
+  const cardioTypes = ["วิ่ง", "เดิน", "ขี่จักรยาน", "ว่ายน้ำ", "มวยไทย", "เต้นรำ"];
 
   const exerciseTypes = [
     "วิ่ง", "เดิน", "ขี่จักรยาน", "ว่ายน้ำ", "ยกน้ำหนัก", 
@@ -77,6 +90,8 @@ export default function ExerciseLog() {
       duration_minutes: "",
       intensity_level: "",
       calories_burned: "",
+      distance_km: "",
+      avg_pace_min_per_km: "",
       notes: ""
     });
   };
@@ -165,6 +180,71 @@ export default function ExerciseLog() {
                     />
                   </div>
                 </div>
+
+                {/* รายละเอียดเฉพาะตามประเภท */}
+                {formData.exercise_type === "ยกน้ำหนัก" && (
+                  <div className="space-y-3">
+                    <Label>รายละเอียดการยกน้ำหนัก</Label>
+                    <div className="space-y-3">
+                      {weightExercises.map((ex, idx) => (
+                        <div key={idx} className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+                          <div className="space-y-1">
+                            <Label htmlFor={`ex-name-${idx}`}>ท่า</Label>
+                            <Input id={`ex-name-${idx}`} value={ex.name} onChange={(e) => updateWeightExercise(idx, 'name', e.target.value)} placeholder="เช่น Bench Press" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label htmlFor={`ex-sets-${idx}`}>เซ็ต</Label>
+                            <Input id={`ex-sets-${idx}`} type="number" value={ex.sets} onChange={(e) => updateWeightExercise(idx, 'sets', e.target.value)} placeholder="3" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label htmlFor={`ex-reps-${idx}`}>ครั้ง/เซ็ต</Label>
+                            <Input id={`ex-reps-${idx}`} type="number" value={ex.reps} onChange={(e) => updateWeightExercise(idx, 'reps', e.target.value)} placeholder="10" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label htmlFor={`ex-weight-${idx}`}>น้ำหนัก (กก.)</Label>
+                            <Input id={`ex-weight-${idx}`} type="number" value={ex.weight} onChange={(e) => updateWeightExercise(idx, 'weight', e.target.value)} placeholder="40" />
+                          </div>
+                          <div className="flex items-end gap-2">
+                            <div className="w-full space-y-1">
+                              <Label htmlFor={`ex-rpe-${idx}`}>RPE</Label>
+                              <Input id={`ex-rpe-${idx}`} type="number" value={ex.rpe} onChange={(e) => updateWeightExercise(idx, 'rpe', e.target.value)} placeholder="7" />
+                            </div>
+                            <Button type="button" variant="outline" onClick={() => removeWeightExercise(idx)}>ลบ</Button>
+                          </div>
+                        </div>
+                      ))}
+                      <Button type="button" variant="secondary" onClick={addWeightExercise} className="gap-2">
+                        <Plus className="h-4 w-4" />
+                        เพิ่มท่า
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {cardioTypes.includes(formData.exercise_type) && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="distance_km">ระยะทาง (กม.)</Label>
+                      <Input
+                        id="distance_km"
+                        type="number"
+                        placeholder="5"
+                        value={formData.distance_km}
+                        onChange={(e) => setFormData({ ...formData, distance_km: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="avg_pace_min_per_km">เพซเฉลี่ย (นาที/กม.)</Label>
+                      <Input
+                        id="avg_pace_min_per_km"
+                        type="text"
+                        placeholder="6:30"
+                        value={formData.avg_pace_min_per_km}
+                        onChange={(e) => setFormData({ ...formData, avg_pace_min_per_km: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="notes">หมายเหตุ</Label>

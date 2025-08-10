@@ -111,6 +111,7 @@ export default function FoodLog() {
   const [formData, setFormData] = useState({
     log_date: new Date().toISOString().split('T')[0],
     meal_time: "",
+    meal_clock_time: "",
     food_items: "",
     total_calories: "",
     total_protein: "",
@@ -126,7 +127,7 @@ export default function FoodLog() {
     notes: ""
   });
 
-  const mealTimes = ["เช้า", "สาย", "กลางวัน", "บ่าย", "เย็น", "ดึก"];
+  const mealTimes = ["เช้า", "สาย", "กลางวัน", "บ่าย", "เย็น", "ดึก", "อื่นๆ"];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,6 +139,7 @@ export default function FoodLog() {
     setFormData({
       log_date: new Date().toISOString().split('T')[0],
       meal_time: "",
+      meal_clock_time: "",
       food_items: "",
       total_calories: "",
       total_protein: "",
@@ -249,7 +251,7 @@ export default function FoodLog() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="date">วันที่</Label>
                     <Input
@@ -273,6 +275,16 @@ export default function FoodLog() {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="meal_clock_time">เวลา</Label>
+                    <Input
+                      id="meal_clock_time"
+                      type="time"
+                      value={formData.meal_clock_time}
+                      onChange={(e) => setFormData({ ...formData, meal_clock_time: e.target.value })}
+                    />
                   </div>
                 </div>
 
