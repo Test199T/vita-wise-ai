@@ -170,23 +170,26 @@ export default function Chat() {
 
   // Sidebar (Chat History) - overlay Drawer for all screens
   const Sidebar = (
-    <aside className={`fixed top-0 right-0 z-40 w-80 border-l bg-white h-full transition-transform duration-200 ${showSidebar ? 'translate-x-0' : 'translate-x-full'}`}>
-      <div className="flex items-center justify-between p-4 border-b">
-        <span className="font-semibold text-lg">ประวัติการคุย</span>
-        <button className="p-2 rounded hover:bg-gray-100" onClick={() => setShowSidebar(false)}>
-          <X className="h-5 w-5" />
+    <aside className={`fixed top-0 right-0 z-40 w-80 border-l border-border bg-background h-full transition-transform duration-200 ${showSidebar ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className="flex items-center justify-between p-4 border-b border-border">
+        <span className="font-medium text-foreground">ประวัติการคุย</span>
+        <button 
+          className="p-1 rounded-md hover:bg-muted transition-colors" 
+          onClick={() => setShowSidebar(false)}
+        >
+          <X className="h-4 w-4 text-muted-foreground" />
         </button>
       </div>
       <div className="flex-1 overflow-y-auto">
         {chatSessions.map(session => (
           <div
             key={session.id}
-            className={`px-4 py-3 cursor-pointer border-b hover:bg-gray-50 ${selectedSessionId === session.id ? 'bg-blue-50 border-r-4 border-blue-400' : ''}`}
+            className={`px-4 py-3 cursor-pointer border-b border-border hover:bg-muted transition-colors ${selectedSessionId === session.id ? 'bg-muted' : ''}`}
             onClick={() => { setSelectedSessionId(session.id); setShowSidebar(false); }}
           >
-            <div className="font-medium truncate">{session.title}</div>
-            <div className="text-xs text-gray-500 truncate">{session.lastMessage}</div>
-            <div className="text-xs text-gray-400 mt-1">{session.timestamp}</div>
+            <div className="font-medium text-foreground text-sm truncate">{session.title}</div>
+            <div className="text-xs text-muted-foreground truncate mt-1">{session.lastMessage}</div>
+            <div className="text-xs text-muted-foreground mt-1">{session.timestamp}</div>
           </div>
         ))}
       </div>
@@ -200,37 +203,39 @@ export default function Chat() {
         {Sidebar}
         {/* Overlay for all screens when sidebar open */}
         {showSidebar && (
-          <div className="fixed inset-0 z-30 bg-black/30" onClick={() => setShowSidebar(false)} />
+          <div className="fixed inset-0 z-30 bg-background/80 backdrop-blur-sm" onClick={() => setShowSidebar(false)} />
         )}
         {/* Main Chat Area */}
-        <main className="flex-1 flex flex-col bg-muted/30">
+        <main className="flex-1 flex flex-col bg-background">
           {/* Toggle Sidebar Button (Right top, all screens) */}
           <button
-            className="absolute top-4 right-4 z-20 bg-background border rounded-full p-2 shadow-soft"
+            className="absolute top-6 right-6 z-20 bg-background hover:bg-muted rounded-lg p-2 transition-colors"
             onClick={() => setShowSidebar(true)}
             title="ประวัติการคุย"
           >
-            <History className="h-5 w-5 text-primary" />
+            <History className="h-4 w-4 text-muted-foreground" />
           </button>
           
-          <div className="w-full max-w-4xl mx-auto flex flex-col flex-1">
+          <div className="w-full max-w-3xl mx-auto flex flex-col flex-1">
             {/* Messages Area */}
             <div className="flex-1 flex flex-col min-h-0">
               {messages.length === 1 ? (
-                <div className="flex-1 flex items-center justify-center p-8">
+                <div className="flex-1 flex items-center justify-center px-4">
                   <div className="text-center w-full max-w-2xl">
-                    {/* Header with icon */}
-                    <div className="mb-8">
-                      <div className="inline-flex items-center gap-3 mb-4">
-                        <Bot className="h-8 w-8 text-primary" />
-                        <h1 className="text-2xl font-semibold text-foreground">
-                          สวัสดี, มีอะไรให้ช่วยไหม?
+                    {/* Header */}
+                    <div className="mb-12">
+                      <div className="inline-flex items-center gap-2 mb-6">
+                        <div className="w-8 h-8 bg-foreground rounded-full flex items-center justify-center">
+                          <Bot className="h-4 w-4 text-background" />
+                        </div>
+                        <h1 className="text-2xl text-foreground font-normal">
+                          สวัสดี มีอะไรให้ช่วยไหม?
                         </h1>
                       </div>
                     </div>
                     
                     {/* Input Field */}
-                    <div className="mb-6">
+                    <div className="mb-8">
                       <div className="relative">
                         <textarea
                           ref={inputRef}
@@ -240,16 +245,16 @@ export default function Chat() {
                           onKeyPress={handleKeyPress}
                           disabled={isTyping}
                           rows={1}
-                          className="w-full resize-none bg-background border-2 border-border rounded-xl px-6 py-4 text-base focus:outline-none focus:border-primary transition-all duration-200 shadow-soft"
-                          style={{ minHeight: '60px' }}
+                          className="w-full resize-none bg-background border border-border rounded-xl px-4 py-3 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground transition-colors duration-200"
+                          style={{ minHeight: '52px' }}
                         />
                         <button
                           onClick={handleSendMessage}
                           disabled={!inputMessage.trim() || isTyping}
-                          className={`absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 ${
+                          className={`absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 ${
                             inputMessage.trim() && !isTyping
-                              ? 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm'
-                              : 'bg-muted text-muted-foreground cursor-not-allowed'
+                              ? 'bg-foreground text-background hover:bg-foreground/80'
+                              : 'bg-transparent text-muted-foreground cursor-not-allowed'
                           }`}
                         >
                           <Send className="h-4 w-4" />
@@ -258,15 +263,15 @@ export default function Chat() {
                     </div>
                     
                     {/* Quick Action Buttons */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {quickActions.map((action, index) => (
                         <button
                           key={index}
                           onClick={() => handleQuickAction(action.description)}
-                          className="flex flex-col items-center gap-2 bg-background border border-border rounded-xl p-4 hover:border-primary/50 hover:shadow-soft transition-all duration-200 group"
+                          className="flex flex-col items-center gap-2 bg-background border border-border rounded-lg px-3 py-4 hover:bg-muted transition-colors duration-200"
                         >
-                          <action.icon className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                          <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                          <action.icon className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-xs text-foreground font-medium">
                             {action.text}
                           </span>
                         </button>
@@ -275,28 +280,31 @@ export default function Chat() {
                   </div>
                 </div>
               ) : (
-                <div className="flex-1 overflow-y-auto px-2 py-4">
-                  <div className="max-w-2xl mx-auto space-y-4">
+                <div className="flex-1 overflow-y-auto px-4 py-6">
+                  <div className="max-w-2xl mx-auto space-y-6">
                     {messages.slice(1).map((message) => (
                       <div key={message.id} className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`flex gap-2 max-w-[85%] sm:max-w-[75%] ${message.isUser ? 'flex-row-reverse' : 'flex-row'}`}>
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${message.isUser
-                            ? 'bg-blue-500'
-                            : 'bg-gradient-to-r from-blue-500 to-purple-600'
-                            }`}>
+                        <div className={`flex gap-3 max-w-[80%] ${message.isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-1 ${
+                            message.isUser
+                              ? 'bg-foreground'
+                              : 'bg-muted'
+                          }`}>
                             {message.isUser ? (
-                              <div className="w-4 h-4 bg-white rounded-full" />
+                              <div className="w-2 h-2 bg-background rounded-full" />
                             ) : (
-                              <MessageCircle className="h-4 w-4 text-white" />
+                              <Bot className="h-3 w-3 text-muted-foreground" />
                             )}
                           </div>
-                          <div className={`rounded-2xl px-4 py-3 shadow ${message.isUser
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-white border border-gray-200 text-gray-800'
-                            }`}>
+                          <div className={`rounded-xl px-4 py-3 ${
+                            message.isUser
+                              ? 'bg-foreground text-background'
+                              : 'bg-muted text-foreground'
+                          }`}>
                             <p className="text-sm leading-relaxed">{message.text}</p>
-                            <p className={`text-xs mt-2 ${message.isUser ? 'text-blue-100' : 'text-gray-500'
-                              }`}>
+                            <p className={`text-xs mt-2 ${
+                              message.isUser ? 'text-background/70' : 'text-muted-foreground'
+                            }`}>
                               {message.timestamp}
                             </p>
                           </div>
@@ -306,15 +314,15 @@ export default function Chat() {
 
                     {isTyping && (
                       <div className="flex justify-start">
-                        <div className="flex gap-2 max-w-[75%]">
-                          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                            <MessageCircle className="h-4 w-4 text-white" />
+                        <div className="flex gap-3 max-w-[80%]">
+                          <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center mt-1">
+                            <Bot className="h-3 w-3 text-muted-foreground" />
                           </div>
-                          <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3">
+                          <div className="bg-muted rounded-xl px-4 py-3">
                             <div className="flex space-x-1">
-                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                              <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" />
+                              <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                              <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
                             </div>
                           </div>
                         </div>
@@ -325,9 +333,10 @@ export default function Chat() {
                 </div>
               )}
             </div>
+            
             {/* Input Area - Only show when in conversation */}
             {messages.length > 1 && (
-              <div className="bg-background border-t border-border p-4">
+              <div className="border-t border-border p-4">
                 <div className="flex gap-3 items-end">
                   <div className="flex-1 relative">
                     <textarea
@@ -338,23 +347,23 @@ export default function Chat() {
                       onKeyPress={handleKeyPress}
                       disabled={isTyping}
                       rows={1}
-                      className="w-full resize-none bg-muted border border-border rounded-2xl px-4 py-3 pr-4 focus:outline-none focus:border-primary focus:bg-background transition-all duration-200 text-sm leading-relaxed"
+                      className="w-full resize-none bg-background border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground transition-colors duration-200"
                       style={{ minHeight: '48px' }}
                     />
                   </div>
                   <button
                     onClick={handleSendMessage}
                     disabled={!inputMessage.trim() || isTyping}
-                    className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-200 ${
+                    className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 ${
                       inputMessage.trim() && !isTyping
-                        ? 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-soft'
-                        : 'bg-muted text-muted-foreground cursor-not-allowed'
+                        ? 'bg-foreground text-background hover:bg-foreground/80'
+                        : 'bg-transparent text-muted-foreground cursor-not-allowed'
                     }`}
                   >
-                    <Send className="h-5 w-5" />
+                    <Send className="h-4 w-4" />
                   </button>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2 text-center">
+                <p className="text-xs text-muted-foreground mt-3 text-center">
                   AI อาจให้ข้อมูลที่ไม่ถูกต้อง โปรดตรวจสอบข้อมูลสำคัญ
                 </p>
               </div>
