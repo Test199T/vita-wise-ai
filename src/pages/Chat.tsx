@@ -10,7 +10,12 @@ import {
   Plus,
   Menu,
   X,
-  History
+  History,
+  Edit3,
+  BookOpen,
+  Code2,
+  Heart,
+  Bot
 } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 
@@ -28,27 +33,27 @@ interface ChatSession {
   timestamp: string;
 }
 
-const quickQuestions = [
+const quickActions = [
   {
-    icon: Moon,
-    text: "ช่วยแนะนำการปรับปรุงการนอนหลับ",
-    color: "bg-blue-500"
+    icon: Edit3,
+    text: "วิเคราะห์สุขภาพ",
+    description: "วิเคราะห์ข้อมูลสุขภาพของฉัน"
   },
   {
-    icon: Utensils,
-    text: "แนะนำอาหารเช้าสำหรับวันนี้",
-    color: "bg-orange-500"
+    icon: BookOpen,
+    text: "ให้คำแนะนำ",
+    description: "แนะนำการดูแลสุขภาพ"
   },
   {
-    icon: Activity,
-    text: "แนะนำการออกกำลังกายเบื้องต้น",
-    color: "bg-green-500"
+    icon: Code2,
+    text: "แปลผลตรวจ",
+    description: "อธิบายผลการตรวจสุขภาพ"
   },
   {
-    icon: Brain,
-    text: "วิธีลดความเครียด",
-    color: "bg-purple-500"
-  },
+    icon: Heart,
+    text: "ปรึกษาสุขภาพ",
+    description: "คำปรึกษาเรื่องสุขภาพทั่วไป"
+  }
 ];
 
 export default function Chat() {
@@ -143,8 +148,8 @@ export default function Chat() {
     }, 2000);
   };
 
-  const handleQuickQuestion = (question: string) => {
-    setInputMessage(question);
+  const handleQuickAction = (actionText: string) => {
+    setInputMessage(actionText);
     if (inputRef.current) {
       inputRef.current.focus();
       setTimeout(adjustTextareaHeight, 0);
@@ -198,42 +203,72 @@ export default function Chat() {
           <div className="fixed inset-0 z-30 bg-black/30" onClick={() => setShowSidebar(false)} />
         )}
         {/* Main Chat Area */}
-        <main className="flex-1 flex flex-col items-center justify-center relative">
+        <main className="flex-1 flex flex-col bg-muted/30">
           {/* Toggle Sidebar Button (Right top, all screens) */}
           <button
-            className="absolute top-4 right-4 z-20 bg-white border rounded-full p-2 shadow"
+            className="absolute top-4 right-4 z-20 bg-background border rounded-full p-2 shadow-soft"
             onClick={() => setShowSidebar(true)}
             title="ประวัติการคุย"
           >
-            <History className="h-5 w-5 text-blue-500" />
+            <History className="h-5 w-5 text-primary" />
           </button>
-          <div className="w-full max-w-2xl mx-auto flex flex-col flex-1">
-
+          
+          <div className="w-full max-w-4xl mx-auto flex flex-col flex-1">
             {/* Messages Area */}
             <div className="flex-1 flex flex-col min-h-0">
               {messages.length === 1 ? (
-                <div className="flex-1 flex items-center justify-center p-4">
-                  <div className="text-center w-full">
-                    <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                      <Sparkles className="h-10 w-10 text-white" />
+                <div className="flex-1 flex items-center justify-center p-8">
+                  <div className="text-center w-full max-w-2xl">
+                    {/* Header with icon */}
+                    <div className="mb-8">
+                      <div className="inline-flex items-center gap-3 mb-4">
+                        <Bot className="h-8 w-8 text-primary" />
+                        <h1 className="text-2xl font-semibold text-foreground">
+                          สวัสดี, มีอะไรให้ช่วยไหม?
+                        </h1>
+                      </div>
                     </div>
-                    <h2 className="text-xl font-semibold mb-2 text-gray-900">
-                      เริ่มต้นการสนทนา
-                    </h2>
-                    <p className="text-gray-600 mb-6">
-                      เลือกหัวข้อด้านล่างหรือพิมพ์คำถามของคุณ
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md mx-auto">
-                      {quickQuestions.map((question, index) => (
+                    
+                    {/* Input Field */}
+                    <div className="mb-6">
+                      <div className="relative">
+                        <textarea
+                          ref={inputRef}
+                          placeholder="พิมพ์คำถามของคุณที่นี่..."
+                          value={inputMessage}
+                          onChange={handleInputChange}
+                          onKeyPress={handleKeyPress}
+                          disabled={isTyping}
+                          rows={1}
+                          className="w-full resize-none bg-background border-2 border-border rounded-xl px-6 py-4 text-base focus:outline-none focus:border-primary transition-all duration-200 shadow-soft"
+                          style={{ minHeight: '60px' }}
+                        />
+                        <button
+                          onClick={handleSendMessage}
+                          disabled={!inputMessage.trim() || isTyping}
+                          className={`absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 ${
+                            inputMessage.trim() && !isTyping
+                              ? 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm'
+                              : 'bg-muted text-muted-foreground cursor-not-allowed'
+                          }`}
+                        >
+                          <Send className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Quick Action Buttons */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto">
+                      {quickActions.map((action, index) => (
                         <button
                           key={index}
-                          onClick={() => handleQuickQuestion(question.text)}
-                          className="w-full flex items-center gap-3 bg-white border border-gray-200 rounded-xl p-4 text-left hover:border-blue-300 hover:shadow-sm transition-all duration-200"
+                          onClick={() => handleQuickAction(action.description)}
+                          className="flex flex-col items-center gap-2 bg-background border border-border rounded-xl p-4 hover:border-primary/50 hover:shadow-soft transition-all duration-200 group"
                         >
-                          <div className={`w-8 h-8 ${question.color} rounded-lg flex items-center justify-center`}>
-                            <question.icon className="h-4 w-4 text-white" />
-                          </div>
-                          <span className="text-sm font-medium text-gray-800">{question.text}</span>
+                          <action.icon className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                          <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                            {action.text}
+                          </span>
                         </button>
                       ))}
                     </div>
@@ -290,37 +325,40 @@ export default function Chat() {
                 </div>
               )}
             </div>
-            {/* Input Area */}
-            <div className="bg-white border-t border-gray-200 p-4">
-              <div className="flex gap-3 items-end">
-                <div className="flex-1 relative">
-                  <textarea
-                    ref={inputRef}
-                    placeholder="พิมพ์ข้อความของคุณ..."
-                    value={inputMessage}
-                    onChange={handleInputChange}
-                    onKeyPress={handleKeyPress}
-                    disabled={isTyping}
-                    rows={1}
-                    className="w-full resize-none bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 pr-4 focus:outline-none focus:border-blue-400 focus:bg-white transition-all duration-200 text-sm leading-relaxed"
-                    style={{ minHeight: '48px' }}
-                  />
-                </div>
-                <button
-                  onClick={handleSendMessage}
-                  disabled={!inputMessage.trim() || isTyping}
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-200 ${inputMessage.trim() && !isTyping
-                    ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-md hover:shadow-lg'
-                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+            {/* Input Area - Only show when in conversation */}
+            {messages.length > 1 && (
+              <div className="bg-background border-t border-border p-4">
+                <div className="flex gap-3 items-end">
+                  <div className="flex-1 relative">
+                    <textarea
+                      ref={inputRef}
+                      placeholder="พิมพ์ข้อความของคุณ..."
+                      value={inputMessage}
+                      onChange={handleInputChange}
+                      onKeyPress={handleKeyPress}
+                      disabled={isTyping}
+                      rows={1}
+                      className="w-full resize-none bg-muted border border-border rounded-2xl px-4 py-3 pr-4 focus:outline-none focus:border-primary focus:bg-background transition-all duration-200 text-sm leading-relaxed"
+                      style={{ minHeight: '48px' }}
+                    />
+                  </div>
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={!inputMessage.trim() || isTyping}
+                    className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-200 ${
+                      inputMessage.trim() && !isTyping
+                        ? 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-soft'
+                        : 'bg-muted text-muted-foreground cursor-not-allowed'
                     }`}
-                >
-                  <Send className="h-5 w-5" />
-                </button>
+                  >
+                    <Send className="h-5 w-5" />
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  AI อาจให้ข้อมูลที่ไม่ถูกต้อง โปรดตรวจสอบข้อมูลสำคัญ
+                </p>
               </div>
-              <p className="text-xs text-gray-500 mt-2 text-center">
-                AI อาจให้ข้อมูลที่ไม่ถูกต้อง โปรดตรวจสอบข้อมูลสำคัญ
-              </p>
-            </div>
+            )}
           </div>
         </main>
       </div>
