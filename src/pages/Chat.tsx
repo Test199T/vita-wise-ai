@@ -23,6 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { tokenUtils } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { createClient } from '@supabase/supabase-js';
 
 interface Message {
   id: string;
@@ -65,21 +66,8 @@ export default function Chat() {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  // Mock chat sessions
-  const [chatSessions, setChatSessions] = useState<ChatSession[]>([
-    {
-      id: "1",
-      title: "AI สุขภาพ (ล่าสุด)",
-      lastMessage: "สวัสดี! ฉันคือ AI สุขภาพ...",
-      timestamp: "เมื่อสักครู่"
-    },
-    {
-      id: "2",
-      title: "AI สุขภาพ (เมื่อวาน)",
-      lastMessage: "ขอบคุณสำหรับข้อมูล! จากข้อมูลที่คุณให้มา...",
-      timestamp: "เมื่อวาน"
-    }
-  ]);
+  // Chat sessions - จะดึงข้อมูลจริงจาก AI หลังบ้าน
+  const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string>("1");
   const [showSidebar, setShowSidebar] = useState(false);
 
@@ -94,24 +82,89 @@ export default function Chat() {
   ]);
   const [inputMessage, setInputMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // สร้าง session ใหม่ถ้ายังไม่มี
-  const createNewSession = () => {
-    // ใช้ timestamp ที่เล็กลงเพื่อให้เข้ากับ PostgreSQL integer
-    const newSessionId = Math.floor(Date.now() / 1000).toString();
-    const newSession: ChatSession = {
-      id: newSessionId,
+  // สร้าง session ใหม่ใน AI หลังบ้าน
+  const createNewSession = async () => {
+    try {
+      const token = tokenUtils.getValidToken();
+      if (!token) {
+        toast({
+          title: "กรุณาเข้าสู่ระบบ",
+          description: "Token ไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await fetch('http://localhost:3000/chat/sessions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: `AI สุขภาพ (${new Date().toLocaleDateString('th-TH')})`,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Created new session:', data);
+        
+        if (data.success && data.data) {
+          const newSession: ChatSession = {
+            id: data.data.id.toString(),
+            title: data.data.title || `AI สุขภาพ (${new Date().toLocaleDateString('th-TH')})`,
+            lastMessage: "เริ่มการสนทนาใหม่",
+            timestamp: "เมื่อสักครู่"
+          };
+          
+          setChatSessions(prev => [newSession, ...prev]);
+          setSelectedSessionId(newSession.id);
+          
+          // รีเซ็ตข้อความ
+          setMessages([{
+            id: "1",
+            text: "สวัสดี! ฉันคือ AI สุขภาพที่พร้อมให้คำแนะนำเกี่ยวกับสุขภาพของคุณ มีอะไรให้ช่วยไหม?",
+            isUser: false,
+            timestamp: "เมื่อสักครู่"
+          }]);
+          
+          return newSession.id;
+        }
+      } else {
+        console.error('Failed to create new session:', response.status);
+        toast({
+          title: "ข้อผิดพลาด",
+          description: "ไม่สามารถสร้าง session ใหม่ได้ กรุณาลองใหม่อีกครั้ง",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error creating new session:', error);
+      toast({
+        title: "ข้อผิดพลาด",
+        description: "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง",
+        variant: "destructive",
+      });
+    }
+    
+    // Fallback: สร้าง session ใหม่ในหน้าบ้าน
+    const fallbackSessionId = Math.floor(Date.now() / 1000).toString();
+    const fallbackSession: ChatSession = {
+      id: fallbackSessionId,
       title: `AI สุขภาพ (${new Date().toLocaleDateString('th-TH')})`,
       lastMessage: "เริ่มการสนทนาใหม่",
       timestamp: "เมื่อสักครู่"
     };
     
-    setChatSessions(prev => [newSession, ...prev]);
-    setSelectedSessionId(newSessionId);
+    setChatSessions(prev => [fallbackSession, ...prev]);
+    setSelectedSessionId(fallbackSessionId);
     
-    // รีเซ็ตข้อความ
     setMessages([{
       id: "1",
       text: "สวัสดี! ฉันคือ AI สุขภาพที่พร้อมให้คำแนะนำเกี่ยวกับสุขภาพของคุณ มีอะไรให้ช่วยไหม?",
@@ -119,28 +172,133 @@ export default function Chat() {
       timestamp: "เมื่อสักครู่"
     }]);
     
-    return newSessionId;
+    return fallbackSessionId;
   };
 
   // ตรวจสอบและรับ sessionId ที่ถูกต้อง
-  const getValidSessionId = (): number => {
+  const getValidSessionId = async (): Promise<number> => {
     console.log('getValidSessionId called with:', { selectedSessionId, type: typeof selectedSessionId });
     
     if (!selectedSessionId || selectedSessionId === "undefined" || selectedSessionId === "null") {
       console.warn('Invalid selectedSessionId, creating new session:', selectedSessionId);
-      const newSessionId = createNewSession();
+      const newSessionId = await createNewSession();
       return parseInt(newSessionId);
     }
     
     const sessionIdNum = parseInt(selectedSessionId);
     if (isNaN(sessionIdNum) || sessionIdNum <= 0) {
       console.warn('Invalid sessionId number, creating new session:', { selectedSessionId, parsed: sessionIdNum });
-      const newSessionId = createNewSession();
+      const newSessionId = await createNewSession();
       return parseInt(newSessionId);
     }
     
     console.log('Valid sessionId found:', { selectedSessionId, parsed: sessionIdNum });
     return sessionIdNum;
+  };
+
+  // ดึงประวัติการพูดคุยจาก AI หลังบ้าน
+  const fetchChatSessions = async () => {
+    try {
+      setIsLoadingSessions(true);
+      const token = tokenUtils.getValidToken();
+      if (!token) return;
+
+      const response = await fetch('http://localhost:3000/chat/sessions', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Fetched chat sessions:', data);
+        
+        if (data.success && data.data) {
+          const sessions = data.data.map((session: any) => ({
+            id: session.id.toString(),
+            title: session.title || `AI สุขภาพ (${new Date(session.created_at).toLocaleDateString('th-TH')})`,
+            lastMessage: session.last_message || "เริ่มการสนทนาใหม่",
+            timestamp: formatTimestamp(session.updated_at || session.created_at)
+          }));
+          
+          setChatSessions(sessions);
+          
+          // ถ้ายังไม่มี session ที่เลือก ให้เลือก session แรก
+          if (sessions.length > 0 && (!selectedSessionId || selectedSessionId === "1")) {
+            setSelectedSessionId(sessions[0].id);
+          }
+        }
+      } else {
+        console.warn('Failed to fetch chat sessions:', response.status);
+      }
+    } catch (error) {
+      console.error('Error fetching chat sessions:', error);
+    } finally {
+      setIsLoadingSessions(false);
+    }
+  };
+
+  // ดึงข้อความใน session ที่เลือก
+  const fetchSessionMessages = async (sessionId: string) => {
+    try {
+      const token = tokenUtils.getValidToken();
+      if (!token) return;
+
+      const response = await fetch(`http://localhost:3000/chat/sessions/${sessionId}/messages`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Fetched session messages:', data);
+        
+        if (data.success && data.data) {
+          const messages = data.data.map((msg: any) => ({
+            id: msg.id.toString(),
+            text: msg.message_text,
+            isUser: msg.is_user_message,
+            timestamp: formatTimestamp(msg.timestamp)
+          }));
+          
+          // เพิ่มข้อความเริ่มต้นถ้าไม่มีข้อความ
+          if (messages.length === 0) {
+            messages.push({
+              id: "1",
+              text: "สวัสดี! ฉันคือ AI สุขภาพที่พร้อมให้คำแนะนำเกี่ยวกับสุขภาพของคุณ มีอะไรให้ช่วยไหม?",
+              isUser: false,
+              timestamp: "เมื่อสักครู่"
+            });
+          }
+          
+          setMessages(messages);
+        }
+      } else {
+        console.warn('Failed to fetch session messages:', response.status);
+      }
+    } catch (error) {
+      console.error('Error fetching session messages:', error);
+    }
+  };
+
+  // จัดรูปแบบ timestamp
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+    
+    if (diffInHours < 1) {
+      return "เมื่อสักครู่";
+    } else if (diffInHours < 24) {
+      return `${Math.floor(diffInHours)} ชั่วโมงที่แล้ว`;
+    } else if (diffInHours < 48) {
+      return "เมื่อวาน";
+    } else {
+      return date.toLocaleDateString('th-TH');
+    }
   };
 
   // สร้าง session เริ่มต้นเมื่อ component mount
@@ -151,7 +309,7 @@ export default function Chat() {
     }
   }, []);
 
-  // ตรวจสอบ token เมื่อ component mount
+  // ตรวจสอบ token และดึงข้อมูลเมื่อ component mount
   useEffect(() => {
     if (!tokenUtils.isLoggedIn()) {
       toast({
@@ -164,17 +322,26 @@ export default function Chat() {
     }
 
     const token = tokenUtils.getValidToken();
-    const currentSessionId = getValidSessionId();
+    if (token) {
+      // ดึงประวัติการพูดคุย
+      fetchChatSessions();
+    }
     
     console.log('Token validation passed:', { 
       hasToken: !!token, 
       tokenLength: token?.length || 0,
       tokenPreview: token ? `${token.substring(0, 20)}...` : 'null',
       isLoggedIn: tokenUtils.isLoggedIn(),
-      currentSessionId,
       selectedSessionId
     });
   }, [navigate, toast]);
+
+  // ดึงข้อความเมื่อ session เปลี่ยน
+  useEffect(() => {
+    if (selectedSessionId && selectedSessionId !== "1") {
+      fetchSessionMessages(selectedSessionId);
+    }
+  }, [selectedSessionId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -207,7 +374,7 @@ export default function Chat() {
     }
 
     // รับ sessionId ที่ถูกต้อง
-    const validSessionId = getValidSessionId();
+    const validSessionId = await getValidSessionId();
     
     // ตรวจสอบเพิ่มเติมว่า sessionId ถูกต้อง
     if (!validSessionId || isNaN(validSessionId) || validSessionId <= 0) {
@@ -270,7 +437,7 @@ export default function Chat() {
         timestamp: new Date().toISOString()
       };
 
-      const response = await fetch('http://localhost:3000/ai/chat/message', {
+      const response = await fetch(`http://localhost:3000/chat/sessions/${validSessionId}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -339,11 +506,7 @@ export default function Chat() {
           setMessages(prev => [...prev, aiMessage]);
           
           // อัปเดต chat session
-          setChatSessions(prev => prev.map(session => 
-            session.id === selectedSessionId 
-              ? { ...session, lastMessage: aiMessage.text, timestamp: "เมื่อสักครู่" }
-              : session
-          ));
+          updateSessionAfterMessage(selectedSessionId, aiMessage.text);
           
           console.log('AI message displayed successfully:', aiMessage.text);
           
@@ -480,6 +643,66 @@ export default function Chat() {
     adjustTextareaHeight();
   };
 
+  // ลบ session
+  const deleteSession = async (sessionId: string) => {
+    try {
+      const token = tokenUtils.getValidToken();
+      if (!token) return;
+
+      const response = await fetch(`http://localhost:3000/chat/sessions/${sessionId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        console.log('Session deleted successfully');
+        // ลบ session ออกจาก state
+        setChatSessions(prev => prev.filter(session => session.id !== sessionId));
+        
+        // ถ้า session ที่ลบเป็น session ที่เลือกอยู่ ให้เลือก session อื่น
+        if (selectedSessionId === sessionId) {
+          const remainingSessions = chatSessions.filter(session => session.id !== sessionId);
+          if (remainingSessions.length > 0) {
+            setSelectedSessionId(remainingSessions[0].id);
+          } else {
+            // ถ้าไม่มี session เหลืออยู่ ให้สร้างใหม่
+            createNewSession();
+          }
+        }
+        
+        toast({
+          title: "ลบสำเร็จ",
+          description: "ลบการสนทนาออกแล้ว",
+        });
+      } else {
+        console.error('Failed to delete session:', response.status);
+        toast({
+          title: "ข้อผิดพลาด",
+          description: "ไม่สามารถลบการสนทนาได้ กรุณาลองใหม่อีกครั้ง",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting session:', error);
+      toast({
+        title: "ข้อผิดพลาด",
+        description: "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // อัปเดต session หลังจากส่งข้อความ
+  const updateSessionAfterMessage = (sessionId: string, lastMessage: string) => {
+    setChatSessions(prev => prev.map(session => 
+      session.id === sessionId 
+        ? { ...session, lastMessage, timestamp: "เมื่อสักครู่" }
+        : session
+    ));
+  };
+
   // Sidebar (Chat History) - overlay Drawer for all screens
   const Sidebar = (
     <aside className={`fixed top-0 right-0 z-40 w-80 border-l border-border bg-background h-full transition-transform duration-200 ${showSidebar ? 'translate-x-0' : 'translate-x-full'}`}>
@@ -493,17 +716,47 @@ export default function Chat() {
         </button>
       </div>
       <div className="flex-1 overflow-y-auto">
-        {chatSessions.map(session => (
+        {isLoadingSessions ? (
+          <div className="flex items-center justify-center p-4">
+            <div className="flex space-x-1">
+              <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
+              <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+              <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+            </div>
+          </div>
+        ) : chatSessions.length === 0 ? (
+          <div className="p-4 text-center text-muted-foreground text-sm">
+            ไม่มีการสนทนา
+          </div>
+        ) : (
+          chatSessions.map(session => (
           <div
             key={session.id}
-            className={`px-4 py-3 cursor-pointer border-b border-border hover:bg-muted transition-colors ${selectedSessionId === session.id ? 'bg-muted' : ''}`}
-            onClick={() => { setSelectedSessionId(session.id); setShowSidebar(false); }}
+            className={`px-4 py-3 border-b border-border hover:bg-muted transition-colors ${selectedSessionId === session.id ? 'bg-muted' : ''}`}
           >
-            <div className="font-medium text-foreground text-sm truncate">{session.title}</div>
-            <div className="text-xs text-muted-foreground truncate mt-1">{session.lastMessage}</div>
-            <div className="text-xs text-muted-foreground mt-1">{session.timestamp}</div>
+            <div 
+              className="cursor-pointer"
+              onClick={() => { setSelectedSessionId(session.id); setShowSidebar(false); }}
+            >
+              <div className="font-medium text-foreground text-sm truncate">{session.title}</div>
+              <div className="text-xs text-muted-foreground truncate mt-1">{session.lastMessage}</div>
+              <div className="text-xs text-muted-foreground mt-1">{session.timestamp}</div>
+            </div>
+            <div className="flex justify-end mt-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteSession(session.id);
+                }}
+                className="p-1 rounded-md hover:bg-destructive/10 text-destructive transition-colors"
+                title="ลบการสนทนา"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
           </div>
-        ))}
+        ))
+        )}
       </div>
     </aside>
   );
