@@ -39,15 +39,116 @@ export default function Register() {
       return;
     }
 
-    // จำลองการสมัครสมาชิก
-    setTimeout(() => {
-      toast({
-        title: "สมัครสมาชิกสำเร็จ",
-        description: "ยินดีต้อนรับสู่แอปสุขภาพดี AI",
+    // Log ข้อมูลที่ผู้ใช้กรอก (ไม่รวมรหัสผ่าน)
+    console.log('Registration attempt:', {
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      age: formData.age,
+      gender: formData.gender,
+      passwordLength: formData.password.length
+    });
+
+    try {
+      const response = await fetch('http://localhost:3000/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          password: formData.password,
+          age: parseInt(formData.age),
+          gender: formData.gender,
+        }),
       });
-      navigate("/onboarding");
+
+      const data = await response.json();
+      
+      // Log response จาก backend
+      console.log('Backend response:', {
+        status: response.status,
+        statusText: response.statusText,
+        data: data
+      });
+
+      if (response.ok) {
+        console.log('Registration successful:', {
+          user: data.user,
+          message: data.message
+        });
+        
+        toast({
+          title: "สมัครสมาชิกสำเร็จ",
+          description: "ยินดีต้อนรับสู่แอปสุขภาพดี AI",
+        });
+        navigate("/onboarding");
+      } else {
+        // จัดการ error cases ต่างๆ
+        let errorMessage = "เกิดข้อผิดพลาดในการสมัครสมาชิก";
+        
+        if (response.status === 400) {
+          errorMessage = "ข้อมูลไม่ถูกต้อง";
+          console.warn('Bad request:', {
+            email: formData.email,
+            reason: 'Invalid data format',
+            backendMessage: data.message,
+            validationErrors: data.errors
+          });
+        } else if (response.status === 409) {
+          errorMessage = "อีเมลนี้มีอยู่ในระบบแล้ว";
+          console.warn('Email already exists:', {
+            email: formData.email,
+            reason: 'Email already registered',
+            backendMessage: data.message
+          });
+        } else if (response.status === 422) {
+          errorMessage = "ข้อมูลไม่ถูกต้อง";
+          console.warn('Validation error:', {
+            email: formData.email,
+            validationErrors: data.errors,
+            backendMessage: data.message
+          });
+        } else if (response.status === 500) {
+          errorMessage = "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์";
+          console.error('Server error:', {
+            email: formData.email,
+            status: response.status,
+            backendMessage: data.message,
+            error: data.error
+          });
+        } else {
+          console.error('Unexpected error response:', {
+            email: formData.email,
+            status: response.status,
+            statusText: response.statusText,
+            data: data
+          });
+        }
+
+        toast({
+          title: "ข้อผิดพลาด",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Network/Connection error:', {
+        email: formData.email,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      
+      toast({
+        title: "ข้อผิดพลาด",
+        description: "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต",
+        variant: "destructive",
+      });
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {

@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity, Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { tokenUtils } from "@/lib/utils";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -19,23 +20,138 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
 
-    // จำลองการเข้าสู่ระบบ
-    setTimeout(() => {
-      if (email && password) {
+    // Log ข้อมูลที่ผู้ใช้กรอก (ไม่รวมรหัสผ่าน)
+    console.log('Login attempt:', { email, passwordLength: password.length });
+
+    try {
+      const response = await fetch('http://localhost:3000/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+      
+      // Log response จาก backend
+      console.log('Backend response:', {
+        status: response.status,
+        statusText: response.statusText,
+        data: data
+      });
+
+      if (response.ok) {
+        // รับ access_token จาก backend
+        if (!data.access_token) {
+          console.error('No access_token received from backend:', data);
+          toast({
+            title: "ข้อผิดพลาด",
+            description: "ไม่ได้รับ access_token จากเซิร์ฟเวอร์ กรุณาลองใหม่อีกครั้ง",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // ใช้ utility function เพื่อบันทึก access_token จาก backend
+        if (!tokenUtils.setToken(data.access_token)) {
+          toast({
+            title: "ข้อผิดพลาด",
+            description: "ไม่สามารถบันทึก access_token ได้ กรุณาลองใหม่อีกครั้ง",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // บันทึกข้อมูลผู้ใช้
+        localStorage.setItem('user', JSON.stringify(data.user || {}));
+        
+        console.log('Login successful:', {
+          user: data.user,
+          hasToken: !!data.access_token,
+          tokenLength: data.access_token.length,
+          tokenPreview: `${data.access_token.substring(0, 20)}...`,
+          tokenParts: data.access_token.split('.').length,
+          tokenStored: tokenUtils.isValidToken(tokenUtils.getToken()),
+          tokenFromBackend: true,
+          tokenType: 'access_token'
+        });
+        
         toast({
           title: "เข้าสู่ระบบสำเร็จ",
           description: "ยินดีต้อนรับสู่แอปสุขภาพดี AI",
         });
-        navigate("/dashboard");
+        
+        // รอสักครู่แล้วค่อยไปหน้า dashboard เพื่อให้ toast แสดงเสร็จ
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 1000);
       } else {
+        // จัดการ error cases ต่างๆ
+        let errorMessage = "เกิดข้อผิดพลาดในการเข้าสู่ระบบ";
+        
+        if (response.status === 401) {
+          errorMessage = "อีเมลหรือรหัสผ่านไม่ถูกต้อง";
+          console.warn('Authentication failed:', {
+            email,
+            reason: 'Invalid credentials',
+            backendMessage: data.message
+          });
+        } else if (response.status === 404) {
+          errorMessage = "ไม่พบผู้ใช้ในระบบ";
+          console.warn('User not found:', {
+            email,
+            reason: 'User does not exist in database',
+            backendMessage: data.message
+          });
+        } else if (response.status === 500) {
+          errorMessage = "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์";
+          console.error('Server error:', {
+            email,
+            status: response.status,
+            backendMessage: data.message,
+            error: data.error
+          });
+        } else if (response.status === 422) {
+          errorMessage = "ข้อมูลไม่ถูกต้อง";
+          console.warn('Validation error:', {
+            email,
+            validationErrors: data.errors,
+            backendMessage: data.message
+          });
+        } else {
+          console.error('Unexpected error response:', {
+            email,
+            status: response.status,
+            statusText: response.statusText,
+            data: data
+          });
+        }
+
         toast({
           title: "ข้อผิดพลาด",
-          description: "กรุณากรอกอีเมลและรหัสผ่าน",
+          description: errorMessage,
           variant: "destructive",
         });
       }
+    } catch (error) {
+      console.error('Network/Connection error:', {
+        email,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      
+      toast({
+        title: "ข้อผิดพลาด",
+        description: "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต",
+        variant: "destructive",
+      });
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (

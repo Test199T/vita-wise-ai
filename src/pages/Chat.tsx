@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Send,
   Moon,
@@ -18,6 +19,10 @@ import {
   Bot
 } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { useToast } from "@/hooks/use-toast";
+import { tokenUtils } from "@/lib/utils";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Message {
   id: string;
@@ -57,6 +62,9 @@ const quickActions = [
 ];
 
 export default function Chat() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
   // Mock chat sessions
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([
     {
@@ -72,7 +80,7 @@ export default function Chat() {
       timestamp: "เมื่อวาน"
     }
   ]);
-  const [selectedSessionId, setSelectedSessionId] = useState("1");
+  const [selectedSessionId, setSelectedSessionId] = useState<string>("1");
   const [showSidebar, setShowSidebar] = useState(false);
 
   // Messages for selected session (mock, single session)
@@ -88,6 +96,85 @@ export default function Chat() {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // สร้าง session ใหม่ถ้ายังไม่มี
+  const createNewSession = () => {
+    // ใช้ timestamp ที่เล็กลงเพื่อให้เข้ากับ PostgreSQL integer
+    const newSessionId = Math.floor(Date.now() / 1000).toString();
+    const newSession: ChatSession = {
+      id: newSessionId,
+      title: `AI สุขภาพ (${new Date().toLocaleDateString('th-TH')})`,
+      lastMessage: "เริ่มการสนทนาใหม่",
+      timestamp: "เมื่อสักครู่"
+    };
+    
+    setChatSessions(prev => [newSession, ...prev]);
+    setSelectedSessionId(newSessionId);
+    
+    // รีเซ็ตข้อความ
+    setMessages([{
+      id: "1",
+      text: "สวัสดี! ฉันคือ AI สุขภาพที่พร้อมให้คำแนะนำเกี่ยวกับสุขภาพของคุณ มีอะไรให้ช่วยไหม?",
+      isUser: false,
+      timestamp: "เมื่อสักครู่"
+    }]);
+    
+    return newSessionId;
+  };
+
+  // ตรวจสอบและรับ sessionId ที่ถูกต้อง
+  const getValidSessionId = (): number => {
+    console.log('getValidSessionId called with:', { selectedSessionId, type: typeof selectedSessionId });
+    
+    if (!selectedSessionId || selectedSessionId === "undefined" || selectedSessionId === "null") {
+      console.warn('Invalid selectedSessionId, creating new session:', selectedSessionId);
+      const newSessionId = createNewSession();
+      return parseInt(newSessionId);
+    }
+    
+    const sessionIdNum = parseInt(selectedSessionId);
+    if (isNaN(sessionIdNum) || sessionIdNum <= 0) {
+      console.warn('Invalid sessionId number, creating new session:', { selectedSessionId, parsed: sessionIdNum });
+      const newSessionId = createNewSession();
+      return parseInt(newSessionId);
+    }
+    
+    console.log('Valid sessionId found:', { selectedSessionId, parsed: sessionIdNum });
+    return sessionIdNum;
+  };
+
+  // สร้าง session เริ่มต้นเมื่อ component mount
+  useEffect(() => {
+    if (!selectedSessionId || selectedSessionId === "undefined" || selectedSessionId === "null") {
+      console.log('Initializing default session');
+      createNewSession();
+    }
+  }, []);
+
+  // ตรวจสอบ token เมื่อ component mount
+  useEffect(() => {
+    if (!tokenUtils.isLoggedIn()) {
+      toast({
+        title: "กรุณาเข้าสู่ระบบ",
+        description: "คุณต้องเข้าสู่ระบบก่อนใช้งาน Chat AI",
+        variant: "destructive",
+      });
+      navigate('/login');
+      return;
+    }
+
+    const token = tokenUtils.getValidToken();
+    const currentSessionId = getValidSessionId();
+    
+    console.log('Token validation passed:', { 
+      hasToken: !!token, 
+      tokenLength: token?.length || 0,
+      tokenPreview: token ? `${token.substring(0, 20)}...` : 'null',
+      isLoggedIn: tokenUtils.isLoggedIn(),
+      currentSessionId,
+      selectedSessionId
+    });
+  }, [navigate, toast]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -107,9 +194,43 @@ export default function Chat() {
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
-    const newMessage: Message = {
+    // ตรวจสอบ token อีกครั้งก่อนส่งข้อความ
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      toast({
+        title: "กรุณาเข้าสู่ระบบ",
+        description: "Token ไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่",
+        variant: "destructive",
+      });
+      navigate('/login');
+      return;
+    }
+
+    // รับ sessionId ที่ถูกต้อง
+    const validSessionId = getValidSessionId();
+    
+    // ตรวจสอบเพิ่มเติมว่า sessionId ถูกต้อง
+    if (!validSessionId || isNaN(validSessionId) || validSessionId <= 0) {
+      console.error('Invalid sessionId after validation:', { validSessionId, type: typeof validSessionId });
+      toast({
+        title: "ข้อผิดพลาด",
+        description: "ไม่สามารถสร้าง session ได้ กรุณาลองใหม่อีกครั้ง",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log('Preparing to send message with sessionId:', { 
+      validSessionId, 
+      type: typeof validSessionId,
+      selectedSessionId,
+      inputMessage: inputMessage.substring(0, 50) + '...'
+    });
+
+    // สร้างข้อความของผู้ใช้จาก inputMessage ที่แท้จริง
+    const userMessage: Message = {
       id: Date.now().toString(),
-      text: inputMessage,
+      text: inputMessage.trim(), // ใช้ข้อความที่ผู้ใช้พิมพ์จริง
       isUser: true,
       timestamp: new Date().toLocaleTimeString('th-TH', {
         hour: '2-digit',
@@ -117,7 +238,8 @@ export default function Chat() {
       })
     };
 
-    setMessages(prev => [...prev, newMessage]);
+    setMessages(prev => [...prev, userMessage]);
+    const currentInput = inputMessage;
     setInputMessage("");
     setIsTyping(true);
 
@@ -125,17 +247,206 @@ export default function Chat() {
       inputRef.current.style.height = 'auto';
     }
 
-    setTimeout(() => {
-      const aiResponses = [
-        "ขอบคุณสำหรับข้อมูล! จากข้อมูลที่คุณให้มา ฉันแนะนำให้คุณลองดื่มน้ำให้เพียงพอ พักผ่อนให้เพียงพอ และออกกำลังกายเบาๆ อย่างสม่ำเสมอ",
-        "เป็นคำถามที่ดีเลย! สำหรับเรื่องนี้ ฉันขอแนะนำให้คุณลองเริ่มจากการปรับเปลี่ยนนิสัยเล็กๆ น้อยๆ ก่อน เช่น การกินผักผลไม้เพิ่มขึ้น",
-        "ตามข้อมูลสุขภาพของคุณ ฉันคิดว่าคุณควรจะให้ความสำคัญกับการจัดการความเครียดและการนอนหลับให้เพียงพอ",
-        "ขอให้ฉันวิเคราะห์ข้อมูลของคุณก่อน... ฉันแนะนำให้คุณลองทำสมาธิหายใจลึกๆ วันละ 10 นาที และเดินเร็วๆ วันละ 30 นาที",
-      ];
+    try {
+      // Log การส่งข้อความไปยัง AI
+      console.log('Sending message to AI:', {
+        message: currentInput,
+        timestamp: new Date().toISOString(),
+        hasToken: !!token,
+        tokenPreview: token ? `${token.substring(0, 20)}...` : 'null',
+        tokenValid: tokenUtils.isValidToken(token),
+        session_id: validSessionId,
+        sessionIdType: typeof validSessionId,
+        requestBody: {
+          message: currentInput,
+          session_id: validSessionId,
+          timestamp: new Date().toISOString()
+        }
+      });
 
-      const aiMessage: Message = {
+      const requestBody = {
+        message: currentInput,
+        session_id: validSessionId,
+        timestamp: new Date().toISOString()
+      };
+
+      const response = await fetch('http://localhost:3000/ai/chat/message', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const data = await response.json();
+      
+      // Log response จาก AI backend
+      console.log('AI response:', {
+        status: response.status,
+        statusText: response.statusText,
+        data: data,
+        session_id: validSessionId
+      });
+
+      if (response.ok) {
+        // ตรวจสอบว่ามีข้อความจาก AI หลังบ้านหรือไม่
+        console.log('AI response data structure:', data);
+        
+        // ดึงข้อความจาก AI หลังบ้าน - ให้ความสำคัญกับ data.data.aiMessage.message_text ก่อน
+        let aiResponseText = null;
+        
+        // ตรวจสอบ data.data.aiMessage.message_text ก่อน (รูปแบบที่ AI หลังบ้านส่งมา)
+        if (data.data && data.data.aiMessage && data.data.aiMessage.message_text) {
+          aiResponseText = data.data.aiMessage.message_text;
+          console.log('Found AI response in data.data.aiMessage.message_text:', aiResponseText);
+        }
+        
+        // ถ้าไม่มีใน aiMessage ลองหาจาก field อื่นๆ
+        if (!aiResponseText) {
+          aiResponseText = data.message || data.response || data.ai_message || data.content || data.text || data.answer || data.reply;
+          
+          // ถ้าไม่มีใน field หลัก ลองดูใน choices
+          if (!aiResponseText && data.choices && data.choices.length > 0) {
+            aiResponseText = data.choices[0].message?.content;
+          }
+          
+          // ถ้าไม่มีใน choices ลองดูใน data field อื่นๆ
+          if (!aiResponseText && data.data) {
+            aiResponseText = data.data.message || data.data.response || data.data.content;
+          }
+          
+          // ลองดูใน response field
+          if (!aiResponseText && data.response) {
+            aiResponseText = data.response.message || data.response.content || data.response.text;
+          }
+        }
+        
+        console.log('Extracted AI response text:', aiResponseText);
+        console.log('Full data object:', JSON.stringify(data, null, 2));
+        
+        if (aiResponseText && typeof aiResponseText === 'string' && aiResponseText.trim()) {
+          const aiMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            text: aiResponseText.trim(),
+            isUser: false,
+            timestamp: new Date().toLocaleTimeString('th-TH', {
+              hour: '2-digit',
+              minute: '2-digit'
+            })
+          };
+
+          setMessages(prev => [...prev, aiMessage]);
+          
+          // อัปเดต chat session
+          setChatSessions(prev => prev.map(session => 
+            session.id === selectedSessionId 
+              ? { ...session, lastMessage: aiMessage.text, timestamp: "เมื่อสักครู่" }
+              : session
+          ));
+          
+          console.log('AI message displayed successfully:', aiMessage.text);
+          
+          // อัปเดตข้อความของผู้ใช้ให้แสดงข้อความจริงจาก AI หลังบ้าน
+          if (data.data && data.data.userMessage && data.data.userMessage.message_text) {
+            const actualUserMessage = data.data.userMessage.message_text;
+            setMessages(prev => prev.map(msg => 
+              msg.isUser && msg.text === inputMessage.trim()
+                ? { ...msg, text: actualUserMessage }
+                : msg
+            ));
+            console.log('Updated user message with actual text:', actualUserMessage);
+          }
+        } else {
+          // ถ้าไม่มีข้อความจาก AI ให้แสดงข้อความเริ่มต้น
+          console.warn('No AI response text found in data:', data);
+          const defaultMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            text: "ขออภัย ไม่สามารถประมวลผลได้ กรุณาลองใหม่อีกครั้ง",
+            isUser: false,
+            timestamp: new Date().toLocaleTimeString('th-TH', {
+              hour: '2-digit',
+              minute: '2-digit'
+            })
+          };
+          setMessages(prev => [...prev, defaultMessage]);
+        }
+      } else {
+        // จัดการ error cases ต่างๆ
+        let errorMessage = "ขออภัย เกิดข้อผิดพลาดในการประมวลผล";
+        
+        if (response.status === 401) {
+          errorMessage = "Token ไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่";
+          console.warn('Authentication failed for AI chat:', {
+            status: response.status,
+            backendMessage: data.message,
+            tokenPreview: token ? `${token.substring(0, 20)}...` : 'null',
+            tokenValid: tokenUtils.isValidToken(token)
+          });
+          
+          // ลบ token ที่ไม่ถูกต้องและ redirect ไปหน้า login
+          tokenUtils.removeToken();
+          
+          toast({
+            title: "Token ไม่ถูกต้อง",
+            description: "กรุณาเข้าสู่ระบบใหม่",
+            variant: "destructive",
+          });
+          
+          setTimeout(() => {
+            navigate('/login');
+          }, 2000);
+          
+        } else if (response.status === 400) {
+          errorMessage = "ข้อความไม่ถูกต้อง";
+          console.warn('Bad request to AI:', {
+            status: response.status,
+            backendMessage: data.message,
+            validationErrors: data.errors
+          });
+        } else if (response.status === 429) {
+          errorMessage = "ส่งข้อความบ่อยเกินไป กรุณารอสักครู่";
+          console.warn('Rate limit exceeded:', {
+            status: response.status,
+            backendMessage: data.message
+          });
+        } else if (response.status === 500) {
+          errorMessage = "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์";
+          console.error('AI server error:', {
+            status: response.status,
+            backendMessage: data.message,
+            error: data.error
+          });
+        } else {
+          console.error('Unexpected AI response:', {
+            status: response.status,
+            statusText: response.statusText,
+            data: data
+          });
+        }
+
+        const errorMessageObj: Message = {
+          id: (Date.now() + 1).toString(),
+          text: errorMessage,
+          isUser: false,
+          timestamp: new Date().toLocaleTimeString('th-TH', {
+            hour: '2-digit',
+            minute: '2-digit'
+          })
+        };
+
+        setMessages(prev => [...prev, errorMessageObj]);
+      }
+    } catch (error) {
+      console.error('Network/Connection error with AI:', {
+        message: currentInput,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      
+      const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: aiResponses[Math.floor(Math.random() * aiResponses.length)],
+        text: "ขออภัย ไม่สามารถเชื่อมต่อกับ AI ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต",
         isUser: false,
         timestamp: new Date().toLocaleTimeString('th-TH', {
           hour: '2-digit',
@@ -143,9 +454,10 @@ export default function Chat() {
         })
       };
 
-      setMessages(prev => [...prev, aiMessage]);
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsTyping(false);
-    }, 2000);
+    }
   };
 
   const handleQuickAction = (actionText: string) => {
@@ -214,6 +526,15 @@ export default function Chat() {
             title="ประวัติการคุย"
           >
             <History className="h-4 w-4 text-muted-foreground" />
+          </button>
+          
+          {/* New Chat Button (Left top) */}
+          <button
+            className="absolute top-6 left-6 z-20 bg-background hover:bg-muted rounded-lg p-2 transition-colors"
+            onClick={createNewSession}
+            title="เริ่มการสนทนาใหม่"
+          >
+            <Plus className="h-4 w-4 text-muted-foreground" />
           </button>
           
           <div className="w-full max-w-3xl mx-auto flex flex-col flex-1">
@@ -296,18 +617,35 @@ export default function Chat() {
                               <Bot className="h-3 w-3 text-muted-foreground" />
                             )}
                           </div>
-                          <div className={`rounded-xl px-4 py-3 ${
-                            message.isUser
-                              ? 'bg-foreground text-background'
-                              : 'bg-muted text-foreground'
-                          }`}>
-                            <p className="text-sm leading-relaxed">{message.text}</p>
-                            <p className={`text-xs mt-2 ${
-                              message.isUser ? 'text-background/70' : 'text-muted-foreground'
-                            }`}>
-                              {message.timestamp}
-                            </p>
-                          </div>
+                                                     <div className={`rounded-xl px-4 py-3 ${
+                             message.isUser
+                               ? 'bg-foreground text-background'
+                               : 'bg-muted text-foreground'
+                           }`}>
+                             {message.isUser ? (
+                               <p className="text-sm leading-relaxed">{message.text}</p>
+                             ) : (
+                               <div className="text-sm leading-relaxed prose prose-sm max-w-none">
+                                 <ReactMarkdown 
+                                   remarkPlugins={[remarkGfm]}
+                                                                       components={{
+                                      table: ({node, ...props}) => (
+                                        <div className="table-container overflow-x-auto">
+                                          <table {...props} />
+                                        </div>
+                                      ),
+                                    }}
+                                 >
+                                   {message.text}
+                                 </ReactMarkdown>
+                               </div>
+                             )}
+                             <p className={`text-xs mt-2 ${
+                               message.isUser ? 'text-background/70' : 'text-muted-foreground'
+                             }`}>
+                               {message.timestamp}
+                             </p>
+                           </div>
                         </div>
                       </div>
                     ))}

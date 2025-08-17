@@ -256,3 +256,98 @@
 .animate-collapsible-up {
   animation: collapsible-up 0.3s ease-out;
 }
+
+/* Markdown and Table Styles */
+@layer components {
+  .prose {
+    @apply text-foreground;
+  }
+  
+  .prose table {
+    @apply w-full border-collapse border border-border bg-card rounded-lg overflow-hidden;
+  }
+  
+  .prose .table-container {
+    @apply rounded-lg border border-border;
+  }
+  
+  .prose thead {
+    @apply bg-muted;
+  }
+  
+  .prose th {
+    @apply border border-border px-4 py-2 text-left text-sm font-medium text-foreground bg-muted;
+  }
+  
+  .prose td {
+    @apply border border-border px-4 py-2 text-sm text-foreground;
+  }
+  
+  .prose tr:hover {
+    @apply bg-muted/50 transition-colors duration-200;
+  }
+  
+  .prose tr:nth-child(even) {
+    @apply bg-muted/20;
+  }
+  
+  .prose code {
+    @apply bg-muted px-1 py-0.5 rounded text-sm font-mono text-foreground;
+  }
+  
+  .prose pre {
+    @apply bg-muted p-3 rounded-lg overflow-x-auto;
+  }
+  
+  .prose pre code {
+    @apply bg-transparent p-0;
+  }
+  
+  .prose blockquote {
+    @apply border-l-4 border-primary pl-4 italic text-muted-foreground;
+  }
+  
+  .prose ul {
+    @apply list-disc list-inside space-y-1;
+  }
+  
+  .prose ol {
+    @apply list-decimal list-inside space-y-1;
+  }
+  
+  .prose li {
+    @apply text-sm text-foreground;
+  }
+  
+  .prose strong {
+    @apply font-semibold text-foreground;
+  }
+  
+  .prose em {
+    @apply italic text-foreground;
+  }
+  
+  .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+    @apply text-foreground font-semibold;
+  }
+  
+  .prose p {
+    @apply text-foreground;
+  }
+  
+  /* Responsive table */
+  @media (max-width: 768px) {
+    .prose table {
+      @apply text-xs;
+    }
+    
+    .prose th,
+    .prose td {
+      @apply px-2 py-1;
+    }
+    
+    .prose .table-container {
+      @apply -mx-4;
+    }
+  }
+}
