@@ -137,7 +137,13 @@ const Onboarding = () => {
   };
 
   const handleSkip = () => {
-    navigate("/dashboard");
+    // เปลี่ยนพฤติกรรม: ข้ามทีละขั้น ไม่ข้ามทั้งหมด
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      completeOnboarding();
+      navigate("/dashboard");
+    }
   };
 
   const handleBack = () => {
@@ -156,40 +162,30 @@ const Onboarding = () => {
       case 0:
         return (
           <Card className="max-w-2xl mx-auto shadow-health border-0">
-            <CardHeader className="text-center">
-              <div className="mx-auto w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mb-4">
-                <Heart className="w-8 h-8 text-white" />
+            <CardHeader className="text-center pb-4 pt-6">
+              <div className="mx-auto w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center mb-3">
+                <Heart className="w-6 h-6 text-white" />
               </div>
               <CardTitle className="text-2xl">ยินดีต้อนรับสู่แอปสุขภาพของคุณ!</CardTitle>
               <CardDescription className="text-lg">
                 เราจะช่วยคุณตั้งค่าแอปให้เหมาะกับเป้าหมายสุขภาพของคุณ
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="sex">เพศ</Label>
-                  <Select value={data.sex} onValueChange={(value) => updateData("sex", value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="เลือกเพศ" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="male">ชาย</SelectItem>
-                      <SelectItem value="female">หญิง</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="birthDate">วันเกิด</Label>
+            <CardContent className="space-y-4 pt-0 pb-6">
+              <div className="grid grid-cols-1 gap-3">
+                <div className="space-y-2 w-full max-w-md mx-auto text-center">
+                  <Label htmlFor="birthDate" className="block text-center font-medium">วันเกิด</Label>
                   <Input
                     id="birthDate"
                     type="date"
                     value={data.birthDate || ""}
                     onChange={(e) => updateData("birthDate", e.target.value)}
+                    className="h-10 rounded-xl text-center shadow-sm focus-visible:ring-2 focus-visible:ring-primary/60 center-date"
                   />
+                  <p className="text-sm text-muted-foreground">เลือกวันเกิดเพื่อปรับคำแนะนำให้เหมาะสมกับคุณ</p>
                 </div>
               </div>
-              <div className="text-center space-y-4">
+              <div className="text-center space-y-3">
                 <p className="text-muted-foreground">
                   การตั้งค่าจะใช้เวลาเพียง 2-3 นาที และจะช่วยให้เราแนะนำคุณได้ตรงเป้าหมายมากขึ้น
                 </p>
@@ -198,9 +194,9 @@ const Onboarding = () => {
                     เริ่มต้นเลย
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
-                  <Button variant="outline" onClick={handleSkip}>
+                  <Button variant="outline" onClick={handleNext}>
                     <SkipForward className="mr-2 h-4 w-4" />
-                    ข้ามตอนนี้
+                    ข้ามไปขั้นถัดไป
                   </Button>
                 </div>
               </div>
