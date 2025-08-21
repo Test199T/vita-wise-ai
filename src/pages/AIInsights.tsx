@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Brain, TrendingUp, TrendingDown, AlertCircle, CheckCircle, ThumbsUp, ThumbsDown, RefreshCw } from "lucide-react";
+import { Brain, TrendingUp, TrendingDown, AlertCircle, CheckCircle, ThumbsUp, ThumbsDown, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface AIInsight {
@@ -120,8 +120,8 @@ export default function AIInsights() {
               <p className="text-muted-foreground">คำแนะนำและการวิเคราะห์จาก AI เพื่อสุขภาพที่ดีขึ้น</p>
             </div>
           </div>
-          <Button onClick={generateNewInsights} className="gap-2">
-            <RefreshCw className="h-4 w-4" />
+          <Button onClick={generateNewInsights} className="gap-2" aria-label="สร้างคำแนะนำใหม่">
+            <Plus className="h-4 w-4" />
             สร้างคำแนะนำใหม่
           </Button>
         </div>

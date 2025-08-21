@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Moon, Calendar, Clock } from "lucide-react";
@@ -49,17 +48,32 @@ export default function SleepLog() {
     notes: ""
   });
 
-  const qualities = ["แย่", "ปานกลาง", "ดี", "ดีมาก"]; 
+  const computeSleepQuality = (sleepTime: string, wakeTime: string): { quality: string; colorClass: string } => {
+    if (!sleepTime || !wakeTime) return { quality: "", colorClass: "" };
+    const [sH, sM] = sleepTime.split(":").map(Number);
+    const [wH, wM] = wakeTime.split(":").map(Number);
+    const start = sH * 60 + sM;
+    const end = wH * 60 + wM;
+    const minutes = end >= start ? end - start : (24 * 60 - start) + end; // handle overnight
+
+    // thresholds (simple): <4h bad, 4-6h medium, 6-9h good, >9h medium
+    if (minutes < 240) return { quality: "แย่", colorClass: "bg-red-500 text-white" };
+    if (minutes < 360) return { quality: "ปานกลาง", colorClass: "bg-yellow-500 text-black" };
+    if (minutes <= 540) return { quality: "ดี", colorClass: "bg-green-600 text-white" };
+    if (minutes <= 600) return { quality: "ดี", colorClass: "bg-green-600 text-white" };
+    return { quality: "ปานกลาง", colorClass: "bg-yellow-500 text-black" };
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const { quality } = computeSleepQuality(formData.sleep_time, formData.wake_time);
     if (editingId) {
       const next = logs.map(l => l.id === editingId ? {
         ...l,
         date: formData.date,
         sleep_time: formData.sleep_time,
         wake_time: formData.wake_time,
-        sleep_quality: formData.sleep_quality,
+        sleep_quality: quality,
         notes: formData.notes,
       } : l);
       saveLogs(next);
@@ -70,7 +84,7 @@ export default function SleepLog() {
         date: formData.date,
         sleep_time: formData.sleep_time,
         wake_time: formData.wake_time,
-        sleep_quality: formData.sleep_quality,
+        sleep_quality: quality,
         notes: formData.notes,
       };
       saveLogs([newLog, ...logs]);
@@ -126,15 +140,11 @@ export default function SleepLog() {
                     <Input id="wake_time" type="time" value={formData.wake_time} onChange={(e) => setFormData({ ...formData, wake_time: e.target.value })} required />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="sleep_quality">คุณภาพการนอน</Label>
-                    <Select value={formData.sleep_quality} onValueChange={(value) => setFormData({ ...formData, sleep_quality: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="เลือกคุณภาพ" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {qualities.map(q => <SelectItem key={q} value={q}>{q}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <Label>คุณภาพโดยอัตโนมัติ</Label>
+                    {(() => {
+                      const { quality } = computeSleepQuality(formData.sleep_time, formData.wake_time);
+                      return <Input value={quality || ""} readOnly placeholder="ระบบจะคำนวณอัตโนมัติ" />;
+                    })()}
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -164,7 +174,14 @@ export default function SleepLog() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge>{item.sleep_quality}</Badge>
+                    {(() => {
+                      const mapColor = (q: string) => {
+                        if (q === "แย่") return "bg-red-500 text-white";
+                        if (q === "ปานกลาง") return "bg-yellow-500 text-black";
+                        return "bg-green-600 text-white";
+                      };
+                      return <Badge className={mapColor(item.sleep_quality)}>{item.sleep_quality}</Badge>;
+                    })()}
                     <Button variant="outline" size="sm" onClick={() => startEdit(item)}>แก้ไข</Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>

@@ -45,7 +45,7 @@ export function Header() {
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <Link to="/" className="flex items-center gap-2">
+            <Link to="/dashboard" className="flex items-center gap-2">
               <div className="bg-gradient-primary p-2 rounded-lg">
                 <Activity className="h-6 w-6 text-primary-foreground" />
               </div>
