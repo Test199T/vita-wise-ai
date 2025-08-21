@@ -68,7 +68,7 @@ export default function Chat() {
   
   // Chat sessions - จะดึงข้อมูลจริงจาก AI หลังบ้าน
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
-  const [selectedSessionId, setSelectedSessionId] = useState<string>("1");
+  const [selectedSessionId, setSelectedSessionId] = useState<string>("");
   const [showSidebar, setShowSidebar] = useState(false);
 
   // Messages for selected session (mock, single session)
@@ -87,8 +87,8 @@ export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // สร้าง session ใหม่ใน AI หลังบ้าน
-  const createNewSession = async () => {
+  // สร้าง session ใหม่ใน AI หลังบ้าน (ต้องสำเร็จฝั่ง backend เท่านั้น)
+  const createNewSession = async (): Promise<string | null> => {
     try {
       const token = tokenUtils.getValidToken();
       if (!token) {
@@ -152,48 +152,44 @@ export default function Chat() {
         variant: "destructive",
       });
     }
-    
-    // Fallback: สร้าง session ใหม่ในหน้าบ้าน
-    const fallbackSessionId = Math.floor(Date.now() / 1000).toString();
-    const fallbackSession: ChatSession = {
-      id: fallbackSessionId,
-      title: `AI สุขภาพ (${new Date().toLocaleDateString('th-TH')})`,
-      lastMessage: "เริ่มการสนทนาใหม่",
-      timestamp: "เมื่อสักครู่"
-    };
-    
-    setChatSessions(prev => [fallbackSession, ...prev]);
-    setSelectedSessionId(fallbackSessionId);
-    
-    setMessages([{
-      id: "1",
-      text: "สวัสดี! ฉันคือ AI สุขภาพที่พร้อมให้คำแนะนำเกี่ยวกับสุขภาพของคุณ มีอะไรให้ช่วยไหม?",
-      isUser: false,
-      timestamp: "เมื่อสักครู่"
-    }]);
-    
-    return fallbackSessionId;
+    return null;
   };
 
-  // ตรวจสอบและรับ sessionId ที่ถูกต้อง
-  const getValidSessionId = async (): Promise<number> => {
+  // ตรวจสอบและรับ sessionId ที่ถูกต้อง (ต้องมีอยู่จริงใน backend)
+  const getValidSessionId = async (): Promise<number | null> => {
     console.log('getValidSessionId called with:', { selectedSessionId, type: typeof selectedSessionId });
     
     if (!selectedSessionId || selectedSessionId === "undefined" || selectedSessionId === "null") {
       console.warn('Invalid selectedSessionId, creating new session:', selectedSessionId);
       const newSessionId = await createNewSession();
-      return parseInt(newSessionId);
+      return newSessionId ? parseInt(newSessionId) : null;
     }
     
     const sessionIdNum = parseInt(selectedSessionId);
     if (isNaN(sessionIdNum) || sessionIdNum <= 0) {
       console.warn('Invalid sessionId number, creating new session:', { selectedSessionId, parsed: sessionIdNum });
       const newSessionId = await createNewSession();
-      return parseInt(newSessionId);
+      return newSessionId ? parseInt(newSessionId) : null;
     }
-    
-    console.log('Valid sessionId found:', { selectedSessionId, parsed: sessionIdNum });
-    return sessionIdNum;
+
+    // ตรวจสอบว่า sessionId นี้มีอยู่จริงใน state หรือไม่
+    const existsInState = chatSessions.some(s => s.id === selectedSessionId);
+    if (existsInState) {
+      console.log('Session exists in state:', { selectedSessionId });
+      return sessionIdNum;
+    }
+
+    // ดึงรายการ session จาก backend เพื่อยืนยันอีกครั้ง
+    await fetchChatSessions();
+    const existsAfterFetch = chatSessions.some(s => s.id === selectedSessionId);
+    if (existsAfterFetch) {
+      console.log('Session found after fetching list:', { selectedSessionId });
+      return sessionIdNum;
+    }
+
+    console.warn('Session not found on server, creating a new one.');
+    const newSessionId = await createNewSession();
+    return newSessionId ? parseInt(newSessionId) : null;
   };
 
   // ดึงประวัติการพูดคุยจาก AI หลังบ้าน
@@ -303,10 +299,12 @@ export default function Chat() {
 
   // สร้าง session เริ่มต้นเมื่อ component mount
   useEffect(() => {
-    if (!selectedSessionId || selectedSessionId === "undefined" || selectedSessionId === "null") {
-      console.log('Initializing default session');
-      createNewSession();
-    }
+    (async () => {
+      if (!selectedSessionId || selectedSessionId === "undefined" || selectedSessionId === "null") {
+        console.log('Initializing by creating backend session');
+        await createNewSession();
+      }
+    })();
   }, []);
 
   // ตรวจสอบ token และดึงข้อมูลเมื่อ component mount
@@ -338,7 +336,7 @@ export default function Chat() {
 
   // ดึงข้อความเมื่อ session เปลี่ยน
   useEffect(() => {
-    if (selectedSessionId && selectedSessionId !== "1") {
+    if (selectedSessionId) {
       fetchSessionMessages(selectedSessionId);
     }
   }, [selectedSessionId]);
@@ -437,7 +435,7 @@ export default function Chat() {
         timestamp: new Date().toISOString()
       };
 
-      const response = await fetch(`http://localhost:3000/chat/                             /${validSessionId}/messages`, {
+      const response = await fetch(`http://localhost:3000/chat/sessions/${validSessionId}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
