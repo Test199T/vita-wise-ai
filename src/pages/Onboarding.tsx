@@ -386,7 +386,7 @@ const Onboarding = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {[5, 6, 7, 8, 9, 10].map((hours) => (
+                    {[1,2,3,4,5,6,7,8,9,10,11,12].map((hours) => (
                       <SelectItem key={hours} value={hours.toString()}>
                         {hours} ชั่วโมง
                       </SelectItem>
@@ -413,16 +413,19 @@ const Onboarding = () => {
 
               <div className="space-y-4">
                 <Label>พฤติกรรมอื่น ๆ</Label>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-3">
-                    <Checkbox
-                      id="smoking"
-                      checked={data.smoking}
-                      onCheckedChange={(checked) => updateData("smoking", checked)}
-                    />
-                    <Label htmlFor="smoking">สูบบุหรี่</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>สูบบุหรี่</Label>
+                    <Select value={data.smoking ? "yes" : "no"} onValueChange={(value) => updateData("smoking", value === "yes")}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="เลือก" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="no">ไม่สูบ</SelectItem>
+                        <SelectItem value="yes">สูบ</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  
                   <div className="space-y-2">
                     <Label>ดื่มแอลกอฮอล์</Label>
                     <Select value={data.alcoholFrequency} onValueChange={(value) => updateData("alcoholFrequency", value)}>
@@ -437,6 +440,24 @@ const Onboarding = () => {
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>ดื่มน้ำต่อวัน (แก้ว)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={30}
+                    value={data.waterIntakeGlasses || 0}
+                    onChange={(e) => updateData("waterIntakeGlasses", Math.max(0, parseInt(e.target.value) || 0))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>อื่น ๆ (ระบุเพิ่มเติม)</Label>
+                  <Textarea
+                    placeholder="เช่น ชอบดื่มเครื่องดื่มหวาน บางวันทำงานกะดึก ฯลฯ"
+                    value={data.otherLifestyleNotes || ''}
+                    onChange={(e) => updateData("otherLifestyleNotes", e.target.value)}
+                  />
                 </div>
               </div>
             </CardContent>

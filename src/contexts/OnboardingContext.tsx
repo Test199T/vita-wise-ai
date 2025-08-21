@@ -24,6 +24,14 @@ interface OnboardingData {
   alcoholFrequency: string;
   // Added for BMR/TDEE
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very-active';
+  // Extended lifestyle fields
+  caffeineCupsPerDay: number; // จำนวนแก้วกาแฟ/คาเฟอีนต่อวัน
+  screenTimeHours: 'lt2' | '2-4' | '4-6' | 'gt6';
+  stressLevel: 'low' | 'medium' | 'high';
+  relaxationFrequency: 'never' | '1-2' | '3-5' | 'daily';
+  waterIntakeGlasses: number; // แก้ว/วัน
+  lateMealFrequency: 'never' | 'rarely' | 'weekly' | 'daily';
+  otherLifestyleNotes: string;
   
   // Step 4: Medical History
   medicalConditions: string[];
@@ -67,6 +75,13 @@ const defaultOnboardingData: OnboardingData = {
   smoking: false,
   alcoholFrequency: "rarely",
   activityLevel: 'moderate',
+  caffeineCupsPerDay: 1,
+  screenTimeHours: '2-4',
+  stressLevel: 'medium',
+  relaxationFrequency: '1-2',
+  waterIntakeGlasses: 6,
+  lateMealFrequency: 'rarely',
+  otherLifestyleNotes: "",
   medicalConditions: ["hypertension"],
   surgeries: "ไม่เคยผ่าตัด",
   allergies: "แพ้ยาเพนิซิลลิน",
