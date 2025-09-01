@@ -885,6 +885,70 @@ class APIService {
       is_active: true
     };
   }
+
+  // Forgot Password - Send reset email
+  async forgotPassword(email: string): Promise<void> {
+    console.log('Sending forgot password email to:', email);
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Mock validation - check if email exists
+    // รองรับอีเมลที่มีอยู่ในฐานข้อมูลจริง
+    const validEmails = [
+      "test@example.com",
+      "methasphoynxk90@gmail.com",
+      "testuser789@gmail.com",
+      "zoomgamer807@gmail.com",
+      "asngiun@gmail.com",
+      "johndoe123@gmail.com",
+      "postman_test@gmail.com",
+      "ppansiun@gmail.com"
+    ];
+    
+    if (validEmails.includes(email)) {
+      console.log('✅ Forgot password email sent successfully');
+      return;
+    } else {
+      throw new Error('User not found');
+    }
+  }
+
+  // Validate Reset Token
+  async validateResetToken(token: string): Promise<boolean> {
+    console.log('Validating reset token:', token);
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Mock validation - check if token is valid
+    if (token && token.length > 10) {
+      console.log('✅ Reset token is valid');
+      return true;
+    } else {
+      throw new Error('Invalid or expired token');
+    }
+  }
+
+  // Reset Password
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    console.log('Resetting password with token:', token);
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Mock validation - check if token is valid and password meets requirements
+    if (!token || token.length < 10) {
+      throw new Error('Invalid or expired token');
+    }
+    
+    if (newPassword.length < 8) {
+      throw new Error('Password too short');
+    }
+    
+    console.log('✅ Password reset successfully');
+    return;
+  }
 }
 
 // Export a singleton instance
