@@ -34,19 +34,5 @@ export const TokenDebugger = () => {
     
   }, []);
 
-  return (
-    <div style={{ 
-      position: 'fixed', 
-      top: 10, 
-      right: 10, 
-      background: '#000', 
-      color: '#fff', 
-      padding: '10px',
-      borderRadius: '5px',
-      fontSize: '12px',
-      zIndex: 9999 
-    }}>
-      Token Debug - Check Console (F12)
-    </div>
-  );
+  return null;
 };
