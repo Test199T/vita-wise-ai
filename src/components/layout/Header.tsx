@@ -1,6 +1,8 @@
 import { Bell, Activity, ChevronDown, MessageCircle, User, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, NavLink } from "react-router-dom";
+import { useProfilePicture } from "@/hooks/useProfilePicture";
+import { useProfile } from "@/hooks/useProfile";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,13 +35,14 @@ const topNav: NavItem[] = [
   },
 ];
 
-// Simple in-memory user profile mock (replace with real auth state as needed)
-const mockUser = {
-  name: 'สมใจ ใสใจ',
-  avatarUrl: '',
-};
-
 export function Header() {
+  const { profilePicture } = useProfilePicture();
+  const { profile, loading } = useProfile();
+
+  // Get user name from profile data or use fallback
+  const userName = profile ? `${profile.first_name} ${profile.last_name}` : 'ผู้ใช้';
+  const userInitial = userName.charAt(0);
+
   return (
     <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-sm border-b border-border shadow-soft">
       <div className="container mx-auto px-4 py-3">
@@ -105,14 +108,16 @@ export function Header() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2 hover:bg-muted/50 px-2 py-1 rounded-lg">
-                  {mockUser.avatarUrl ? (
-                    <img src={mockUser.avatarUrl} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
+                  {profilePicture ? (
+                    <img src={profilePicture} alt="avatar" className="w-7 h-7 rounded-full object-cover border-2 border-border" />
                   ) : (
                     <div className="w-7 h-7 rounded-full bg-gradient-primary text-primary-foreground flex items-center justify-center text-xs font-medium">
-                      {mockUser.name.slice(0,1)}
+                      {userInitial}
                     </div>
                   )}
-                  <span className="hidden sm:block text-sm font-medium max-w-[140px] truncate">{mockUser.name}</span>
+                  <span className="hidden sm:block text-sm font-medium max-w-[140px] truncate">
+                    {loading ? 'กำลังโหลด...' : userName}
+                  </span>
                   <ChevronDown className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>

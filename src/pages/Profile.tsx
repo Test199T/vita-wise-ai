@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useOnboarding } from "@/contexts/OnboardingContext";
 import { useProfile } from "@/hooks/useProfile";
+import { useProfilePicture } from "@/hooks/useProfilePicture";
 import { UserProfile, userService } from "@/services/api";
 import {
   User,
@@ -46,6 +47,7 @@ import {
 export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { onboardingData } = useOnboarding();
   const { toast } = useToast();
   
@@ -58,6 +60,14 @@ export default function Profile() {
     updateProfile,
     isLoggedIn 
   } = useProfile();
+
+  // Use profile picture hook
+  const { 
+    profilePicture, 
+    loading: uploadingPicture, 
+    uploadProfilePicture, 
+    removeProfilePicture 
+  } = useProfilePicture();
 
   // Local form data state
   const [formData, setFormData] = useState<Partial<UserProfile>>({});
@@ -113,6 +123,43 @@ export default function Profile() {
       }));
     }
   }, [profile]);
+
+  // Handle profile picture upload
+  const handleProfilePictureChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const success = await uploadProfilePicture(file);
+      if (success) {
+        toast({
+          title: "สำเร็จ",
+          description: "อัปเดตรูปโปรไฟล์แล้ว",
+        });
+      } else {
+        toast({
+          title: "ข้อผิดพลาด",
+          description: "ไม่สามารถอัปโหลดรูปภาพได้ กรุณาตรวจสอบไฟล์",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  // Handle profile picture removal
+  const handleRemoveProfilePicture = () => {
+    removeProfilePicture();
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    toast({
+      title: "สำเร็จ",
+      description: "ลบรูปโปรไฟล์แล้ว",
+    });
+  };
+
+  // Trigger file input click
+  const handleChangePictureClick = () => {
+    fileInputRef.current?.click();
+  };
 
   // Show loading if not logged in
   if (!isLoggedIn) {
@@ -382,22 +429,62 @@ export default function Profile() {
               <CardContent className="space-y-4 md:space-y-6">
                 {/* Avatar */}
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-4">
-                  <Avatar className="h-20 w-20">
-                    <AvatarImage src="/placeholder-avatar.jpg" alt="Profile" />
-                    <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xl">
-                      {profile ? (
-                        profile.first_name?.charAt(0)?.toUpperCase() || profile.email?.charAt(0)?.toUpperCase() || "U"
+                  <div className="relative">
+                    <Avatar className="h-20 w-20">
+                      {profilePicture ? (
+                        <AvatarImage src={profilePicture} alt="Profile" />
                       ) : (
-                        profileData.firstName.charAt(0)
+                        <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xl">
+                          {profile ? (
+                            profile.first_name?.charAt(0)?.toUpperCase() || profile.email?.charAt(0)?.toUpperCase() || "U"
+                          ) : (
+                            profileData.firstName.charAt(0)
+                          )}
+                        </AvatarFallback>
                       )}
-                    </AvatarFallback>
-                  </Avatar>
+                    </Avatar>
+                    {uploadingPicture && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+                        <Loader2 className="h-6 w-6 animate-spin text-white" />
+                      </div>
+                    )}
+                  </div>
                   {isEditing && (
-                    <Button variant="outline" size="sm" className="mt-2 sm:mt-0">
-                      <Camera className="h-4 w-4 mr-2" />
-                      เปลี่ยนรูปภาพ
-                    </Button>
+                    <div className="flex flex-col gap-2 mt-2 sm:mt-0">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={handleChangePictureClick}
+                        disabled={uploadingPicture}
+                      >
+                        {uploadingPicture ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Camera className="h-4 w-4 mr-2" />
+                        )}
+                        {uploadingPicture ? "กำลังอัปโหลด..." : "เปลี่ยนรูปภาพ"}
+                      </Button>
+                      {profilePicture && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={handleRemoveProfilePicture}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          ลบรูปภาพ
+                        </Button>
+                      )}
+                    </div>
                   )}
+                  
+                  {/* Hidden file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleProfilePictureChange}
+                    className="hidden"
+                  />
                 </div>
 
                 {/* Basic Info */}
