@@ -40,6 +40,8 @@ interface OnboardingData {
   motivation: string;
   
   // Step 2: Basic Body Info
+  firstName: string;
+  lastName: string;
   height: number;
   weight: number;
   waist: number;
@@ -80,8 +82,9 @@ const Onboarding = () => {
 
   const steps = [
     { title: "ยินดีต้อนรับ", icon: Heart },
+    { title: "ข้อมูลส่วนตัว", icon: User },
     { title: "เป้าหมายสุขภาพ", icon: Target },
-    { title: "ข้อมูลร่างกาย", icon: User },
+    { title: "ข้อมูลร่างกาย", icon: Ruler },
     { title: "พฤติกรรมประจำวัน", icon: Activity },
     { title: "ประวัติสุขภาพ", icon: AlertTriangle },
     { title: "การติดตาม", icon: Bell },
@@ -126,13 +129,27 @@ const Onboarding = () => {
     { value: "body-fat", label: "ไขมันในร่างกาย" }
   ];
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
       // Complete onboarding
-      completeOnboarding();
-      navigate("/dashboard");
+      try {
+        // อัพเดทข้อมูลล่าสุดก่อนส่ง
+        console.log('Final onboarding data before completion:', data);
+        
+        // อัพเดทข้อมูลทั้งหมดใน context ก่อน
+        Object.keys(data).forEach(key => {
+          updateOnboardingData(key as keyof OnboardingData, data[key as keyof OnboardingData]);
+        });
+        
+        await completeOnboarding();
+        navigate("/dashboard");
+      } catch (error) {
+        console.error('Error completing onboarding:', error);
+        // Still navigate even if there's an error
+        navigate("/dashboard");
+      }
     }
   };
 
@@ -152,7 +169,7 @@ const Onboarding = () => {
     }
   };
 
-  const updateData = (key: keyof OnboardingData, value: any) => {
+  const updateData = (key: keyof OnboardingData, value: unknown) => {
     setData(prev => ({ ...prev, [key]: value }));
     updateOnboardingData(key, value);
   };
@@ -205,6 +222,77 @@ const Onboarding = () => {
         );
 
       case 1:
+        return (
+          <Card className="max-w-2xl mx-auto shadow-health border-0">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-6 w-6" />
+                ข้อมูลส่วนตัว
+              </CardTitle>
+              <CardDescription>
+                กรุณากรอกข้อมูลส่วนตัวเพื่อให้เราจัดการแอปให้ตรงกับความต้องการของคุณ
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">ชื่อจริง *</Label>
+                  <Input
+                    id="firstName"
+                    type="text"
+                    placeholder="ชื่อจริง"
+                    value={data.firstName || ""}
+                    onChange={(e) => updateData("firstName", e.target.value)}
+                    className="h-10 rounded-xl shadow-sm focus-visible:ring-2 focus-visible:ring-primary/60"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">นามสกุล *</Label>
+                  <Input
+                    id="lastName"
+                    type="text"
+                    placeholder="นามสกุล"
+                    value={data.lastName || ""}
+                    onChange={(e) => updateData("lastName", e.target.value)}
+                    className="h-10 rounded-xl shadow-sm focus-visible:ring-2 focus-visible:ring-primary/60"
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="sex">เพศ *</Label>
+                <Select value={data.sex} onValueChange={(value) => updateData("sex", value as 'male' | 'female')}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="เลือกเพศ" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">ชาย</SelectItem>
+                    <SelectItem value="female">หญิง</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="birthDate">วันเกิด *</Label>
+                <Input
+                  id="birthDate"
+                  type="date"
+                  value={data.birthDate || ""}
+                  onChange={(e) => updateData("birthDate", e.target.value)}
+                  className="h-10 rounded-xl shadow-sm focus-visible:ring-2 focus-visible:ring-primary/60"
+                  required
+                />
+                <p className="text-sm text-muted-foreground">
+                  เราใช้ข้อมูลนี้เพื่อคำนวณความต้องการพลังงานที่เหมาะสมกับคุณ
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        );
+
+      case 2:
         return (
           <Card className="max-w-2xl mx-auto shadow-health border-0">
             <CardHeader>
@@ -262,12 +350,12 @@ const Onboarding = () => {
           </Card>
         );
 
-      case 2:
+      case 3:
         return (
           <Card className="max-w-2xl mx-auto shadow-health border-0">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <User className="h-6 w-6" />
+                <Ruler className="h-6 w-6" />
                 ข้อมูลร่างกายเบื้องต้น
               </CardTitle>
               <CardDescription>
@@ -333,7 +421,7 @@ const Onboarding = () => {
           </Card>
         );
 
-      case 3:
+      case 4:
         return (
           <Card className="max-w-2xl mx-auto shadow-health border-0">
             <CardHeader>
@@ -447,16 +535,16 @@ const Onboarding = () => {
                     type="number"
                     min={0}
                     max={30}
-                    value={data.waterIntakeGlasses || 0}
-                    onChange={(e) => updateData("waterIntakeGlasses", Math.max(0, parseInt(e.target.value) || 0))}
+                    value={(data as unknown as Record<string, unknown>).waterIntakeGlasses as number || 0}
+                    onChange={(e) => updateData("waterIntakeGlasses" as keyof OnboardingData, Math.max(0, parseInt(e.target.value) || 0))}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>อื่น ๆ (ระบุเพิ่มเติม)</Label>
                   <Textarea
                     placeholder="เช่น ชอบดื่มเครื่องดื่มหวาน บางวันทำงานกะดึก ฯลฯ"
-                    value={data.otherLifestyleNotes || ''}
-                    onChange={(e) => updateData("otherLifestyleNotes", e.target.value)}
+                    value={(data as unknown as Record<string, unknown>).otherLifestyleNotes as string || ''}
+                    onChange={(e) => updateData("otherLifestyleNotes" as keyof OnboardingData, e.target.value)}
                   />
                 </div>
               </div>
@@ -464,7 +552,7 @@ const Onboarding = () => {
           </Card>
         );
 
-      case 4:
+      case 5:
         return (
           <Card className="max-w-2xl mx-auto shadow-health border-0">
             <CardHeader>
@@ -530,7 +618,7 @@ const Onboarding = () => {
           </Card>
         );
 
-      case 5:
+      case 6:
         return (
           <Card className="max-w-2xl mx-auto shadow-health border-0">
             <CardHeader>
@@ -630,7 +718,7 @@ const Onboarding = () => {
           </Card>
         );
 
-      case 6:
+      case 7:
         return (
           <Card className="max-w-2xl mx-auto shadow-health border-0">
             <CardHeader>

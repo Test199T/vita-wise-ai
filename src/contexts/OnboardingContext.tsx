@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { apiService } from '@/services/api';
 
 interface OnboardingData {
   // Step 1: Health Goals
@@ -7,6 +8,8 @@ interface OnboardingData {
   motivation: string;
   
   // Step 2: Basic Body Info
+  firstName: string; // ชื่อจริง
+  lastName: string;  // นามสกุล
   height: number;
   weight: number;
   waist: number;
@@ -52,9 +55,9 @@ interface OnboardingData {
 
 interface OnboardingContextType {
   onboardingData: OnboardingData;
-  updateOnboardingData: (key: keyof OnboardingData, value: any) => void;
+  updateOnboardingData: (key: keyof OnboardingData, value: unknown) => void;
   setOnboardingData: (data: OnboardingData) => void;
-  completeOnboarding: () => void;
+  completeOnboarding: () => Promise<void>;
   resetOnboarding: () => void;
 }
 
@@ -62,6 +65,8 @@ const defaultOnboardingData: OnboardingData = {
   healthGoal: "weight-loss",
   timeline: 6,
   motivation: "อยากมีสุขภาพที่ดีขึ้นและลดน้ำหนักเพื่อสุขภาพ",
+  firstName: "",
+  lastName: "",
   height: 165,
   weight: 65,
   waist: 80,
@@ -123,11 +128,13 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
     return defaultOnboardingData;
   });
 
-  const updateOnboardingData = (key: keyof OnboardingData, value: any) => {
+  const updateOnboardingData = (key: keyof OnboardingData, value: unknown) => {
+    console.log(`🔄 Updating onboarding data: ${key} =`, value);
     const newData = { ...onboardingData, [key]: value };
     setOnboardingDataState(newData);
     // Save to localStorage
     localStorage.setItem('onboardingData', JSON.stringify(newData));
+    console.log('📝 Updated onboarding data:', newData);
   };
 
   const setOnboardingData = (data: OnboardingData) => {
@@ -135,10 +142,29 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
     localStorage.setItem('onboardingData', JSON.stringify(data));
   };
 
-  const completeOnboarding = () => {
-    const completedData = { ...onboardingData, isCompleted: true };
-    setOnboardingDataState(completedData);
-    localStorage.setItem('onboardingData', JSON.stringify(completedData));
+  const completeOnboarding = async () => {
+    try {
+      console.log('🎯 Completing onboarding and saving to backend...');
+      
+      // Save onboarding data to backend
+      await apiService.saveOnboardingData(onboardingData as unknown as Record<string, unknown>);
+      
+      // Mark as completed in local storage
+      const completedData = { ...onboardingData, isCompleted: true };
+      setOnboardingDataState(completedData);
+      localStorage.setItem('onboardingData', JSON.stringify(completedData));
+      
+      console.log('✅ Onboarding completed successfully!');
+    } catch (error) {
+      console.error('❌ Failed to save onboarding data:', error);
+      // Still mark as completed locally even if backend fails
+      const completedData = { ...onboardingData, isCompleted: true };
+      setOnboardingDataState(completedData);
+      localStorage.setItem('onboardingData', JSON.stringify(completedData));
+      
+      // You could show a toast notification here
+      alert('ข้อมูลถูกบันทึกในเครื่องแล้ว แต่ยังไม่สามารถส่งไปยังเซิร์ฟเวอร์ได้ ระบบจะลองส่งอีกครั้งในภายหลัง');
+    }
   };
 
   const resetOnboarding = () => {

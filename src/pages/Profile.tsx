@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,8 @@ import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useOnboarding } from "@/contexts/OnboardingContext";
+import { useProfile } from "@/hooks/useProfile";
+import { UserProfile, userService } from "@/services/api";
 import {
   User,
   Settings,
@@ -37,7 +39,9 @@ import {
   Dumbbell,
   Smartphone,
   Calendar,
-  BarChart3
+  BarChart3,
+  Loader2,
+  RefreshCw
 } from "lucide-react";
 
 export default function Profile() {
@@ -45,12 +49,149 @@ export default function Profile() {
   const [loading, setLoading] = useState(false);
   const { onboardingData } = useOnboarding();
   const { toast } = useToast();
+  
+  // Use profile hook for real data
+  const { 
+    profile, 
+    loading: profileLoading, 
+    error: profileError, 
+    refreshProfile, 
+    updateProfile,
+    isLoggedIn 
+  } = useProfile();
 
-  // Calculate BMI
+  // Local form data state
+  const [formData, setFormData] = useState<Partial<UserProfile>>({});
+
+  // Keep old profileData state structure for compatibility with existing UI
+  const [profileData, setProfileData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    age: "",
+    gender: "female",
+    weight: "65",
+    height: "165",
+    exerciseGoal: "30",
+    waterGoal: "2.5",
+    sleepGoal: "8",
+    calorieGoal: "2000",
+    proteinGoal: "60",
+    carbGoal: "250",
+    fatGoal: "65",
+    fiberGoal: "25",
+    sodiumGoal: "2300",
+    dietaryRestrictions: [] as string[],
+    notifications: true,
+    weeklyReports: true,
+  });
+
+  // Initialize form data when profile loads
+  useEffect(() => {
+    if (profile) {
+      // Update form data for API calls
+      setFormData({
+        first_name: profile.first_name || "",
+        last_name: profile.last_name || "",
+        email: profile.email || "",
+        gender: profile.gender || undefined,
+        height_cm: profile.height_cm || undefined,
+        weight_kg: profile.weight_kg || undefined,
+        activity_level: profile.activity_level || undefined,
+        date_of_birth: profile.date_of_birth || undefined,
+      });
+
+      // Update legacy profileData for UI compatibility
+      setProfileData(prev => ({
+        ...prev,
+        firstName: profile.first_name || "",
+        lastName: profile.last_name || "",
+        email: profile.email || "",
+        gender: profile.gender || "female",
+        weight: profile.weight_kg?.toString() || prev.weight,
+        height: profile.height_cm?.toString() || prev.height,
+        age: profile.date_of_birth ? 
+          Math.floor((new Date().getTime() - new Date(profile.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)).toString() 
+          : prev.age,
+      }));
+    }
+  }, [profile]);
+
+  // Show loading if not logged in
+  if (!isLoggedIn) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold mb-2">กรุณาเข้าสู่ระบบ</h2>
+            <p className="text-muted-foreground">คุณต้องเข้าสู่ระบบเพื่อดูข้อมูลโปรไฟล์</p>
+            <Button 
+              onClick={() => window.location.href = "/login"} 
+              className="mt-4 health-button"
+            >
+              เข้าสู่ระบบ
+            </Button>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // Show loading state
+  if (profileLoading && !profile) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">กำลังโหลดข้อมูล</h2>
+            <p className="text-muted-foreground">กรุณารอสักครู่...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // Show error state
+  if (profileError && !profile) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">เกิดข้อผิดพลาด</h2>
+            <p className="text-muted-foreground mb-4">{profileError}</p>
+            <div className="space-x-2">
+              <Button 
+                onClick={refreshProfile} 
+                className="health-button"
+                disabled={profileLoading}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                ลองอีกครั้ง
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => window.location.href = "/login"}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                ออกจากระบบ
+              </Button>
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // Calculate BMI from real profile data
   const calculateBMI = () => {
-    if (onboardingData.height > 0 && onboardingData.weight > 0) {
-      const heightInMeters = onboardingData.height / 100;
-      return (onboardingData.weight / (heightInMeters * heightInMeters)).toFixed(1);
+    const height = profile?.height_cm || parseFloat(profileData.height);
+    const weight = profile?.weight_kg || parseFloat(profileData.weight);
+    
+    if (height > 0 && weight > 0) {
+      const heightInMeters = height / 100;
+      return (weight / (heightInMeters * heightInMeters)).toFixed(1);
     }
     return "0";
   };
@@ -110,38 +251,32 @@ export default function Profile() {
     "body-fat": "ไขมันในร่างกาย"
   };
 
-  const [profileData, setProfileData] = useState({
-    firstName: "สมใจ",
-    lastName: "ใสใจ",
-    email: "somjai@example.com",
-    age: "25",
-    gender: "female",
-    weight: onboardingData.weight.toString(),
-    height: onboardingData.height.toString(),
-    exerciseGoal: "30",
-    waterGoal: "2.5",
-    sleepGoal: "8",
-    calorieGoal: "2000",
-    proteinGoal: "60",
-    carbGoal: "250",
-    fatGoal: "65",
-    fiberGoal: "25",
-    sodiumGoal: "2300",
-    dietaryRestrictions: [] as string[],
-    notifications: true,
-    weeklyReports: true,
-  });
-
   const handleSave = async () => {
     setLoading(true);
-    setTimeout(() => {
-      toast({
-        title: "บันทึกข้อมูลสำเร็จ",
-        description: "ข้อมูลโปรไฟล์ของคุณได้รับการอัปเดตแล้ว",
-      });
-      setIsEditing(false);
+    
+    try {
+      // Map form data to API format
+      const updateData: Partial<UserProfile> = {
+        first_name: profileData.firstName,
+        last_name: profileData.lastName,
+        email: profileData.email,
+        gender: profileData.gender as 'male' | 'female' | 'other',
+        height_cm: parseFloat(profileData.height) || undefined,
+        weight_kg: parseFloat(profileData.weight) || undefined,
+        date_of_birth: profileData.age ? 
+          new Date(new Date().getFullYear() - parseInt(profileData.age), 0, 1).toISOString().split('T')[0] 
+          : undefined,
+      };
+
+      const success = await updateProfile(updateData);
+      if (success) {
+        setIsEditing(false);
+      }
+    } catch (error) {
+      console.error('Error saving profile:', error);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   const handleInputChange = (field: string, value: string | boolean | string[]) => {
@@ -149,10 +284,15 @@ export default function Profile() {
   };
 
   const handleLogout = () => {
+    // Clear all user data
+    userService.clearUserData();
+    
     toast({
       title: "ออกจากระบบ",
       description: "คุณได้ออกจากระบบเรียบร้อยแล้ว",
     });
+    
+    // Redirect to login page
     window.location.href = "/login";
   };
 
@@ -163,10 +303,36 @@ export default function Profile() {
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">โปรไฟล์</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">โปรไฟล์</h1>
+              {profileLoading && (
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              )}
+            </div>
             <p className="text-muted-foreground mt-2 text-sm sm:text-base">
               จัดการข้อมูลส่วนตัวและการตั้งค่า
+              {profile && (
+                <span className="block text-xs mt-1">
+                  อัปเดตล่าสุด: {new Date(profile.updated_at).toLocaleDateString('th-TH')}
+                  {profile.id === 1 && profile.email === "test@example.com" && (
+                    <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs">
+                      Mock Data
+                    </span>
+                  )}
+                </span>
+              )}
             </p>
+            {profileError && (
+              <div className="flex items-center gap-1 mt-2 text-yellow-600">
+                <AlertTriangle className="h-4 w-4" />
+                <span className="text-xs">
+                  {profileError.includes('mock data') ? 
+                    'ใช้ข้อมูลจำลอง - Backend ยังไม่พร้อม' : 
+                    'ใช้ข้อมูลแคชชั่วคราว'
+                  }
+                </span>
+              </div>
+            )}
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             {!isEditing ? (
@@ -174,6 +340,15 @@ export default function Profile() {
                 <Button onClick={() => setIsEditing(true)} className="health-button w-full sm:w-auto">
                   <Edit className="h-4 w-4 mr-2" />
                   แก้ไขโปรไฟล์
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={refreshProfile}
+                  disabled={profileLoading}
+                  className="w-full sm:w-auto"
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${profileLoading ? 'animate-spin' : ''}`} />
+                  รีเฟรช
                 </Button>
                 <Button 
                   variant="outline" 
@@ -196,7 +371,7 @@ export default function Profile() {
                 </Button>
                 <Button
                   onClick={handleSave}
-                  disabled={loading}
+                  disabled={loading || profileLoading}
                   className="health-button w-full sm:w-auto"
                 >
                   <Save className="h-4 w-4 mr-2" />
@@ -227,7 +402,11 @@ export default function Profile() {
                   <Avatar className="h-20 w-20">
                     <AvatarImage src="/placeholder-avatar.jpg" alt="Profile" />
                     <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xl">
-                      {profileData.firstName.charAt(0)}
+                      {profile ? (
+                        profile.first_name?.charAt(0)?.toUpperCase() || profile.email?.charAt(0)?.toUpperCase() || "U"
+                      ) : (
+                        profileData.firstName.charAt(0)
+                      )}
                     </AvatarFallback>
                   </Avatar>
                   {isEditing && (

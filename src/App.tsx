@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { OnboardingProvider } from "./contexts/OnboardingContext";
+import { TokenDebugger } from "./components/debug/TokenDebugger";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -19,6 +20,7 @@ import Onboarding from "./pages/Onboarding";
 import SleepLog from "./pages/SleepLog";
 import WaterLog from "./pages/WaterLog";
 import Notifications from "./pages/Notifications";
+import Debug from "./pages/Debug";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +28,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <OnboardingProvider>
       <TooltipProvider>
+        <TokenDebugger />
         <Toaster />
         <Sonner />
         <BrowserRouter>
@@ -44,6 +47,7 @@ const App = () => (
             <Route path="/chat" element={<Chat />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/notifications" element={<Notifications />} />
+            <Route path="/debug" element={<Debug />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

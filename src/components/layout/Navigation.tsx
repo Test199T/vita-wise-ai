@@ -18,7 +18,8 @@ import {
   TrendingUp,
   Settings,
   Moon,
-  Droplets
+  Droplets,
+  Bug
 } from "lucide-react";
 
 interface NavItem {
@@ -85,6 +86,11 @@ const navItems: NavItem[] = [
     title: "โปรไฟล์",
     href: "/profile",
     icon: User,
+  },
+  {
+    title: "Debug & Troubleshooting",
+    href: "/debug",
+    icon: Bug,
   },
 ];
 
