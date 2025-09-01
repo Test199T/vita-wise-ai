@@ -37,7 +37,6 @@ import {
   Moon,
   Utensils,
   Dumbbell,
-  Smartphone,
   Calendar,
   BarChart3,
   Loader2,
@@ -82,8 +81,6 @@ export default function Profile() {
     fiberGoal: "25",
     sodiumGoal: "2300",
     dietaryRestrictions: [] as string[],
-    notifications: true,
-    weeklyReports: true,
   });
 
   // Initialize form data when profile loads
@@ -235,20 +232,6 @@ export default function Profile() {
     "asthma": "หอบหืด",
     "heart-disease": "โรคหัวใจ",
     "other": "อื่น ๆ"
-  };
-
-  const notificationLabels = {
-    "water": "ดื่มน้ำ",
-    "exercise": "ออกกำลังกาย",
-    "sleep": "นอนให้ตรงเวลา",
-    "weight": "บันทึกน้ำหนักประจำวัน"
-  };
-
-  const trackingLabels = {
-    "weight": "น้ำหนัก",
-    "blood-pressure": "ความดัน",
-    "blood-sugar": "ระดับน้ำตาล",
-    "body-fat": "ไขมันในร่างกาย"
   };
 
   const handleSave = async () => {
@@ -925,102 +908,8 @@ export default function Profile() {
             </Card>
           </div>
 
-          {/* Settings & Actions */}
+          {/* Actions */}
           <div className="space-y-4 md:space-y-6">
-            {/* Tracking Preferences Card */}
-            <Card className="health-stat-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Smartphone className="h-5 w-5" />
-                  การติดตาม
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">การแจ้งเตือน</Label>
-                  <div className="space-y-2">
-                    {onboardingData.notifications.map((notification) => (
-                      <div key={notification} className="flex items-center gap-2">
-                        <CheckCircle className="h-3 w-3 text-green-500" />
-                        <span className="text-sm">
-                          {notificationLabels[notification as keyof typeof notificationLabels] || notification}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">การติดตามข้อมูล</Label>
-                  <div className="space-y-2">
-                    {onboardingData.trackingItems.map((item) => (
-                      <div key={item} className="flex items-center gap-2">
-                        <CheckCircle className="h-3 w-3 text-green-500" />
-                        <span className="text-sm">
-                          {trackingLabels[item as keyof typeof trackingLabels] || item}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {onboardingData.reminderTime && (
-                  <>
-                    <Separator />
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">เวลาการแจ้งเตือน</Label>
-                      <div className="p-2 border rounded-md bg-muted/50">
-                        <span className="text-sm">{onboardingData.reminderTime}</span>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Settings Card */}
-            <Card className="health-stat-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
-                  การตั้งค่า
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 md:space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label className="text-sm font-medium">การแจ้งเตือน</Label>
-                    <p className="text-xs text-muted-foreground">
-                      รับการแจ้งเตือนเกี่ยวกับสุขภาพ
-                    </p>
-                  </div>
-                  <Switch
-                    checked={profileData.notifications}
-                    onCheckedChange={(checked) => handleInputChange("notifications", checked)}
-                    disabled={!isEditing}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label className="text-sm font-medium">รายงานรายสัปดาห์</Label>
-                    <p className="text-xs text-muted-foreground">
-                      ส่งรายงานสุขภาพทุกสัปดาห์
-                    </p>
-                  </div>
-                  <Switch
-                    checked={profileData.weeklyReports}
-                    onCheckedChange={(checked) => handleInputChange("weeklyReports", checked)}
-                    disabled={!isEditing}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Actions Card */}
             <Card className="health-stat-card">
               <CardHeader>

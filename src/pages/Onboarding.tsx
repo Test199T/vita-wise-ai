@@ -18,7 +18,6 @@ import {
   Heart, 
   Activity, 
   Clock, 
-  Bell,
   CheckCircle,
   User,
   Ruler,
@@ -27,8 +26,7 @@ import {
   Moon,
   Utensils,
   AlertTriangle,
-  Pill,
-  Smartphone
+  Pill
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useOnboarding } from "@/contexts/OnboardingContext";
@@ -64,14 +62,6 @@ interface OnboardingData {
   medicalConditions: string[];
   surgeries: string;
   allergies: string;
-  
-  // Step 5: Tracking Preferences
-  notifications: string[];
-  trackingItems: string[];
-  reminderTime: string;
-  // Added user nutrition targets
-  fiberTarget: number;
-  sodiumTarget: number;
 }
 
 const Onboarding = () => {
@@ -87,7 +77,6 @@ const Onboarding = () => {
     { title: "ข้อมูลร่างกาย", icon: Ruler },
     { title: "พฤติกรรมประจำวัน", icon: Activity },
     { title: "ประวัติสุขภาพ", icon: AlertTriangle },
-    { title: "การติดตาม", icon: Bell },
     { title: "สรุป", icon: CheckCircle }
   ];
 
@@ -113,20 +102,6 @@ const Onboarding = () => {
     { value: "asthma", label: "หอบหืด" },
     { value: "heart-disease", label: "โรคหัวใจ" },
     { value: "other", label: "อื่น ๆ" }
-  ];
-
-  const notificationOptions = [
-    { value: "water", label: "ดื่มน้ำ", icon: Heart },
-    { value: "exercise", label: "ออกกำลังกาย", icon: Activity },
-    { value: "sleep", label: "นอนให้ตรงเวลา", icon: Moon },
-    { value: "weight", label: "บันทึกน้ำหนักประจำวัน", icon: Scale }
-  ];
-
-  const trackingOptions = [
-    { value: "weight", label: "น้ำหนัก" },
-    { value: "blood-pressure", label: "ความดัน" },
-    { value: "blood-sugar", label: "ระดับน้ำตาล" },
-    { value: "body-fat", label: "ไขมันในร่างกาย" }
   ];
 
   const handleNext = async () => {
@@ -623,106 +598,6 @@ const Onboarding = () => {
           <Card className="max-w-2xl mx-auto shadow-health border-0">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Bell className="h-6 w-6" />
-                ตั้งค่าการติดตามและแจ้งเตือน
-              </CardTitle>
-              <CardDescription>
-                เลือกสิ่งที่คุณต้องการให้ระบบช่วยเตือนและติดตาม
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <Label>ต้องการให้ระบบแจ้งเตือนอะไรบ้าง?</Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {notificationOptions.map((option) => (
-                    <div key={option.value} className="flex items-center space-x-3">
-                      <Checkbox
-                        id={option.value}
-                        checked={data.notifications.includes(option.value)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            updateData("notifications", [...data.notifications, option.value]);
-                          } else {
-                            updateData("notifications", data.notifications.filter(n => n !== option.value));
-                          }
-                        }}
-                      />
-                      <Label htmlFor={option.value} className="flex items-center gap-2 cursor-pointer">
-                        <option.icon className="h-4 w-4" />
-                        {option.label}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <Label>ต้องการติดตามอะไรบ้าง?</Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {trackingOptions.map((option) => (
-                    <div key={option.value} className="flex items-center space-x-3">
-                      <Checkbox
-                        id={`tracking-${option.value}`}
-                        checked={data.trackingItems.includes(option.value)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            updateData("trackingItems", [...data.trackingItems, option.value]);
-                          } else {
-                            updateData("trackingItems", data.trackingItems.filter(t => t !== option.value));
-                          }
-                        }}
-                      />
-                      <Label htmlFor={`tracking-${option.value}`} className="cursor-pointer">
-                        {option.label}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <Label>ตั้งค่าเป้าหมายโภชนาการเฉพาะ</Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="fiberTarget">ไฟเบอร์เป้าหมาย (g/วัน)</Label>
-                    <Input
-                      id="fiberTarget"
-                      type="number"
-                      placeholder="25"
-                      value={data.fiberTarget || ""}
-                      onChange={(e) => updateData("fiberTarget", parseFloat(e.target.value) || 0)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="sodiumTarget">โซเดียมเป้าหมาย (mg/วัน)</Label>
-                    <Input
-                      id="sodiumTarget"
-                      type="number"
-                      placeholder="2300"
-                      value={data.sodiumTarget || ""}
-                      onChange={(e) => updateData("sodiumTarget", parseFloat(e.target.value) || 0)}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <Label>ตั้งเวลาที่สะดวกสำหรับการแจ้งเตือน</Label>
-                <Input
-                  type="time"
-                  value={data.reminderTime}
-                  onChange={(e) => updateData("reminderTime", e.target.value)}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        );
-
-      case 7:
-        return (
-          <Card className="max-w-2xl mx-auto shadow-health border-0">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
                 <CheckCircle className="h-6 w-6" />
                 สรุปการตั้งค่า
               </CardTitle>
@@ -755,19 +630,6 @@ const Onboarding = () => {
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">น้ำหนัก</Label>
                     <p className="text-sm">{data.weight} kg</p>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">การแจ้งเตือน</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {data.notifications.map((notification) => (
-                      <Badge key={notification} variant="outline">
-                        {notificationOptions.find(n => n.value === notification)?.label}
-                      </Badge>
-                    ))}
                   </div>
                 </div>
               </div>

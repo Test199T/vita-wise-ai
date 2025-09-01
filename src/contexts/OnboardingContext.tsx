@@ -41,14 +41,6 @@ interface OnboardingData {
   surgeries: string;
   allergies: string;
   
-  // Step 5: Tracking Preferences
-  notifications: string[];
-  trackingItems: string[];
-  reminderTime: string;
-  // Added nutrition targets (user-defined)
-  fiberTarget: number; // grams/day
-  sodiumTarget: number; // mg/day
-  
   // Onboarding status
   isCompleted: boolean;
 }
@@ -90,11 +82,6 @@ const defaultOnboardingData: OnboardingData = {
   medicalConditions: ["hypertension"],
   surgeries: "ไม่เคยผ่าตัด",
   allergies: "แพ้ยาเพนิซิลลิน",
-  notifications: ["water", "exercise", "sleep"],
-  trackingItems: ["weight", "blood-pressure"],
-  reminderTime: "08:00",
-  fiberTarget: 25,
-  sodiumTarget: 2300,
   isCompleted: false
 };
 
