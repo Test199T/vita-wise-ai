@@ -282,7 +282,7 @@ export default function Profile() {
   return (
     <MainLayout>
       {/* Main Profile Content */}
-      <div className="w-full mx-auto px-4 sm:px-10 pb-8">
+      <div className="container mx-auto px-4 sm:px-6 pb-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
@@ -365,9 +365,9 @@ export default function Profile() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+        <div className="max-w-4xl mx-auto space-y-4 md:space-y-6">
           {/* Profile Info */}
-          <div className="lg:col-span-2 space-y-4 md:space-y-6">
+          <div className="space-y-4 md:space-y-6">
             {/* Basic Info Card */}
             <Card className="health-stat-card">
               <CardHeader>
@@ -908,28 +908,7 @@ export default function Profile() {
             </Card>
           </div>
 
-          {/* Actions */}
-          <div className="space-y-4 md:space-y-6">
-            {/* Actions Card */}
-            <Card className="health-stat-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bell className="h-5 w-5" />
-                  การดำเนินการ
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  variant="destructive"
-                  className="w-full mt-2"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  ออกจากระบบ
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+
         </div>
       </div>
     </MainLayout>

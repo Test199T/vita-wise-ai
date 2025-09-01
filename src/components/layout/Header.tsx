@@ -1,4 +1,4 @@
-import { Bell, Activity, ChevronDown, MessageCircle } from "lucide-react";
+import { Bell, Activity, ChevronDown, MessageCircle, User, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, NavLink } from "react-router-dom";
 import {
@@ -41,7 +41,7 @@ const mockUser = {
 
 export function Header() {
   return (
-    <header className="bg-card border-b border-border shadow-soft">
+    <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-sm border-b border-border shadow-soft">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -102,16 +102,35 @@ export function Header() {
                 </span>
               </Link>
             </Button>
-            <Link to="/profile" className="flex items-center gap-2 hover:bg-muted/50 px-2 py-1 rounded-lg">
-              {mockUser.avatarUrl ? (
-                <img src={mockUser.avatarUrl} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
-              ) : (
-                <div className="w-7 h-7 rounded-full bg-gradient-primary text-primary-foreground flex items-center justify-center text-xs font-medium">
-                  {mockUser.name.slice(0,1)}
-                </div>
-              )}
-              <span className="hidden sm:block text-sm font-medium max-w-[140px] truncate">{mockUser.name}</span>
-            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2 hover:bg-muted/50 px-2 py-1 rounded-lg">
+                  {mockUser.avatarUrl ? (
+                    <img src={mockUser.avatarUrl} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-gradient-primary text-primary-foreground flex items-center justify-center text-xs font-medium">
+                      {mockUser.name.slice(0,1)}
+                    </div>
+                  )}
+                  <span className="hidden sm:block text-sm font-medium max-w-[140px] truncate">{mockUser.name}</span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem asChild>
+                  <Link to="/profile" className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    โปรไฟล์
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/login" className="flex items-center gap-2 text-destructive">
+                    <LogOut className="h-4 w-4" />
+                    ออกจากระบบ
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
