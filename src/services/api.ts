@@ -123,8 +123,11 @@ class APIService {
     const now = Date.now();
     const lastTime = this.lastRequestTime.get(endpoint) || 0;
     
-    if (now - lastTime < this.MIN_REQUEST_INTERVAL) {
-      console.log(`⏳ Rate limiting: Please wait ${this.MIN_REQUEST_INTERVAL}ms between requests`);
+    // Reduce rate limiting interval for profile requests to improve UX
+    const interval = endpoint === 'profile-get' ? 0 : this.MIN_REQUEST_INTERVAL;
+    
+    if (now - lastTime < interval) {
+      console.log(`⏳ Rate limiting: Please wait ${interval}ms between requests for ${endpoint}`);
       return false;
     }
     
@@ -203,12 +206,7 @@ class APIService {
   async getCurrentUserProfile(): Promise<UserProfile> {
     console.log('Fetching current user profile...');
     
-    // Rate limiting check
-    if (!this.canMakeRequest('profile-get')) {
-      throw new Error('Rate limited: Please wait before making another request');
-    }
-
-    // Check for existing request
+    // Check for existing request first
     const existingRequest = this.requestQueue.get('profile-get');
     if (existingRequest) {
       console.log('⏳ Using existing profile request...');
@@ -219,6 +217,9 @@ class APIService {
     if (!token) {
       throw new Error('No valid authentication token found');
     }
+
+    // Skip rate limiting for profile requests to improve UX
+    // No rate limiting check for profile requests
 
     // Create new request and add to queue
     const requestPromise = this.fetchUserProfileInternal();

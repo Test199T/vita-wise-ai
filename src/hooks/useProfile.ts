@@ -88,7 +88,8 @@ export const useProfile = (): UseProfileReturn => {
       setError(errorMessage);
       
       // Show toast notification for severe errors only
-      if (!errorMessage.includes('mock data') && !errorMessage.includes('Backend not available')) {
+      if (!errorMessage.includes('mock data') && 
+          !errorMessage.includes('Backend not available')) {
         toast({
           title: "ข้อผิดพลาด",
           description: errorMessage,

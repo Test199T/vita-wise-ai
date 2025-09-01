@@ -14,14 +14,10 @@ import {
   Calendar, 
   Flame, 
   Beef, 
-  Apple, 
   Pill, 
   AlertTriangle, 
   CheckCircle, 
   XCircle,
-  Activity,
-  Droplets,
-  Target,
   BarChart3
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -29,11 +25,17 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useOnboarding } from "@/contexts/OnboardingContext";
 
+interface FoodItem {
+  name: string;
+  amount: string;
+  calories: number;
+}
+
 interface FoodLog {
   food_log_id: string;
   log_date: string;
   meal_time: string;
-  food_items: any[];
+  food_items: FoodItem[];
   total_calories: number;
   total_protein: number;
   total_carbs: number;
@@ -84,11 +86,6 @@ export default function FoodLog() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const filteredFoods = foodCatalog.filter((f) => f.name.includes(query.trim())).slice(0, 8);
-  const addSuggestedFood = (name: string) => {
-    const prefix = formData.food_items ? formData.food_items + ", " : "";
-    setFormData({ ...formData, food_items: `${prefix}${name} 1 ที่` });
-    setQuery("");
-  };
   const [foodLogs, setFoodLogs] = useState<FoodLog[]>([
     {
       food_log_id: "1",
@@ -153,6 +150,12 @@ export default function FoodLog() {
     total_sodium: "",
     notes: ""
   });
+
+  const addSuggestedFood = (name: string) => {
+    const prefix = formData.food_items ? formData.food_items + ", " : "";
+    setFormData({ ...formData, food_items: `${prefix}${name} 1 ที่` });
+    setQuery("");
+  };
 
   const mealTimes = ["เช้า", "สาย", "กลางวัน", "บ่าย", "เย็น", "ดึก", "อื่นๆ"];
 
@@ -305,7 +308,7 @@ export default function FoodLog() {
       log_date: log.log_date,
       meal_time: log.meal_time,
       meal_clock_time: "",
-      food_items: log.food_items?.map((it: any) => it.name).join(", "),
+      food_items: log.food_items?.map((it) => it.name).join(", "),
       total_calories: String(log.total_calories || ""),
       total_protein: String(log.total_protein || ""),
       total_carbs: String(log.total_carbs || ""),
@@ -356,8 +359,8 @@ export default function FoodLog() {
 
   const nutritionTargets = useMemo(() => {
     // Override with user's fiber/sodium targets if provided (>0)
-    const fiberTarget = onboardingData.fiberTarget && onboardingData.fiberTarget > 0 ? onboardingData.fiberTarget : defaultNutritionTargets.fiber.target;
-    const sodiumTarget = onboardingData.sodiumTarget && onboardingData.sodiumTarget > 0 ? onboardingData.sodiumTarget : defaultNutritionTargets.sodium.target;
+    const fiberTarget = (onboardingData as any).fiberTarget && (onboardingData as any).fiberTarget > 0 ? (onboardingData as any).fiberTarget : defaultNutritionTargets.fiber.target;
+    const sodiumTarget = (onboardingData as any).sodiumTarget && (onboardingData as any).sodiumTarget > 0 ? (onboardingData as any).sodiumTarget : defaultNutritionTargets.sodium.target;
     return {
       ...defaultNutritionTargets,
       fiber: { ...defaultNutritionTargets.fiber, target: fiberTarget },
