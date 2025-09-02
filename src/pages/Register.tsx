@@ -80,18 +80,83 @@ export default function Register() {
           message: data.message
         });
         
+        // หลังสมัครสำเร็จ ให้ล็อกอินทันทีเพื่อเอา JWT
+        try {
+          console.log('🔄 กำลังล็อกอินทันทีหลังสมัครสำเร็จ...');
+          
+          // ล็อกอินทันทีด้วยข้อมูลที่พึ่งสมัคร
+          const loginResponse = await fetch('http://localhost:3000/auth/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              email: formData.email,
+              password: formData.password
+            })
+          });
+          
+          if (loginResponse.ok) {
+            const loginData = await loginResponse.json();
+            console.log('✅ ล็อกอินสำเร็จ:', loginData);
+            
+            // ตรวจสอบ JWT Token จาก response
+            const token = loginData.token || loginData.accessToken || loginData.access_token || loginData.jwt || loginData.JWT;
+            
+            if (token) {
+              // บันทึก Token ใน localStorage
+              localStorage.setItem('token', token);
+              localStorage.setItem('accessToken', token);
+              console.log('✅ JWT Token saved to localStorage:', token.substring(0, 20) + '...');
+              
+              toast({
+                title: "✅ เข้าสู่ระบบสำเร็จ",
+                description: "ล็อกอินสำเร็จและได้ JWT Token แล้ว",
+                variant: "default",
+              });
+            } else {
+              console.error('❌ ไม่พบ JWT Token หลังล็อกอิน');
+              toast({
+                title: "⚠️ ล็อกอินสำเร็จแต่ไม่มี Token",
+                description: "ล็อกอินสำเร็จแล้ว แต่ระบบยังไม่สามารถสร้าง JWT Token ได้",
+                variant: "destructive",
+              });
+            }
+          } else {
+            const loginError = await loginResponse.text();
+            console.error('❌ ล็อกอินไม่สำเร็จ:', loginResponse.status, loginError);
+            toast({
+              title: "⚠️ ล็อกอินไม่สำเร็จ",
+              description: "การสมัครสมาชิกสำเร็จแล้ว แต่ล็อกอินไม่สำเร็จ กรุณาลองล็อกอินด้วยตนเอง",
+              variant: "destructive",
+            });
+          }
+        } catch (loginError) {
+          console.error('❌ Error during auto-login:', loginError);
+          toast({
+            title: "⚠️ ล็อกอินไม่สำเร็จ",
+            description: "การสมัครสมาชิกสำเร็จแล้ว แต่ล็อกอินไม่สำเร็จ กรุณาลองล็อกอินด้วยตนเอง",
+            variant: "destructive",
+          });
+        }
+        
         toast({
           title: "สมัครสมาชิกสำเร็จ",
           description: "ยินดีต้อนรับสู่แอปสุขภาพดี AI",
         });
-        // ส่งข้อมูลที่สมัครไปยัง Onboarding
+        
+        // ส่งข้อมูลที่สมัครไปยัง Onboarding พร้อม JWT
         navigate("/onboarding", { 
           state: { 
             registrationData: {
               firstName: formData.firstName,
               lastName: formData.lastName,
               age: parseInt(formData.age),
-              gender: formData.gender
+              gender: formData.gender,
+              // เพิ่มข้อมูล JWT
+              isProfileCreated: false,
+              hasJWT: true,
+              message: "เข้าสู่ระบบด้วย JWT แล้ว กรุณาเสร็จสิ้นการตั้งค่า"
             }
           }
         });

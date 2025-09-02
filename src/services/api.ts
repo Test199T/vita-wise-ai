@@ -388,11 +388,11 @@ class APIService {
 
     // List of possible endpoints to try for updating
     const endpoints = [
-      { method: 'PUT', path: '/user/profile' },      // Primary endpoint
-      { method: 'PUT', path: '/users/profile' },     // Alternative
+      { method: 'PUT', path: '/user/profile' },      // Primary endpoint (matches backend)
+      { method: 'PATCH', path: '/user/profile' },    // PATCH version
       { method: 'PUT', path: '/profile' },           // Simple
       { method: 'PUT', path: '/me' },                // Common REST
-      { method: 'PATCH', path: '/user/profile' },    // PATCH instead of PUT
+      { method: 'PUT', path: '/users/profile' },     // Alternative (plural)
       { method: 'PATCH', path: '/users/profile' },
       { method: 'PATCH', path: '/profile' },
       { method: 'PATCH', path: '/me' },
@@ -468,10 +468,32 @@ class APIService {
     // Convert onboarding data to user profile format
     const profileData = this.convertOnboardingToProfile(onboardingData);
     console.log('📝 Converted profile data:', profileData);
+    
+    // ตรวจสอบข้อมูลชื่อ - เพิ่มการตรวจสอบที่เข้มงวด
+    console.log('🔍 Name data check:', {
+      firstName: profileData.first_name,
+      lastName: profileData.last_name,
+      firstNameType: typeof profileData.first_name,
+      lastNameType: typeof profileData.last_name,
+      firstNameLength: profileData.first_name?.length,
+      lastNameLength: profileData.last_name?.length,
+      source: 'API Service'
+    });
+    
+    // Validate that we have valid names before proceeding
+    if (!profileData.first_name || !profileData.last_name || 
+        typeof profileData.first_name !== 'string' || typeof profileData.last_name !== 'string' ||
+        profileData.first_name.trim() === '' || profileData.last_name.trim() === '') {
+      console.error('❌ Invalid name data detected:', {
+        first_name: profileData.first_name,
+        last_name: profileData.last_name
+      });
+      throw new Error('First name and last name are required and cannot be empty');
+    }
 
     // Try to update user profile with onboarding data
     try {
-      return await this.updateUserProfileInternal(profileData);
+      return await this.updateUserProfile(profileData);
     } catch (error) {
       console.error('Update failed, trying to create profile:', error);
       // If update fails, try to create user profile
@@ -486,63 +508,41 @@ class APIService {
     const weight = onboardingData.weight as number;
     const bmi = height && weight ? weight / Math.pow(height / 100, 2) : undefined;
 
+    // ตรวจสอบข้อมูลชื่อจากหลายแหล่ง
+    const firstName = (onboardingData.firstName as string) || 
+                     (onboardingData.first_name as string) || 
+                     (onboardingData.registrationFirstName as string) || '';
+    const lastName = (onboardingData.lastName as string) || 
+                    (onboardingData.last_name as string) || 
+                    (onboardingData.registrationLastName as string) || '';
+
+    console.log('🔍 Name data in convertOnboardingToProfile:', {
+      firstName: {
+        fromFirstName: onboardingData.firstName,
+        fromFirst_name: onboardingData.first_name,
+        fromRegistrationFirstName: onboardingData.registrationFirstName,
+        final: firstName
+      },
+      lastName: {
+        fromLastName: onboardingData.lastName,
+        fromLast_name: onboardingData.last_name,
+        fromRegistrationLastName: onboardingData.registrationLastName,
+        final: lastName
+      }
+    });
+
+    // Return only the fields that the backend DTO expects
     return {
-      first_name: (onboardingData.firstName as string) || '',
-      last_name: (onboardingData.lastName as string) || '',
+      first_name: firstName,
+      last_name: lastName,
       date_of_birth: onboardingData.birthDate as string,
       gender: onboardingData.sex as 'male' | 'female' | 'other',
       height_cm: onboardingData.height as number,
       weight_kg: onboardingData.weight as number,
       activity_level: this.mapActivityLevel(onboardingData.activityLevel as string),
       
-      // Health Data JSON
-      health_data: {
-        bmi: bmi,
-        waist_circumference: onboardingData.waist as number,
-        blood_pressure_systolic: this.extractBloodPressure(onboardingData.bloodPressure as string, 'systolic'),
-        blood_pressure_diastolic: this.extractBloodPressure(onboardingData.bloodPressure as string, 'diastolic'),
-        blood_sugar_mg_dl: parseInt(onboardingData.bloodSugar as string) || undefined,
-      },
-      
-      // Health Goals JSON
-      health_goals: {
-        goal_type: this.mapHealthGoal(onboardingData.healthGoal as string),
-        title: this.getHealthGoalTitle(onboardingData.healthGoal as string),
-        description: onboardingData.motivation as string,
-        target_date: this.calculateTargetDate(onboardingData.timeline as number),
-        status: 'active' as const,
-        priority: 'medium' as const,
-      },
-      
-      // Nutrition Goals JSON  
-      nutrition_goals: {
-        daily_calories: this.calculateDailyCalories(onboardingData),
-        water_liters: (onboardingData.waterIntakeGlasses as number || 6) * 0.25, // แก้ว 250ml
-        fiber_g: onboardingData.fiberTarget as number || 25,
-        sodium_mg: onboardingData.sodiumTarget as number || 2300,
-      },
-      
-      // Daily Behavior JSON
-      daily_behavior: {
-        exercise_frequency: (onboardingData.exerciseFrequency as string) as DailyBehavior['exercise_frequency'],
-        sleep_hours: onboardingData.sleepHours as number,
-        meals_per_day: onboardingData.mealsPerDay as number,
-        smoking: onboardingData.smoking as boolean,
-        alcohol_frequency: (onboardingData.alcoholFrequency as string) as DailyBehavior['alcohol_frequency'],
-        caffeine_cups_per_day: onboardingData.caffeineCupsPerDay as number,
-        screen_time_hours: (onboardingData.screenTimeHours as string) as DailyBehavior['screen_time_hours'],
-        stress_level: (onboardingData.stressLevel as string) as DailyBehavior['stress_level'],
-        water_intake_glasses: onboardingData.waterIntakeGlasses as number,
-      },
-      
-      // Medical History JSON
-      medical_history: {
-        conditions: onboardingData.medicalConditions as string[],
-        surgeries: onboardingData.surgeries as string,
-        allergies: onboardingData.allergies as string,
-        medications: [], // ยังไม่มีในฟอร์ม
-        family_history: '', // ยังไม่มีในฟอร์ม
-      },
+      // Store additional data in a separate field or handle differently
+      // For now, we'll only send the basic fields that the backend accepts
     };
   }
 
