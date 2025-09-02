@@ -31,6 +31,7 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import { useOnboarding } from "@/contexts/OnboardingContext";
 import { useToast } from "@/hooks/use-toast";
+import React from "react"; // Added missing import
 
 interface OnboardingData {
   // Step 1: Health Goals
@@ -88,15 +89,49 @@ const Onboarding = () => {
           onboardingData.birthDate
       };
       
-      // อัพเดท context ด้วยข้อมูลที่ merge แล้ว
-      Object.keys(mergedData).forEach(key => {
-        updateOnboardingData(key as keyof OnboardingData, mergedData[key as keyof OnboardingData]);
-      });
-      
       return mergedData;
     }
     return onboardingData;
   });
+
+  // ใช้ useEffect เพื่ออัพเดท context หลังจาก component mount
+  const [hasUpdatedContext, setHasUpdatedContext] = React.useState(false);
+  
+  // ตรวจสอบ Token ทันทีเมื่อ component mount
+  React.useEffect(() => {
+    console.log('🔍 ตรวจสอบ Token เมื่อ component mount:');
+    console.log('localStorage token:', localStorage.getItem('token'));
+    console.log('localStorage accessToken:', localStorage.getItem('accessToken'));
+    console.log('sessionStorage token:', sessionStorage.getItem('token'));
+    console.log('sessionStorage accessToken:', sessionStorage.getItem('accessToken'));
+    console.log('registrationData:', registrationData);
+  }, [registrationData]);
+  
+  React.useEffect(() => {
+    if (registrationData && !onboardingData.isCompleted && !hasUpdatedContext) {
+      // อัพเดท context ด้วยข้อมูลจาก Register เพียงครั้งเดียว
+      const mergedData = {
+        ...onboardingData,
+        firstName: registrationData.firstName || onboardingData.firstName,
+        lastName: registrationData.lastName || onboardingData.lastName,
+        sex: registrationData.gender === 'other' ? 'male' : (registrationData.gender as 'male' | 'female') || onboardingData.sex,
+        birthDate: registrationData.age ? 
+          new Date(new Date().getFullYear() - registrationData.age, 0, 1).toISOString().split('T')[0] : 
+          onboardingData.birthDate
+      };
+      
+      // อัพเดท context เพียงครั้งเดียว
+      Object.keys(mergedData).forEach(key => {
+        if (mergedData[key as keyof OnboardingData] !== onboardingData[key as keyof OnboardingData]) {
+          updateOnboardingData(key as keyof OnboardingData, mergedData[key as keyof OnboardingData]);
+        }
+      });
+      
+      // มาร์คว่าได้อัพเดท context แล้ว
+      setHasUpdatedContext(true);
+      console.log('✅ อัพเดท context ด้วยข้อมูลจาก Register เรียบร้อยแล้ว');
+    }
+  }, [registrationData, hasUpdatedContext]); // ใช้ hasUpdatedContext เป็น dependency
 
   const steps = [
     { title: "ยินดีต้อนรับ", icon: Heart },
@@ -145,22 +180,20 @@ const Onboarding = () => {
         return;
       }
       
-      // ถ้ามีข้อมูลจาก Register ให้แสดงข้อความแจ้งเตือน
-      if (registrationData) {
-        toast({
-          title: "✅ ข้อมูลส่วนตัวครบถ้วน",
-          description: "ข้อมูลส่วนตัวถูกกรอกแล้วตอนสมัครสมาชิก",
-          variant: "default",
-        });
-        console.log('✅ ข้อมูลส่วนตัวครบถ้วนแล้ว (จาก Register)');
-      } else {
-        toast({
-          title: "✅ ข้อมูลส่วนตัวครบถ้วน",
-          description: "ข้อมูลส่วนตัวถูกกรอกเรียบร้อยแล้ว",
-          variant: "default",
-        });
-        console.log('✅ ข้อมูลส่วนตัวครบถ้วนแล้ว (กรอกใหม่)');
-      }
+      // แสดงข้อความแจ้งเตือนการเสร็จสิ้น
+      toast({
+        title: "✅ ข้อมูลส่วนตัวครบถ้วน",
+        description: `ชื่อ: ${data.firstName} ${data.lastName}\nเพศ: ${data.sex === 'male' ? 'ชาย' : 'หญิง'}\nวันเกิด: ${new Date(data.birthDate).toLocaleDateString('th-TH')}`,
+        variant: "default",
+      });
+      
+      console.log('✅ ข้อมูลส่วนตัวครบถ้วนแล้ว:', {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        sex: data.sex,
+        birthDate: data.birthDate,
+        source: registrationData ? 'Register + Edited' : 'Onboarding Only'
+      });
     }
     
     if (currentStep === 2) {
@@ -212,17 +245,146 @@ const Onboarding = () => {
         // อัพเดทข้อมูลล่าสุดก่อนส่ง
         console.log('🎯 Final onboarding data before completion:', data);
         
-        // อัพเดทข้อมูลทั้งหมดใน context ก่อน
-        Object.keys(data).forEach(key => {
-          updateOnboardingData(key as keyof OnboardingData, data[key as keyof OnboardingData]);
-        });
-        
         // แสดงข้อมูลที่จะบันทึก
         if (registrationData) {
           console.log('📝 ข้อมูลจาก Register ที่จะถูกบันทึก:', registrationData);
         }
         
         console.log('💾 ข้อมูลทั้งหมดที่จะบันทึก:', data);
+        
+        // ส่งข้อมูลไปหลังบ้านด้วย JWT
+        try {
+          // ตรวจสอบ JWT Token จากหลายแหล่ง
+          const token = localStorage.getItem('token') || 
+                       localStorage.getItem('accessToken') || 
+                       sessionStorage.getItem('token') ||
+                       sessionStorage.getItem('accessToken');
+          
+          console.log('🔍 ตรวจสอบ JWT Token:');
+          console.log('localStorage token:', localStorage.getItem('token'));
+          console.log('localStorage accessToken:', localStorage.getItem('accessToken'));
+          console.log('sessionStorage token:', sessionStorage.getItem('token'));
+          console.log('sessionStorage accessToken:', sessionStorage.getItem('accessToken'));
+          console.log('registrationData:', registrationData);
+          
+          if (!token) {
+            console.error('❌ ไม่พบ JWT Token ในที่ใดเลย');
+            
+            // ตรวจสอบว่ามีข้อมูลจาก Register หรือไม่
+            if (registrationData && registrationData.hasJWT) {
+              console.warn('⚠️ registrationData.hasJWT = true แต่ไม่มี Token ใน storage');
+              
+              // แสดงข้อความที่ชัดเจนเกี่ยวกับปัญหา
+              toast({
+                title: "⚠️ ระบบยังไม่พร้อม",
+                description: "Backend ยังไม่สามารถสร้าง JWT Token ได้\nกรุณาลองสมัครสมาชิกใหม่อีกครั้ง",
+                variant: "destructive",
+              });
+              
+              // กลับไปหน้า Register เพื่อลองใหม่
+              navigate("/register");
+              return;
+            } else {
+              toast({
+                title: "❌ ไม่สามารถเข้าสู่ระบบได้",
+                description: "กรุณาเข้าสู่ระบบก่อน",
+                variant: "destructive",
+              });
+              navigate("/login");
+              return;
+            }
+          }
+          
+          console.log('✅ พบ JWT Token:', token.substring(0, 20) + '...');
+          
+          // สร้างข้อมูลสำหรับส่งไปหลังบ้าน
+          const onboardingDataForBackend = {
+            // ใช้ field names แบบเดิมที่ backend ต้องการ
+            firstName: data.firstName || '',
+            lastName: data.lastName || '',
+            sex: data.sex || '',
+            birthDate: data.birthDate || '',
+            height: data.height || 0,
+            weight: data.weight || 0,
+            healthGoal: data.healthGoal || '',
+            timeline: data.timeline || 0,
+            motivation: data.motivation || '',
+            waist: data.waist || 0,
+            bloodPressure: data.bloodPressure || '',
+            bloodSugar: data.bloodSugar || '',
+            exerciseFrequency: data.exerciseFrequency || '',
+            sleepHours: data.sleepHours || 0,
+            mealsPerDay: data.mealsPerDay || 0,
+            smoking: data.smoking || false,
+            alcoholFrequency: data.alcoholFrequency || '',
+            activityLevel: data.activityLevel || '',
+            medicalConditions: data.medicalConditions || [],
+            surgeries: data.surgeries || '',
+            allergies: data.allergies || ''
+          };
+          
+          // ตรวจสอบข้อมูลที่จำเป็นก่อนส่ง
+          console.log('🔍 ข้อมูลที่จะส่งไป backend:', onboardingDataForBackend);
+          console.log('🔍 ข้อมูลชื่อ:', {
+            firstName: onboardingDataForBackend.firstName,
+            lastName: onboardingDataForBackend.lastName
+          });
+          
+          // ตรวจสอบว่าข้อมูลชื่อไม่หาย
+          if (!onboardingDataForBackend.firstName || !onboardingDataForBackend.lastName) {
+            console.error('❌ ข้อมูลชื่อหายไป!');
+            toast({
+              title: "❌ ข้อมูลชื่อหายไป",
+              description: "กรุณากรอกชื่อและนามสกุลให้ครบถ้วน",
+              variant: "destructive",
+            });
+            return;
+          }
+          
+          // ส่งข้อมูลไปยัง backend ด้วย JWT
+          const response = await fetch('http://localhost:3000/users/profile', {
+            method: 'PUT', // ใช้ PUT เพื่ออัพเดทข้อมูลที่มีอยู่แล้ว
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}` // ใช้ JWT Token
+            },
+            body: JSON.stringify(onboardingDataForBackend)
+          });
+          
+          console.log('📊 Response status:', response.status, response.statusText);
+          
+          if (response.ok) {
+            const result = await response.json();
+            console.log('✅ ข้อมูล Onboarding ถูกส่งไปยัง backend สำเร็จ:', result);
+            toast({
+              title: "✅ บันทึกข้อมูลสำเร็จ",
+              description: "ข้อมูลถูกบันทึกในฐานข้อมูลแล้ว",
+              variant: "default",
+            });
+          } else if (response.status === 400) {
+            // Bad Request - ข้อมูลไม่ถูกต้อง
+            const errorData = await response.text();
+            console.error('❌ Bad Request (400):', errorData);
+            console.error('❌ ข้อมูลที่ส่งไป:', onboardingDataForBackend);
+            
+            toast({
+              title: "⚠️ ข้อมูลไม่ถูกต้อง",
+              description: "ข้อมูลที่ส่งไปยัง backend ไม่ถูกต้อง กรุณาตรวจสอบข้อมูลที่กรอก",
+              variant: "destructive",
+            });
+          } else {
+            const errorData = await response.text();
+            console.warn('⚠️ ไม่สามารถส่งข้อมูลไปยัง backend ได้:', response.status, errorData);
+            toast({
+              title: "⚠️ บันทึกข้อมูลไม่สำเร็จ",
+              description: `ข้อมูลถูกบันทึกในแอปแล้ว แต่ยังไม่ถูกส่งไปยังฐานข้อมูล\nStatus: ${response.status} ${response.statusText}`,
+              variant: "destructive",
+            });
+          }
+        } catch (apiError) {
+          console.error('❌ Error sending data to backend:', apiError);
+          // ไม่แสดง error ให้ผู้ใช้เห็น เพราะ Onboarding เสร็จสิ้นแล้ว
+        }
         
         // แสดง toast แจ้งเตือนการเสร็จสิ้น
         toast({
@@ -231,6 +393,7 @@ const Onboarding = () => {
           variant: "default",
         });
         
+        // บันทึกข้อมูลใน localStorage และไปหน้า Dashboard
         await completeOnboarding();
         navigate("/dashboard");
       } catch (error) {
@@ -476,19 +639,19 @@ const Onboarding = () => {
                 <p className="text-muted-foreground">
                   การตั้งค่าจะใช้เวลาเพียง 2-3 นาที และจะช่วยให้เราแนะนำคุณได้ตรงเป้าหมายมากขึ้น
                 </p>
-                                                   <div className="flex justify-center">
-                    <Button onClick={() => {
-                      toast({
-                        title: "🚀 เริ่มต้นการตั้งค่า",
-                        description: "เริ่มต้นการตั้งค่าแอปสุขภาพของคุณ",
-                        variant: "default",
-                      });
-                      handleNext();
-                    }} className="health-button">
-                      เริ่มต้นเลย
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </div>
+                <div className="flex justify-center">
+                  <Button onClick={() => {
+                    toast({
+                      title: "🚀 เริ่มต้นการตั้งค่า",
+                      description: "เริ่มต้นการตั้งค่าแอปสุขภาพของคุณ",
+                      variant: "default",
+                    });
+                    handleNext();
+                  }} className="health-button">
+                    เริ่มต้นเลย
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -502,124 +665,122 @@ const Onboarding = () => {
                 <User className="h-6 w-6" />
                 ข้อมูลส่วนตัว
               </CardTitle>
-                           <CardDescription>
-               กรุณากรอกข้อมูลส่วนตัวเพื่อให้เราจัดการแอปให้ตรงกับความต้องการของคุณ
-             </CardDescription>
-             {!canSkipCurrentStep() && (
-               <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                 <div className="flex items-center gap-2 text-amber-800">
-                   <AlertTriangle className="h-4 w-4" />
-                   <span className="text-sm font-medium">ข้อมูลที่จำเป็นต้องกรอกก่อนข้าม:</span>
-                 </div>
-                 <ul className="mt-2 text-sm text-amber-700 space-y-1">
-                   {!data.firstName?.trim() && <li>• ชื่อจริง</li>}
-                   {!data.lastName?.trim() && <li>• นามสกุล</li>}
-                   {!data.sex && <li>• เพศ</li>}
-                   {!data.birthDate && <li>• วันเกิด</li>}
-                 </ul>
-               </div>
-             )}
+              <CardDescription>
+                กรุณากรอกข้อมูลส่วนตัวเพื่อให้เราจัดการแอปให้ตรงกับความต้องการของคุณ
+              </CardDescription>
+              {!canSkipCurrentStep() && (
+                <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-amber-800">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span className="text-sm font-medium">ข้อมูลที่จำเป็นต้องกรอกก่อนข้าม:</span>
+                  </div>
+                  <ul className="mt-2 text-sm text-amber-700 space-y-1">
+                    {!data.firstName?.trim() && <li>• ชื่อจริง</li>}
+                    {!data.lastName?.trim() && <li>• นามสกุล</li>}
+                    {!data.sex && <li>• เพศ</li>}
+                    {!data.birthDate && <li>• วันเกิด</li>}
+                  </ul>
+                </div>
+              )}
             </CardHeader>
-                         <CardContent className="space-y-6">
-               {/* แสดงข้อมูลที่ได้จาก Register */}
-               {registrationData && (
-                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-                   <div className="flex items-center gap-2 mb-2">
-                     <CheckCircle className="h-5 w-5 text-green-600" />
-                     <span className="font-medium text-green-800">ข้อมูลที่สมัครสมาชิกแล้ว</span>
-                   </div>
-                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-green-700">
-                     <div>
-                       <span className="font-medium">ชื่อ:</span> {data.firstName} {data.lastName}
-                     </div>
-                     <div>
-                       <span className="font-medium">เพศ:</span> {data.sex === 'male' ? 'ชาย' : 'หญิง'}
-                     </div>
-                   </div>
-                   <p className="text-xs text-green-600 mt-2">
-                     ✅ ข้อมูลเหล่านี้ถูกกรอกแล้วตอนสมัครสมาชิก ไม่ต้องกรอกซ้ำ
-                   </p>
-                 </div>
-               )}
+            <CardContent className="space-y-6">
+              {/* แสดงข้อมูลที่ได้จาก Register */}
+              {registrationData && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <span className="font-medium text-green-800">ข้อมูลที่สมัครสมาชิกแล้ว</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-green-700">
+                    <div>
+                      <span className="font-medium">ชื่อ:</span> {data.firstName} {data.lastName}
+                    </div>
+                    <div>
+                      <span className="font-medium">เพศ:</span> {data.sex === 'male' ? 'ชาย' : 'หญิง'}
+                    </div>
+                  </div>
+                  {registrationData.hasJWT && (
+                    <div className="mt-2 p-2 bg-blue-100 rounded border border-blue-300">
+                      <p className="text-xs text-blue-800 font-medium">
+                        🔐 เข้าสู่ระบบด้วย JWT แล้ว
+                      </p>
+                      <p className="text-xs text-blue-700 mt-1">
+                        ข้อมูลจะถูกส่งไปยังฐานข้อมูลเมื่อเสร็จสิ้นการตั้งค่า
+                      </p>
+                    </div>
+                  )}
+                  <p className="text-xs text-green-700 mt-2">
+                    💡 คุณสามารถแก้ไขข้อมูลเหล่านี้ได้หากต้องการ
+                  </p>
+                </div>
+              )}
 
-               {/* แสดงเฉพาะข้อมูลที่ยังไม่เคยกรอก */}
-               {!registrationData && (
-                 <>
-                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                     <div className="flex items-center gap-2 mb-2">
-                       <User className="h-5 w-5 text-blue-600" />
-                       <span className="font-medium text-blue-800">กรุณากรอกข้อมูลส่วนตัว</span>
-                     </div>
-                     <p className="text-sm text-blue-700">
-                       ข้อมูลเหล่านี้จำเป็นสำหรับการตั้งค่าแอปสุขภาพ
-                     </p>
-                   </div>
+              {/* ฟอร์มข้อมูลส่วนตัว - แสดงเสมอเพื่อให้แก้ไขได้ */}
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">ชื่อจริง <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="firstName"
+                      type="text"
+                      placeholder="ชื่อจริง"
+                      value={data.firstName || ""}
+                      onChange={(e) => updateData("firstName", e.target.value)}
+                      className="h-10 rounded-xl shadow-sm focus-visible:ring-2 focus-visible:ring-primary/60"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">นามสกุล <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="lastName"
+                      type="text"
+                      placeholder="นามสกุล"
+                      value={data.lastName || ""}
+                      onChange={(e) => updateData("lastName", e.target.value)}
+                      className="h-10 rounded-xl shadow-sm focus-visible:ring-2 focus-visible:ring-primary/60"
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="sex">เพศ <span className="text-red-500">*</span></Label>
+                  <Select value={data.sex} onValueChange={(value) => {
+                    updateData("sex", value as 'male' | 'female');
+                    const genderText = value === 'male' ? 'ชาย' : 'หญิง';
+                    toast({
+                      title: "👤 เพศ",
+                      description: `เลือกเพศ: ${genderText}`,
+                      variant: "default",
+                    });
+                  }}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="เลือกเพศ" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">ชาย</SelectItem>
+                      <SelectItem value="female">หญิง</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                     <div className="space-y-2">
-                       <Label htmlFor="firstName">ชื่อจริง <span className="text-red-500">*</span></Label>
-                       <Input
-                         id="firstName"
-                         type="text"
-                         placeholder="ชื่อจริง"
-                         value={data.firstName || ""}
-                         onChange={(e) => updateData("firstName", e.target.value)}
-                         className="h-10 rounded-xl shadow-sm focus-visible:ring-2 focus-visible:ring-primary/60"
-                         required
-                       />
-                     </div>
-                     <div className="space-y-2">
-                       <Label htmlFor="lastName">นามสกุล <span className="text-red-500">*</span></Label>
-                       <Input
-                         id="lastName"
-                         type="text"
-                         placeholder="นามสกุล"
-                         value={data.lastName || ""}
-                         onChange={(e) => updateData("lastName", e.target.value)}
-                         className="h-10 rounded-xl shadow-sm focus-visible:ring-2 focus-visible:ring-primary/60"
-                         required
-                       />
-                     </div>
-                   </div>
-                   
-                   <div className="space-y-2">
-                     <Label htmlFor="sex">เพศ <span className="text-red-500">*</span></Label>
-                     <Select value={data.sex} onValueChange={(value) => {
-                     updateData("sex", value as 'male' | 'female');
-                     const genderText = value === 'male' ? 'ชาย' : 'หญิง';
-                     toast({
-                       title: "👤 เพศ",
-                       description: `เลือกเพศ: ${genderText}`,
-                       variant: "default",
-                     });
-                   }}>
-                       <SelectTrigger className="w-full">
-                         <SelectValue placeholder="เลือกเพศ" />
-                       </SelectTrigger>
-                       <SelectContent>
-                         <SelectItem value="male">ชาย</SelectItem>
-                         <SelectItem value="female">หญิง</SelectItem>
-                       </SelectContent>
-                     </Select>
-                   </div>
-                 </>
-               )}
-
-               <div className="space-y-2">
-                 <Label htmlFor="birthDate">วันเกิด <span className="text-red-500">*</span></Label>
-                 <Input
-                   id="birthDate"
-                   type="date"
-                   value={data.birthDate || ""}
-                   onChange={(e) => updateData("birthDate", e.target.value)}
-                   className="h-10 rounded-xl shadow-sm focus-visible:ring-2 focus-visible:ring-primary/60"
-                   required
-                 />
-                 <p className="text-sm text-muted-foreground">
-                   เราใช้ข้อมูลนี้เพื่อคำนวณความต้องการพลังงานที่เหมาะสมกับคุณ
-                 </p>
-               </div>
-             </CardContent>
+                <div className="space-y-2">
+                  <Label htmlFor="birthDate">วันเกิด <span className="text-red-500">*</span></Label>
+                  <Input
+                    id="birthDate"
+                    type="date"
+                    value={data.birthDate || ""}
+                    onChange={(e) => updateData("birthDate", e.target.value)}
+                    className="h-10 rounded-xl shadow-sm focus-visible:ring-2 focus-visible:ring-primary/60"
+                    required
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    เราใช้ข้อมูลนี้เพื่อคำนวณความต้องการพลังงานที่เหมาะสมกับคุณ
+                  </p>
+                </div>
+              </div>
+            </CardContent>
           </Card>
         );
 
@@ -631,40 +792,40 @@ const Onboarding = () => {
                 <Target className="h-6 w-6" />
                 เป้าหมายสุขภาพ
               </CardTitle>
-                           <CardDescription>
-               เลือกเป้าหมายหลักที่คุณต้องการเพื่อให้เราแนะนำได้ตรงจุด
-             </CardDescription>
-             {!canSkipCurrentStep() && (
-               <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                 <div className="flex items-center gap-2 text-amber-800">
-                   <AlertTriangle className="h-4 w-4" />
-                   <span className="text-sm font-medium">ข้อมูลที่จำเป็นต้องกรอกก่อนข้าม:</span>
-                 </div>
-                 <ul className="mt-2 text-sm text-amber-700 space-y-1">
-                   {!data.healthGoal && <li>• เป้าหมายสุขภาพ</li>}
-                   {!data.timeline && <li>• ระยะเวลา</li>}
-                 </ul>
-               </div>
-             )}
+              <CardDescription>
+                เลือกเป้าหมายหลักที่คุณต้องการเพื่อให้เราแนะนำได้ตรงจุด
+              </CardDescription>
+              {!canSkipCurrentStep() && (
+                <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-amber-800">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span className="text-sm font-medium">ข้อมูลที่จำเป็นต้องกรอกก่อนข้าม:</span>
+                  </div>
+                  <ul className="mt-2 text-sm text-amber-700 space-y-1">
+                    {!data.healthGoal && <li>• เป้าหมายสุขภาพ</li>}
+                    {!data.timeline && <li>• ระยะเวลา</li>}
+                  </ul>
+                </div>
+              )}
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <Label>คุณต้องการอะไร? <span className="text-red-500">*</span></Label>
-                                 <RadioGroup
-                   value={data.healthGoal}
-                   onValueChange={(value) => {
-                     updateData("healthGoal", value);
-                     const selectedGoal = healthGoals.find(g => g.value === value);
-                     if (selectedGoal) {
-                       toast({
-                         title: "🎯 เป้าหมายสุขภาพ",
-                         description: `เลือกเป้าหมาย: ${selectedGoal.label}`,
-                         variant: "default",
-                       });
-                     }
-                   }}
-                   required
-                 >
+                <RadioGroup
+                  value={data.healthGoal}
+                  onValueChange={(value) => {
+                    updateData("healthGoal", value);
+                    const selectedGoal = healthGoals.find(g => g.value === value);
+                    if (selectedGoal) {
+                      toast({
+                        title: "🎯 เป้าหมายสุขภาพ",
+                        description: `เลือกเป้าหมาย: ${selectedGoal.label}`,
+                        variant: "default",
+                      });
+                    }
+                  }}
+                  required
+                >
                   {healthGoals.map((goal) => (
                     <div key={goal.value} className="flex items-center space-x-3">
                       <RadioGroupItem value={goal.value} id={goal.value} />
@@ -679,15 +840,15 @@ const Onboarding = () => {
 
               <div className="space-y-4">
                 <Label>อยากเห็นผลในกี่เดือน? <span className="text-red-500">*</span></Label>
-                                 <Select value={data.timeline.toString()} onValueChange={(value) => {
-                   const timeline = parseInt(value);
-                   updateData("timeline", timeline);
-                   toast({
-                     title: "⏰ ระยะเวลา",
-                     description: `เป้าหมาย: ${timeline} เดือน`,
-                     variant: "default",
-                   });
-                 }}>
+                <Select value={data.timeline.toString()} onValueChange={(value) => {
+                  const timeline = parseInt(value);
+                  updateData("timeline", timeline);
+                  toast({
+                    title: "⏰ ระยะเวลา",
+                    description: `เป้าหมาย: ${timeline} เดือน`,
+                    variant: "default",
+                  });
+                }}>
                   <SelectTrigger>
                     <SelectValue placeholder="เลือกระยะเวลา" />
                   </SelectTrigger>
@@ -720,21 +881,21 @@ const Onboarding = () => {
                 <Ruler className="h-6 w-6" />
                 ข้อมูลร่างกายเบื้องต้น
               </CardTitle>
-                           <CardDescription>
-               ข้อมูลเหล่านี้จะช่วยคำนวณ BMI และวิเคราะห์สุขภาพเบื้องต้น
-             </CardDescription>
-             {!canSkipCurrentStep() && (
-               <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                 <div className="flex items-center gap-2 text-amber-800">
-                   <AlertTriangle className="h-4 w-4" />
-                   <span className="text-sm font-medium">ข้อมูลที่จำเป็นต้องกรอกก่อนข้าม:</span>
-                 </div>
-                 <ul className="mt-2 text-sm text-amber-700 space-y-1">
-                   {!data.height && <li>• ส่วนสูง (cm)</li>}
-                   {!data.weight && <li>• น้ำหนัก (kg)</li>}
-                 </ul>
-               </div>
-             )}
+              <CardDescription>
+                ข้อมูลเหล่านี้จะช่วยคำนวณ BMI และวิเคราะห์สุขภาพเบื้องต้น
+              </CardDescription>
+              {!canSkipCurrentStep() && (
+                <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-amber-800">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span className="text-sm font-medium">ข้อมูลที่จำเป็นต้องกรอกก่อนข้าม:</span>
+                  </div>
+                  <ul className="mt-2 text-sm text-amber-700 space-y-1">
+                    {!data.height && <li>• ส่วนสูง (cm)</li>}
+                    {!data.weight && <li>• น้ำหนัก (kg)</li>}
+                  </ul>
+                </div>
+              )}
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -808,36 +969,36 @@ const Onboarding = () => {
                 <Activity className="h-6 w-6" />
                 พฤติกรรมประจำวัน
               </CardTitle>
-                           <CardDescription>
-               ช่วยให้เราเข้าใจนิสัยสุขภาพของคุณ
-             </CardDescription>
-             <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-               <div className="flex items-center gap-2 text-blue-800">
-                 <CheckCircle className="h-4 w-4" />
-                 <span className="text-sm font-medium">ข้อมูลในขั้นตอนนี้ไม่บังคับ - ข้ามได้เสมอ</span>
-               </div>
-             </div>
+              <CardDescription>
+                ช่วยให้เราเข้าใจนิสัยสุขภาพของคุณ
+              </CardDescription>
+              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center gap-2 text-blue-800">
+                  <CheckCircle className="h-4 w-4" />
+                  <span className="text-sm font-medium">ข้อมูลในขั้นตอนนี้ไม่บังคับ - ข้ามได้เสมอ</span>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <Label>คุณออกกำลังกายบ่อยแค่ไหน?</Label>
-                                 <RadioGroup
-                   value={data.exerciseFrequency}
-                   onValueChange={(value) => {
-                     updateData("exerciseFrequency", value);
-                     const exerciseLabels = {
-                       'never': 'ไม่เคย',
-                       '1-2': '1-2 ครั้งต่อสัปดาห์',
-                       '3-5': '3-5 ครั้งต่อสัปดาห์',
-                       'daily': 'ทุกวัน'
-                     };
-                     toast({
-                       title: "💪 การออกกำลังกาย",
-                       description: exerciseLabels[value as keyof typeof exerciseLabels] || value,
-                       variant: "default",
-                     });
-                   }}
-                 >
+                <RadioGroup
+                  value={data.exerciseFrequency}
+                  onValueChange={(value) => {
+                    updateData("exerciseFrequency", value);
+                    const exerciseLabels = {
+                      'never': 'ไม่เคย',
+                      '1-2': '1-2 ครั้งต่อสัปดาห์',
+                      '3-5': '3-5 ครั้งต่อสัปดาห์',
+                      'daily': 'ทุกวัน'
+                    };
+                    toast({
+                      title: "💪 การออกกำลังกาย",
+                      description: exerciseLabels[value as keyof typeof exerciseLabels] || value,
+                      variant: "default",
+                    });
+                  }}
+                >
                   {exerciseOptions.map((option) => (
                     <div key={option.value} className="flex items-center space-x-3">
                       <RadioGroupItem value={option.value} id={option.value} />
@@ -851,21 +1012,21 @@ const Onboarding = () => {
 
               <div className="space-y-4">
                 <Label>ระดับกิจกรรม (สำหรับคำนวณ TDEE)</Label>
-                                 <Select value={data.activityLevel} onValueChange={(value) => {
-                   updateData("activityLevel", value);
-                   const activityLabels = {
-                     'sedentary': 'นั่งทำงาน/ไม่ค่อยขยับตัว',
-                     'light': 'ออกกำลังกายเบาๆ 1-3 วัน/สัปดาห์',
-                     'moderate': 'ออกกำลังกายปานกลาง 3-5 วัน/สัปดาห์',
-                     'active': 'ออกกำลังกายหนัก 6-7 วัน/สัปดาห์',
-                     'very-active': 'ออกกำลังกายหนักมาก/ใช้แรงงาน'
-                   };
-                   toast({
-                     title: "🏃‍♂️ ระดับกิจกรรม",
-                     description: activityLabels[value as keyof typeof activityLabels] || value,
-                     variant: "default",
-                   });
-                 }}>
+                <Select value={data.activityLevel} onValueChange={(value) => {
+                  updateData("activityLevel", value);
+                  const activityLabels = {
+                    'sedentary': 'นั่งทำงาน/ไม่ค่อยขยับตัว',
+                    'light': 'ออกกำลังกายเบาๆ 1-3 วัน/สัปดาห์',
+                    'moderate': 'ออกกำลังกายปานกลาง 3-5 วัน/สัปดาห์',
+                    'active': 'ออกกำลังกายหนัก 6-7 วัน/สัปดาห์',
+                    'very-active': 'ออกกำลังกายหนักมาก/ใช้แรงงาน'
+                  };
+                  toast({
+                    title: "🏃‍♂️ ระดับกิจกรรม",
+                    description: activityLabels[value as keyof typeof activityLabels] || value,
+                    variant: "default",
+                  });
+                }}>
                   <SelectTrigger>
                     <SelectValue placeholder="เลือกระดับกิจกรรม" />
                   </SelectTrigger>
@@ -881,15 +1042,15 @@ const Onboarding = () => {
 
               <div className="space-y-4">
                 <Label>นอนกี่ชั่วโมงต่อวันโดยเฉลี่ย?</Label>
-                                 <Select value={data.sleepHours.toString()} onValueChange={(value) => {
-                   const hours = parseInt(value);
-                   updateData("sleepHours", hours);
-                   toast({
-                     title: "😴 การนอน",
-                     description: `นอน: ${hours} ชั่วโมงต่อวัน`,
-                     variant: "default",
-                   });
-                 }}>
+                <Select value={data.sleepHours.toString()} onValueChange={(value) => {
+                  const hours = parseInt(value);
+                  updateData("sleepHours", hours);
+                  toast({
+                    title: "😴 การนอน",
+                    description: `นอน: ${hours} ชั่วโมงต่อวัน`,
+                    variant: "default",
+                  });
+                }}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -905,15 +1066,15 @@ const Onboarding = () => {
 
               <div className="space-y-4">
                 <Label>กินวันละกี่มื้อ?</Label>
-                                 <Select value={data.mealsPerDay.toString()} onValueChange={(value) => {
-                   const meals = parseInt(value);
-                   updateData("mealsPerDay", meals);
-                   toast({
-                     title: "🍽️ มื้ออาหาร",
-                     description: `กิน: ${meals} มื้อต่อวัน`,
-                     variant: "default",
-                   });
-                 }}>
+                <Select value={data.mealsPerDay.toString()} onValueChange={(value) => {
+                  const meals = parseInt(value);
+                  updateData("mealsPerDay", meals);
+                  toast({
+                    title: "🍽️ มื้ออาหาร",
+                    description: `กิน: ${meals} มื้อต่อวัน`,
+                    variant: "default",
+                  });
+                }}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -930,47 +1091,47 @@ const Onboarding = () => {
               <div className="space-y-4">
                 <Label>พฤติกรรมอื่น ๆ</Label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                     <div className="space-y-2">
-                     <Label>สูบบุหรี่</Label>
-                     <Select 
-                       value={data.smoking ? "yes" : "no"} 
-                       onValueChange={(value) => {
-                         const isSmoking = value === "yes";
-                         updateData("smoking", isSmoking);
-                         const smokingText = isSmoking ? "สูบ" : "ไม่สูบ";
-                         toast({
-                           title: "🚬 สูบบุหรี่",
-                           description: `สถานะ: ${smokingText}`,
-                           variant: "default",
-                         });
-                         console.log('🚬 Updated smoking status:', isSmoking);
-                       }}
-                     >
-                       <SelectTrigger>
-                         <SelectValue placeholder="เลือกสถานะการสูบบุหรี่" />
-                       </SelectTrigger>
-                       <SelectContent>
-                         <SelectItem value="no">ไม่สูบ</SelectItem>
-                         <SelectItem value="yes">สูบ</SelectItem>
-                       </SelectContent>
-                     </Select>
-                   </div>
+                  <div className="space-y-2">
+                    <Label>สูบบุหรี่</Label>
+                    <Select 
+                      value={data.smoking ? "yes" : "no"} 
+                      onValueChange={(value) => {
+                        const isSmoking = value === "yes";
+                        updateData("smoking", isSmoking);
+                        const smokingText = isSmoking ? "สูบ" : "ไม่สูบ";
+                        toast({
+                          title: "🚬 สูบบุหรี่",
+                          description: `สถานะ: ${smokingText}`,
+                          variant: "default",
+                        });
+                        console.log('🚬 Updated smoking status:', isSmoking);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="เลือกสถานะการสูบบุหรี่" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="no">ไม่สูบ</SelectItem>
+                        <SelectItem value="yes">สูบ</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="space-y-2">
                     <Label>ดื่มแอลกอฮอล์</Label>
-                                         <Select value={data.alcoholFrequency} onValueChange={(value) => {
-                       updateData("alcoholFrequency", value);
-                       const alcoholLabels = {
-                         'never': 'ไม่ดื่ม',
-                         'rarely': 'นานๆ ครั้ง',
-                         'weekly': 'สัปดาห์ละ 1-2 ครั้ง',
-                         'daily': 'ทุกวัน'
-                       };
-                       toast({
-                         title: "🍷 ดื่มแอลกอฮอล์",
-                         description: `ความถี่: ${alcoholLabels[value as keyof typeof alcoholLabels] || value}`,
-                         variant: "default",
-                       });
-                     }}>
+                    <Select value={data.alcoholFrequency} onValueChange={(value) => {
+                      updateData("alcoholFrequency", value);
+                      const alcoholLabels = {
+                        'never': 'ไม่ดื่ม',
+                        'rarely': 'นานๆ ครั้ง',
+                        'weekly': 'สัปดาห์ละ 1-2 ครั้ง',
+                        'daily': 'ทุกวัน'
+                      };
+                      toast({
+                        title: "🍷 ดื่มแอลกอฮอล์",
+                        description: `ความถี่: ${alcoholLabels[value as keyof typeof alcoholLabels] || value}`,
+                        variant: "default",
+                      });
+                    }}>
                       <SelectTrigger>
                         <SelectValue placeholder="เลือกความถี่" />
                       </SelectTrigger>
@@ -990,17 +1151,17 @@ const Onboarding = () => {
                     min={0}
                     max={30}
                     value={(data as unknown as Record<string, unknown>).waterIntakeGlasses as number || ""}
-                                         onChange={(e) => {
-                       const value = parseInt(e.target.value);
-                       updateData("waterIntakeGlasses" as keyof OnboardingData, value || undefined);
-                       if (value && value > 0) {
-                         toast({
-                           title: "💧 การดื่มน้ำ",
-                           description: `ดื่มน้ำ: ${value} แก้วต่อวัน`,
-                           variant: "default",
-                         });
-                       }
-                     }}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value);
+                      updateData("waterIntakeGlasses" as keyof OnboardingData, value || undefined);
+                      if (value && value > 0) {
+                        toast({
+                          title: "💧 การดื่มน้ำ",
+                          description: `ดื่มน้ำ: ${value} แก้วต่อวัน`,
+                          variant: "default",
+                        });
+                      }
+                    }}
                   />
                 </div>
                 <div className="space-y-2">
@@ -1024,15 +1185,15 @@ const Onboarding = () => {
                 <AlertTriangle className="h-6 w-6" />
                 ประวัติสุขภาพ
               </CardTitle>
-                           <CardDescription>
-               ข้อมูลนี้จะช่วยให้เราแนะนำได้เหมาะสมและปลอดภัย
-             </CardDescription>
-             <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-               <div className="flex items-center gap-2 text-blue-800">
-                 <CheckCircle className="h-4 w-4" />
-                 <span className="text-sm font-medium">ข้อมูลในขั้นตอนนี้ไม่บังคับ - ข้ามได้เสมอ</span>
-               </div>
-             </div>
+              <CardDescription>
+                ข้อมูลนี้จะช่วยให้เราแนะนำได้เหมาะสมและปลอดภัย
+              </CardDescription>
+              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center gap-2 text-blue-800">
+                  <CheckCircle className="h-4 w-4" />
+                  <span className="text-sm font-medium">ข้อมูลในขั้นตอนนี้ไม่บังคับ - ข้ามได้เสมอ</span>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
@@ -1043,23 +1204,23 @@ const Onboarding = () => {
                       <Checkbox
                         id={condition.value}
                         checked={data.medicalConditions.includes(condition.value)}
-                                                 onCheckedChange={(checked) => {
-                           if (checked) {
-                             updateData("medicalConditions", [...data.medicalConditions, condition.value]);
-                             toast({
-                               title: "🏥 โรคประจำตัว",
-                               description: `เพิ่ม: ${condition.label}`,
-                               variant: "default",
-                             });
-                           } else {
-                             updateData("medicalConditions", data.medicalConditions.filter(c => c !== condition.value));
-                             toast({
-                               title: "🏥 โรคประจำตัว",
-                               description: `ลบ: ${condition.label}`,
-                               variant: "default",
-                             });
-                           }
-                         }}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            updateData("medicalConditions", [...data.medicalConditions, condition.value]);
+                            toast({
+                              title: "🏥 โรคประจำตัว",
+                              description: `เพิ่ม: ${condition.label}`,
+                              variant: "default",
+                            });
+                          } else {
+                            updateData("medicalConditions", data.medicalConditions.filter(c => c !== condition.value));
+                            toast({
+                              title: "🏥 โรคประจำตัว",
+                              description: `ลบ: ${condition.label}`,
+                              variant: "default",
+                            });
+                          }
+                        }}
                       />
                       <Label htmlFor={condition.value} className="cursor-pointer">
                         {condition.label}
@@ -1143,17 +1304,17 @@ const Onboarding = () => {
                 <p className="text-muted-foreground">
                   คุณสามารถแก้ไขข้อมูลเหล่านี้ได้ในภายหลังที่หน้าโปรไฟล์
                 </p>
-                                 <Button onClick={() => {
-                   toast({
-                     title: "🎯 เริ่มใช้งานแอป",
-                     description: "ยินดีต้อนรับสู่แอปสุขภาพดี AI ของคุณ!",
-                     variant: "default",
-                   });
-                   handleNext();
-                 }} className="health-button">
-                   เริ่มใช้งานเลย!
-                   <ArrowRight className="ml-2 h-4 w-4" />
-                 </Button>
+                <Button onClick={() => {
+                  toast({
+                    title: "🎯 เริ่มใช้งานแอป",
+                    description: "ยินดีต้อนรับสู่แอปสุขภาพดี AI ของคุณ!",
+                    variant: "default",
+                  });
+                  handleNext();
+                }} className="health-button">
+                  เริ่มใช้งานเลย!
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
               </div>
             </CardContent>
           </Card>
