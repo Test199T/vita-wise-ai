@@ -100,7 +100,14 @@ export default function Register() {
         let errorMessage = "เกิดข้อผิดพลาดในการสมัครสมาชิก";
         
         if (response.status === 400) {
-          errorMessage = "ข้อมูลไม่ถูกต้อง";
+          // ตรวจสอบว่าเป็นกรณีอีเมลซ้ำหรือไม่
+          if (data.message && data.message.toLowerCase().includes('email') && data.message.toLowerCase().includes('already')) {
+            errorMessage = "มีผู้ใช้อีเมลนี้แล้ว กรุณาใช้อีเมลอื่น";
+          } else if (data.message && data.message.toLowerCase().includes('duplicate')) {
+            errorMessage = "มีบัญชีนี้แล้ว กรุณาใช้อีเมลอื่น";
+          } else {
+            errorMessage = "ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบข้อมูลที่กรอก";
+          }
           console.warn('Bad request:', {
             email: formData.email,
             reason: 'Invalid data format',
@@ -108,21 +115,37 @@ export default function Register() {
             validationErrors: data.errors
           });
         } else if (response.status === 409) {
-          errorMessage = "อีเมลนี้มีอยู่ในระบบแล้ว";
+          errorMessage = "มีผู้ใช้อีเมลนี้แล้ว กรุณาใช้อีเมลอื่น";
           console.warn('Email already exists:', {
             email: formData.email,
             reason: 'Email already registered',
             backendMessage: data.message
           });
         } else if (response.status === 422) {
-          errorMessage = "ข้อมูลไม่ถูกต้อง";
+          // ตรวจสอบ validation errors ที่เฉพาะเจาะจง
+          if (data.errors && Array.isArray(data.errors)) {
+            const emailError = data.errors.find((error: any) => 
+              error.field === 'email' || error.message?.toLowerCase().includes('email')
+            );
+            if (emailError) {
+              if (emailError.message?.toLowerCase().includes('already') || emailError.message?.toLowerCase().includes('duplicate')) {
+                errorMessage = "มีผู้ใช้อีเมลนี้แล้ว กรุณาใช้อีเมลอื่น";
+              } else {
+                errorMessage = "รูปแบบอีเมลไม่ถูกต้อง";
+              }
+            } else {
+              errorMessage = "ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบข้อมูลที่กรอก";
+            }
+          } else {
+            errorMessage = "ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบข้อมูลที่กรอก";
+          }
           console.warn('Validation error:', {
             email: formData.email,
             validationErrors: data.errors,
             backendMessage: data.message
           });
         } else if (response.status === 500) {
-          errorMessage = "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์";
+          errorMessage = "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์ กรุณาลองใหม่อีกครั้ง";
           console.error('Server error:', {
             email: formData.email,
             status: response.status,
@@ -130,6 +153,17 @@ export default function Register() {
             error: data.error
           });
         } else {
+          // ตรวจสอบข้อความจาก backend เพื่อหากรณีอีเมลซ้ำ
+          if (data.message && (
+            data.message.toLowerCase().includes('email') && 
+            (data.message.toLowerCase().includes('already') || data.message.toLowerCase().includes('duplicate') || data.message.toLowerCase().includes('exists'))
+          )) {
+            errorMessage = "มีผู้ใช้อีเมลนี้แล้ว กรุณาใช้อีเมลอื่น";
+          } else if (data.message && data.message.toLowerCase().includes('duplicate')) {
+            errorMessage = "มีบัญชีนี้แล้ว กรุณาใช้อีเมลอื่น";
+          } else {
+            errorMessage = "เกิดข้อผิดพลาดในการสมัครสมาชิก";
+          }
           console.error('Unexpected error response:', {
             email: formData.email,
             status: response.status,
@@ -151,9 +185,22 @@ export default function Register() {
         stack: error instanceof Error ? error.stack : undefined
       });
       
+      let errorDescription = "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต";
+      
+      // ตรวจสอบข้อผิดพลาดที่เฉพาะเจาะจง
+      if (error instanceof Error) {
+        if (error.message.includes('fetch') || error.message.includes('network')) {
+          errorDescription = "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต";
+        } else if (error.message.includes('timeout')) {
+          errorDescription = "การเชื่อมต่อใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง";
+        } else if (error.message.includes('cors')) {
+          errorDescription = "เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง";
+        }
+      }
+      
       toast({
         title: "ข้อผิดพลาด",
-        description: "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต",
+        description: errorDescription,
         variant: "destructive",
       });
     } finally {
