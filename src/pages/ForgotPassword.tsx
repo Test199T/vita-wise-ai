@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,7 +74,7 @@ export default function ForgotPassword() {
 
   if (isSubmitted) {
     return (
-      <MainLayout>
+      <AuthLayout>
         <div className="container mx-auto px-4 py-8 max-w-md">
           <Card className="health-stat-card">
             <CardHeader className="text-center">
@@ -125,12 +125,12 @@ export default function ForgotPassword() {
             </CardContent>
           </Card>
         </div>
-      </MainLayout>
+      </AuthLayout>
     );
   }
 
   return (
-    <MainLayout>
+    <AuthLayout>
       <div className="container mx-auto px-4 py-8 max-w-md">
         <Card className="health-stat-card">
           <CardHeader className="text-center">
@@ -207,6 +207,6 @@ export default function ForgotPassword() {
           </CardContent>
         </Card>
       </div>
-    </MainLayout>
+    </AuthLayout>
   );
 }

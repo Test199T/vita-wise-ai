@@ -68,6 +68,27 @@ export const tokenUtils = {
 
   // ตรวจสอบสถานะการล็อกอิน
   isLoggedIn: (): boolean => {
-    return tokenUtils.isValidToken(tokenUtils.getToken());
+    const token = tokenUtils.getToken();
+    if (!tokenUtils.isValidToken(token)) {
+      return false;
+    }
+
+    // ตรวจสอบว่า token ไม่ได้หมดอายุ (ถ้ามีข้อมูล expiration)
+    try {
+      const tokenData = JSON.parse(atob(token.split('.')[1]));
+      const currentTime = Math.floor(Date.now() / 1000);
+      
+      if (tokenData.exp && tokenData.exp < currentTime) {
+        // Token หมดอายุแล้ว
+        tokenUtils.removeToken();
+        return false;
+      }
+    } catch (error) {
+      // ถ้าไม่สามารถ decode token ได้ ให้ถือว่า invalid
+      tokenUtils.removeToken();
+      return false;
+    }
+    
+    return true;
   }
 };

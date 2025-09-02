@@ -18,11 +18,12 @@ export const useProfile = (): UseProfileReturn => {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const isLoggedIn = userService.isLoggedIn();
+  // ใช้ userService.isLoggedIn() ที่มีการตรวจสอบ token expiration แล้ว
+  const currentIsLoggedIn = userService.isLoggedIn();
 
   // Fetch profile data from API
   const fetchProfile = useCallback(async () => {
-    if (!isLoggedIn) {
+    if (!currentIsLoggedIn) {
       setProfile(null);
       setLoading(false);
       setError('User not logged in');
@@ -99,7 +100,7 @@ export const useProfile = (): UseProfileReturn => {
     } finally {
       setLoading(false);
     }
-  }, [isLoggedIn, toast]);
+  }, [currentIsLoggedIn, toast]);
 
   // Update profile data
   const updateProfile = useCallback(async (data: Partial<UserProfile>): Promise<boolean> => {
@@ -184,6 +185,6 @@ export const useProfile = (): UseProfileReturn => {
     error,
     refreshProfile,
     updateProfile,
-    isLoggedIn
+    isLoggedIn: currentIsLoggedIn
   };
 };

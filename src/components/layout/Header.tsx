@@ -37,7 +37,38 @@ const topNav: NavItem[] = [
 
 export function Header() {
   const { profilePicture } = useProfilePicture();
-  const { profile, loading } = useProfile();
+  const { profile, loading, isLoggedIn } = useProfile();
+
+  // ถ้าผู้ใช้ไม่ได้เข้าสู่ระบบ ให้แสดงเฉพาะโลโก้และปุ่มเข้าสู่ระบบ
+  if (!isLoggedIn) {
+    return (
+      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-sm border-b border-border shadow-soft">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Link to="/" className="flex items-center gap-2">
+                <div className="bg-gradient-primary p-2 rounded-lg">
+                  <Activity className="h-6 w-6 text-primary-foreground" />
+                </div>
+                <span className="text-xl font-semibold text-foreground">
+                  สุขภาพดี AI
+                </span>
+              </Link>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button asChild variant="outline">
+                <Link to="/login">เข้าสู่ระบบ</Link>
+              </Button>
+              <Button asChild>
+                <Link to="/register">สมัครสมาชิก</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   // Get user name from profile data or use fallback
   const userName = profile ? `${profile.first_name} ${profile.last_name}` : 'ผู้ใช้';

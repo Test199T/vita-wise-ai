@@ -272,6 +272,21 @@ export default function Profile() {
     "daily": "ทุกวัน"
   };
 
+  const activityLevelLabels = {
+    "sedentary": "นั่งทำงาน/ไม่ค่อยขยับตัว",
+    "light": "ออกกำลังกายเบาๆ 1-3 วัน/สัปดาห์",
+    "moderate": "ออกกำลังกายปานกลาง 3-5 วัน/สัปดาห์",
+    "active": "ออกกำลังกายหนัก 6-7 วัน/สัปดาห์",
+    "very-active": "ออกกำลังกายหนักมาก/ใช้แรงงาน"
+  };
+
+  const screenTimeLabels = {
+    "lt2": "น้อยกว่า 2 ชั่วโมง",
+    "2-4": "2-4 ชั่วโมง",
+    "4-6": "4-6 ชั่วโมง",
+    "gt6": "มากกว่า 6 ชั่วโมง"
+  };
+
   const medicalConditionsLabels = {
     "diabetes": "เบาหวาน",
     "hypertension": "ความดันโลหิตสูง",
@@ -872,61 +887,106 @@ export default function Profile() {
                </CardContent>
              </Card>
 
-            {/* Lifestyle Card */}
-            <Card className="health-stat-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  พฤติกรรมประจำวัน
-                </CardTitle>
-                <CardDescription>
-                  ข้อมูลเกี่ยวกับไลฟ์สไตล์ของคุณ
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4 md:space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>ความถี่การออกกำลังกาย</Label>
-                    <div className="p-3 border rounded-md bg-muted/50">
-                      <span className="text-sm">
-                        {onboardingData.exerciseFrequency ? exerciseFrequencyLabels[onboardingData.exerciseFrequency as keyof typeof exerciseFrequencyLabels] : "ไม่ระบุ"}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>ชั่วโมงการนอนต่อวัน</Label>
-                    <div className="p-3 border rounded-md bg-muted/50">
-                      <span className="text-sm">{onboardingData.sleepHours} ชั่วโมง</span>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>มื้ออาหารต่อวัน</Label>
-                    <div className="p-3 border rounded-md bg-muted/50">
-                      <span className="text-sm">{onboardingData.mealsPerDay} มื้อ</span>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>การดื่มแอลกอฮอล์</Label>
-                    <div className="p-3 border rounded-md bg-muted/50">
-                      <span className="text-sm">
-                        {onboardingData.alcoholFrequency ? alcoholFrequencyLabels[onboardingData.alcoholFrequency as keyof typeof alcoholFrequencyLabels] : "ไม่ระบุ"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                         {/* Lifestyle Card */}
+             <Card className="health-stat-card">
+               <CardHeader>
+                 <CardTitle className="flex items-center gap-2">
+                   <Activity className="h-5 w-5" />
+                   พฤติกรรมประจำวัน
+                 </CardTitle>
+                 <CardDescription>
+                   ข้อมูลเกี่ยวกับไลฟ์สไตล์ของคุณ
+                 </CardDescription>
+               </CardHeader>
+               <CardContent className="space-y-4 md:space-y-6">
+                 {/* Basic Lifestyle Habits */}
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                   <div className="space-y-2">
+                     <Label>สูบบุหรี่</Label>
+                     <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
+                       {onboardingData.smoking ? (
+                         <XCircle className="h-4 w-4 text-red-500" />
+                       ) : (
+                         <CheckCircle className="h-4 w-4 text-green-500" />
+                       )}
+                       <span className="text-sm">
+                         {onboardingData.smoking ? "สูบบุหรี่" : "ไม่สูบบุหรี่"}
+                       </span>
+                     </div>
+                   </div>
+                   
+                   <div className="space-y-2">
+                     <Label>การดื่มแอลกอฮอล์</Label>
+                     <div className="p-3 border rounded-md bg-muted/50">
+                       <span className="text-sm">
+                         {onboardingData.alcoholFrequency ? 
+                           alcoholFrequencyLabels[onboardingData.alcoholFrequency as keyof typeof alcoholFrequencyLabels] : 
+                           "ไม่ระบุ"
+                         }
+                       </span>
+                     </div>
+                   </div>
+                   
+                   <div className="space-y-2">
+                     <Label>ความถี่การออกกำลังกาย</Label>
+                     <div className="p-3 border rounded-md bg-muted/50">
+                       <span className="text-sm">
+                         {onboardingData.exerciseFrequency ? 
+                           exerciseFrequencyLabels[onboardingData.exerciseFrequency as keyof typeof exerciseFrequencyLabels] : 
+                           "ไม่ระบุ"
+                         }
+                       </span>
+                     </div>
+                   </div>
+                 </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    {onboardingData.smoking ? (
-                      <XCircle className="h-4 w-4 text-red-500" />
-                    ) : (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                    )}
-                    <span className="text-sm">สูบบุหรี่</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                 {/* Sleep and Meals */}
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <div className="space-y-2">
+                     <Label>ชั่วโมงการนอนต่อวัน</Label>
+                     <div className="p-3 border rounded-md bg-muted/50">
+                       <span className="text-sm">
+                         {onboardingData.sleepHours ? `${onboardingData.sleepHours} ชั่วโมง` : "ไม่ระบุ"}
+                       </span>
+                     </div>
+                   </div>
+                   <div className="space-y-2">
+                     <Label>มื้ออาหารต่อวัน</Label>
+                     <div className="p-3 border rounded-md bg-muted/50">
+                       <span className="text-sm">
+                         {onboardingData.mealsPerDay ? `${onboardingData.mealsPerDay} มื้อ` : "ไม่ระบุ"}
+                       </span>
+                     </div>
+                   </div>
+                 </div>
+
+                 {/* Activity Level and Water Intake */}
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <div className="space-y-2">
+                     <Label>ระดับกิจกรรม (TDEE)</Label>
+                     <div className="p-3 border rounded-md bg-muted/50">
+                       <span className="text-sm">
+                         {onboardingData.activityLevel ? 
+                           activityLevelLabels[onboardingData.activityLevel] : 
+                           "ไม่ระบุ"
+                         }
+                       </span>
+                     </div>
+                   </div>
+                   <div className="space-y-2">
+                     <Label>การดื่มน้ำต่อวัน</Label>
+                     <div className="p-3 border rounded-md bg-muted/50">
+                       <span className="text-sm">
+                         {onboardingData.waterIntakeGlasses ? 
+                           `${onboardingData.waterIntakeGlasses} แก้ว` : 
+                           "ไม่ระบุ"
+                         }
+                       </span>
+                     </div>
+                   </div>
+                 </div>
+               </CardContent>
+             </Card>
 
             {/* Medical History Card */}
             <Card className="health-stat-card">

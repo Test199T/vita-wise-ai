@@ -991,5 +991,15 @@ export const userService = {
   // Check if user is logged in
   isLoggedIn: (): boolean => {
     return tokenUtils.isLoggedIn();
+  },
+
+  // Get token from localStorage
+  getToken: (): string | null => {
+    return tokenUtils.getToken();
+  },
+
+  // Check if token is valid
+  isValidToken: (token: string | null): boolean => {
+    return tokenUtils.isValidToken(token);
   }
 };

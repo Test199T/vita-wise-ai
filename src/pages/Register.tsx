@@ -84,7 +84,17 @@ export default function Register() {
           title: "สมัครสมาชิกสำเร็จ",
           description: "ยินดีต้อนรับสู่แอปสุขภาพดี AI",
         });
-        navigate("/onboarding");
+        // ส่งข้อมูลที่สมัครไปยัง Onboarding
+        navigate("/onboarding", { 
+          state: { 
+            registrationData: {
+              firstName: formData.firstName,
+              lastName: formData.lastName,
+              age: parseInt(formData.age),
+              gender: formData.gender
+            }
+          }
+        });
       } else {
         // จัดการ error cases ต่างๆ
         let errorMessage = "เกิดข้อผิดพลาดในการสมัครสมาชิก";
