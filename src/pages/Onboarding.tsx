@@ -557,7 +557,7 @@ const Onboarding = () => {
 
                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                      <div className="space-y-2">
-                       <Label htmlFor="firstName">ชื่อจริง *</Label>
+                       <Label htmlFor="firstName">ชื่อจริง <span className="text-red-500">*</span></Label>
                        <Input
                          id="firstName"
                          type="text"
@@ -569,7 +569,7 @@ const Onboarding = () => {
                        />
                      </div>
                      <div className="space-y-2">
-                       <Label htmlFor="lastName">นามสกุล *</Label>
+                       <Label htmlFor="lastName">นามสกุล <span className="text-red-500">*</span></Label>
                        <Input
                          id="lastName"
                          type="text"
@@ -583,7 +583,7 @@ const Onboarding = () => {
                    </div>
                    
                    <div className="space-y-2">
-                     <Label htmlFor="sex">เพศ *</Label>
+                     <Label htmlFor="sex">เพศ <span className="text-red-500">*</span></Label>
                      <Select value={data.sex} onValueChange={(value) => {
                      updateData("sex", value as 'male' | 'female');
                      const genderText = value === 'male' ? 'ชาย' : 'หญิง';
@@ -606,7 +606,7 @@ const Onboarding = () => {
                )}
 
                <div className="space-y-2">
-                 <Label htmlFor="birthDate">วันเกิด *</Label>
+                 <Label htmlFor="birthDate">วันเกิด <span className="text-red-500">*</span></Label>
                  <Input
                    id="birthDate"
                    type="date"
@@ -649,7 +649,7 @@ const Onboarding = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <Label>คุณต้องการอะไร? *</Label>
+                <Label>คุณต้องการอะไร? <span className="text-red-500">*</span></Label>
                                  <RadioGroup
                    value={data.healthGoal}
                    onValueChange={(value) => {
@@ -678,7 +678,7 @@ const Onboarding = () => {
               </div>
 
               <div className="space-y-4">
-                <Label>อยากเห็นผลในกี่เดือน? *</Label>
+                <Label>อยากเห็นผลในกี่เดือน? <span className="text-red-500">*</span></Label>
                                  <Select value={data.timeline.toString()} onValueChange={(value) => {
                    const timeline = parseInt(value);
                    updateData("timeline", timeline);
@@ -739,7 +739,7 @@ const Onboarding = () => {
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="height">ส่วนสูง (cm) *</Label>
+                  <Label htmlFor="height">ส่วนสูง (cm) <span className="text-red-500">*</span></Label>
                   <Input
                     id="height"
                     type="number"
@@ -750,7 +750,7 @@ const Onboarding = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="weight">น้ำหนัก (kg) *</Label>
+                  <Label htmlFor="weight">น้ำหนัก (kg) <span className="text-red-500">*</span></Label>
                   <Input
                     id="weight"
                     type="number"

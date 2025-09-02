@@ -185,10 +185,10 @@ export default function Register() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName" className="text-sm font-medium">
-                    ชื่อ
-                  </Label>
+                                 <div className="space-y-2">
+                   <Label htmlFor="firstName" className="text-sm font-medium">
+                     ชื่อ <span className="text-red-500">*</span>
+                   </Label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -202,10 +202,10 @@ export default function Register() {
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName" className="text-sm font-medium">
-                    นามสกุล
-                  </Label>
+                                 <div className="space-y-2">
+                   <Label htmlFor="lastName" className="text-sm font-medium">
+                     นามสกุล <span className="text-red-500">*</span>
+                   </Label>
                   <Input
                     id="lastName"
                     type="text"
@@ -218,10 +218,10 @@ export default function Register() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium">
-                  อีเมล
-                </Label>
+                             <div className="space-y-2">
+                 <Label htmlFor="email" className="text-sm font-medium">
+                   อีเมล <span className="text-red-500">*</span>
+                 </Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -236,10 +236,10 @@ export default function Register() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium">
-                  รหัสผ่าน
-                </Label>
+                             <div className="space-y-2">
+                 <Label htmlFor="password" className="text-sm font-medium">
+                   รหัสผ่าน <span className="text-red-500">*</span>
+                 </Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -265,10 +265,10 @@ export default function Register() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-sm font-medium">
-                  ยืนยันรหัสผ่าน
-                </Label>
+                             <div className="space-y-2">
+                 <Label htmlFor="confirmPassword" className="text-sm font-medium">
+                   ยืนยันรหัสผ่าน <span className="text-red-500">*</span>
+                 </Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -295,10 +295,10 @@ export default function Register() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="age" className="text-sm font-medium">
-                    อายุ
-                  </Label>
+                                 <div className="space-y-2">
+                   <Label htmlFor="age" className="text-sm font-medium">
+                     อายุ <span className="text-red-500">*</span>
+                   </Label>
                   <Input
                     id="age"
                     type="number"
@@ -309,10 +309,10 @@ export default function Register() {
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="gender" className="text-sm font-medium">
-                    เพศ
-                  </Label>
+                                 <div className="space-y-2">
+                   <Label htmlFor="gender" className="text-sm font-medium">
+                     เพศ <span className="text-red-500">*</span>
+                   </Label>
                   <Select onValueChange={(value) => handleInputChange("gender", value)}>
                     <SelectTrigger className="health-input">
                       <SelectValue placeholder="เลือกเพศ" />
