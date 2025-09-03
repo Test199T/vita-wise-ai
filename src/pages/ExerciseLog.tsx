@@ -547,41 +547,7 @@ export default function ExerciseLog() {
               </svg>
               {isLoadingFromBackend ? 'กำลังโหลด...' : 'รีเฟรช'}
             </Button>
-                         <Button 
-               variant="outline" 
-               onClick={() => {
-                 console.log('🔍 Debug Info:');
-                 console.log('Sessions:', sessions);
-                 console.log('LocalStorage:', localStorage.getItem('exercise_logs'));
-                 console.log('Token:', tokenUtils.getValidToken()?.substring(0, 20) + '...');
-                 
-                                   // แสดงข้อมูล ID ที่สำคัญ
-                  sessions.forEach((session, index) => {
-                    console.log(`Session ${index + 1}:`, {
-                      session_id: session.session_id,
-                      backend_id: session.backend_id,
-                      exercise_type: session.exercise_type,
-                      exercise_date: session.session_date,
-                      can_delete: !!session.backend_id ? '✅ ลบได้' : '❌ ลบไม่ได้ (ไม่มี backend_id)'
-                    });
-                  });
-                  
-                  // แสดงสรุป
-                  const deletableCount = sessions.filter(s => s.backend_id).length;
-                  const nonDeletableCount = sessions.filter(s => !s.backend_id).length;
-                  console.log('📊 สรุป:', {
-                    total: sessions.length,
-                    deletable: deletableCount,
-                    non_deletable: nonDeletableCount
-                  });
-               }}
-               className="gap-2"
-             >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              Debug
-            </Button>
+                         
             <Button onClick={() => setShowForm(!showForm)} className="gap-2">
               <Plus className="h-4 w-4" />
               เพิ่มการออกกำลังกาย
