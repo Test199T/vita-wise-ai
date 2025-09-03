@@ -101,17 +101,54 @@ interface OnboardingProviderProps {
 
 export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children }) => {
   const [onboardingData, setOnboardingDataState] = useState<OnboardingData>(() => {
-    // Load from localStorage if available
-    const saved = localStorage.getItem('onboardingData');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        // Merge with defaults to ensure newly added fields exist
-        return { ...defaultOnboardingData, ...parsed, isCompleted: parsed.isCompleted ?? false } as OnboardingData;
-      } catch {
-        return defaultOnboardingData;
+    // ล้างข้อมูลเก่าที่มีชื่อ "Methas" หรือ "Haha" ออกจาก localStorage
+    try {
+      const oldOnboardingData = localStorage.getItem('onboardingData');
+      const oldUserData = localStorage.getItem('user');
+      
+      if (oldOnboardingData) {
+        const parsed = JSON.parse(oldOnboardingData);
+        // ถ้ามีข้อมูลเก่าที่มีชื่อ "Methas" หรือ "Haha" ให้ล้างออก
+        if (parsed.firstName === 'Methas' || parsed.lastName === 'Haha' || 
+            parsed.firstName === 'methas' || parsed.lastName === 'haha') {
+          console.log('🧹 ล้างข้อมูลเก่าที่มีชื่อ Methas/Haha ออกจาก localStorage');
+          localStorage.removeItem('onboardingData');
+          localStorage.removeItem('user');
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('token');
+          return defaultOnboardingData;
+        }
       }
+      
+      if (oldUserData) {
+        const parsed = JSON.parse(oldUserData);
+        // ถ้ามีข้อมูล user เก่าที่มีชื่อ "Methas" หรือ "Haha" ให้ล้างออก
+        if (parsed.first_name === 'Methas' || parsed.last_name === 'Haha' || 
+            parsed.first_name === 'methas' || parsed.last_name === 'haha') {
+          console.log('🧹 ล้างข้อมูล user เก่าที่มีชื่อ Methas/Haha ออกจาก localStorage');
+          localStorage.removeItem('onboardingData');
+          localStorage.removeItem('user');
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('token');
+          return defaultOnboardingData;
+        }
+      }
+      
+      // Load from localStorage if available (หลังจากล้างข้อมูลเก่าแล้ว)
+      const saved = localStorage.getItem('onboardingData');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          // Merge with defaults to ensure newly added fields exist
+          return { ...defaultOnboardingData, ...parsed, isCompleted: parsed.isCompleted ?? false } as OnboardingData;
+        } catch {
+          return defaultOnboardingData;
+        }
+      }
+    } catch (error) {
+      console.error('Error clearing old data:', error);
     }
+    
     return defaultOnboardingData;
   });
 

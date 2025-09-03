@@ -503,33 +503,22 @@ class APIService {
 
   // Convert onboarding data to user profile format
   private convertOnboardingToProfile(onboardingData: Record<string, unknown>): Partial<UserProfile> {
+    // ใช้ Logic เดียวกับ Profile page ที่อัพเดตชื่อได้
+    const firstName = (onboardingData.firstName as string)?.trim() || 
+                     (onboardingData.registrationFirstName as string)?.trim() || '';
+    const lastName = (onboardingData.lastName as string)?.trim() || 
+                    (onboardingData.registrationLastName as string)?.trim() || '';
+
+    console.log('🔍 Name data in convertOnboardingToProfile:', {
+      firstName,
+      lastName,
+      source: 'Direct from onboarding data (using Profile logic)'
+    });
+
     // Calculate BMI if height and weight are available
     const height = onboardingData.height as number;
     const weight = onboardingData.weight as number;
     const bmi = height && weight ? weight / Math.pow(height / 100, 2) : undefined;
-
-    // ตรวจสอบข้อมูลชื่อจากหลายแหล่ง
-    const firstName = (onboardingData.firstName as string) || 
-                     (onboardingData.first_name as string) || 
-                     (onboardingData.registrationFirstName as string) || '';
-    const lastName = (onboardingData.lastName as string) || 
-                    (onboardingData.last_name as string) || 
-                    (onboardingData.registrationLastName as string) || '';
-
-    console.log('🔍 Name data in convertOnboardingToProfile:', {
-      firstName: {
-        fromFirstName: onboardingData.firstName,
-        fromFirst_name: onboardingData.first_name,
-        fromRegistrationFirstName: onboardingData.registrationFirstName,
-        final: firstName
-      },
-      lastName: {
-        fromLastName: onboardingData.lastName,
-        fromLast_name: onboardingData.last_name,
-        fromRegistrationLastName: onboardingData.registrationLastName,
-        final: lastName
-      }
-    });
 
     // Return only the fields that the backend DTO expects
     return {

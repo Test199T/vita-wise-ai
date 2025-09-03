@@ -386,12 +386,17 @@ const Onboarding = () => {
           console.log('🔍 ข้อมูลที่จะส่งไป backend:', onboardingDataForBackend);
           console.log('🔍 ข้อมูลชื่อ:', {
             firstName: onboardingDataForBackend.firstName,
-            lastName: onboardingDataForBackend.lastName
+            lastName: onboardingDataForBackend.lastName,
+            source: 'From data state (user input)'
           });
           
           // ตรวจสอบว่าข้อมูลชื่อไม่หาย
           if (!onboardingDataForBackend.firstName || !onboardingDataForBackend.lastName) {
             console.error('❌ ข้อมูลชื่อหายไป!');
+            console.error('❌ firstName from data:', data.firstName);
+            console.error('❌ lastName from data:', data.lastName);
+            console.error('❌ registrationData:', registrationData);
+            
             toast({
               title: "❌ ข้อมูลชื่อหายไป",
               description: "กรุณากรอกชื่อและนามสกุลให้ครบถ้วน",
