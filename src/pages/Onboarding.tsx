@@ -33,6 +33,7 @@ import { useOnboarding } from "@/contexts/OnboardingContext";
 import { useToast } from "@/hooks/use-toast";
 import React from "react";
 import { apiService } from "@/services/api"; // เพิ่ม import API service
+import { tokenUtils } from "@/lib/utils";
 
 interface OnboardingData {
   // Step 1: Health Goals
@@ -82,6 +83,15 @@ const Onboarding = () => {
   const { onboardingData, updateOnboardingData, completeOnboarding } = useOnboarding();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
+  
+  // ตรวจสอบว่าผู้ใช้ล็อกอินแล้วหรือไม่
+  React.useEffect(() => {
+    if (!tokenUtils.isLoggedIn()) {
+      console.log('🚫 ผู้ใช้ไม่ได้เข้าสู่ระบบ - เปลี่ยนไปยังหน้า login');
+      navigate('/login');
+      return;
+    }
+  }, [navigate]);
   
   // รับข้อมูลจาก Register และ merge กับ onboardingData
   const registrationData = location.state?.registrationData;

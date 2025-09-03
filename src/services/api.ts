@@ -1019,10 +1019,10 @@ export const userService = {
     }
   },
 
-  // Clear user data
+  // Clear user data - ใช้ฟังก์ชัน logout ใหม่
   clearUserData: (): void => {
-    localStorage.removeItem('user');
-    tokenUtils.removeToken();
+    // ใช้ฟังก์ชัน logout ใหม่ที่ล้างข้อมูลทั้งหมด
+    tokenUtils.logout();
   },
 
   // Check if user is logged in

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { OnboardingProvider } from "./contexts/OnboardingContext";
 import { TokenDebugger } from "./components/debug/TokenDebugger";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -40,18 +41,18 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/onboarding" element={<Onboarding />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/health-goals" element={<HealthGoals />} />
-            <Route path="/exercise-log" element={<ExerciseLog />} />
-            <Route path="/food-log" element={<FoodLog />} />
-            <Route path="/sleep-log" element={<SleepLog />} />
-            <Route path="/water-log" element={<WaterLog />} />
-            <Route path="/ai-insights" element={<AIInsights />} />
-            <Route path="/chat" element={<Chat />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/debug" element={<Debug />} />
+            <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/health-goals" element={<ProtectedRoute><HealthGoals /></ProtectedRoute>} />
+            <Route path="/exercise-log" element={<ProtectedRoute><ExerciseLog /></ProtectedRoute>} />
+            <Route path="/food-log" element={<ProtectedRoute><FoodLog /></ProtectedRoute>} />
+            <Route path="/sleep-log" element={<ProtectedRoute><SleepLog /></ProtectedRoute>} />
+            <Route path="/water-log" element={<ProtectedRoute><WaterLog /></ProtectedRoute>} />
+            <Route path="/ai-insights" element={<ProtectedRoute><AIInsights /></ProtectedRoute>} />
+            <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+            <Route path="/debug" element={<ProtectedRoute><Debug /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

@@ -43,6 +43,7 @@ import {
   Loader2,
   RefreshCw
 } from "lucide-react";
+import { tokenUtils } from "@/lib/utils";
 
 export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
@@ -216,7 +217,7 @@ export default function Profile() {
               </Button>
               <Button 
                 variant="outline"
-                onClick={() => window.location.href = "/login"}
+                onClick={() => tokenUtils.logout()}
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 ออกจากระบบ
@@ -357,16 +358,8 @@ export default function Profile() {
   };
 
   const handleLogout = () => {
-    // Clear all user data
-    userService.clearUserData();
-    
-    toast({
-      title: "ออกจากระบบ",
-      description: "คุณได้ออกจากระบบเรียบร้อยแล้ว",
-    });
-    
-    // Redirect to login page
-    window.location.href = "/login";
+    // ใช้ฟังก์ชัน logout ใหม่ที่ล้างข้อมูลทั้งหมด
+    tokenUtils.logout();
   };
 
   return (

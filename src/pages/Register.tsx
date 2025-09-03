@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Activity, Eye, EyeOff, Mail, Lock, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { tokenUtils } from "@/lib/utils";
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -23,6 +24,14 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // ตรวจสอบว่าผู้ใช้ล็อกอินแล้วหรือไม่
+  useEffect(() => {
+    if (tokenUtils.isLoggedIn()) {
+      console.log('✅ ผู้ใช้ล็อกอินแล้ว - เปลี่ยนไปยังหน้า Dashboard');
+      navigate('/dashboard');
+    }
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

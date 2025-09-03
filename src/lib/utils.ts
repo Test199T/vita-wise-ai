@@ -90,5 +90,87 @@ export const tokenUtils = {
     }
     
     return true;
+  },
+
+  // ฟังก์ชัน logout ที่สมบูรณ์
+  logout: (): void => {
+    console.log('🔄 เริ่มกระบวนการออกจากระบบ...');
+    
+    // ล้างข้อมูลทั้งหมดใน localStorage
+    const keysToRemove = [
+      'token',
+      'accessToken',
+      'user',
+      'onboardingData',
+      'profileData',
+      'chat_sessions',
+      'food_logs',
+      'exercise_logs',
+      'sleep_logs',
+      'water_logs',
+      'health_goals',
+      'notifications'
+    ];
+    
+    keysToRemove.forEach(key => {
+      if (localStorage.getItem(key)) {
+        localStorage.removeItem(key);
+        console.log(`🗑️ ลบ ${key} จาก localStorage`);
+      }
+    });
+    
+    // ล้างข้อมูลทั้งหมดใน sessionStorage
+    const sessionKeysToRemove = [
+      'token',
+      'accessToken',
+      'user',
+      'onboardingData',
+      'profileData',
+      'chat_sessions',
+      'food_logs',
+      'exercise_logs',
+      'sleep_logs',
+      'water_logs',
+      'health_goals',
+      'notifications'
+    ];
+    
+    sessionKeysToRemove.forEach(key => {
+      if (sessionStorage.getItem(key)) {
+        sessionStorage.removeItem(key);
+        console.log(`🗑️ ลบ ${key} จาก sessionStorage`);
+      }
+    });
+    
+    // ล้างข้อมูลใน memory (ถ้ามี)
+    if (typeof window !== 'undefined') {
+      // ล้าง event listeners ที่อาจเกี่ยวข้องกับ user data
+      window.removeEventListener('storage', () => {});
+      window.removeEventListener('beforeunload', () => {});
+    }
+    
+    console.log('✅ ออกจากระบบเรียบร้อยแล้ว');
+    
+    // เปลี่ยน URL ไปยังหน้า login และป้องกันการย้อนกลับ
+    if (typeof window !== 'undefined') {
+      // ใช้ replaceState เพื่อไม่ให้สามารถย้อนกลับได้
+      window.history.replaceState(null, '', '/login');
+      
+      // ล้างประวัติการนำทางทั้งหมด
+      window.history.pushState(null, '', '/login');
+      
+      // เปลี่ยนไปยังหน้า login
+      window.location.href = '/login';
+    }
+  },
+
+  // ตรวจสอบและป้องกันการเข้าถึงหน้าที่ต้องล็อกอิน
+  requireAuth: (): boolean => {
+    if (!tokenUtils.isLoggedIn()) {
+      console.log('🚫 ผู้ใช้ไม่ได้เข้าสู่ระบบ - เปลี่ยนไปยังหน้า login');
+      tokenUtils.logout();
+      return false;
+    }
+    return true;
   }
 };

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,10 +10,12 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Lock, CheckCircle, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { apiService } from "@/services/api";
 import { useSearchParams } from "react-router-dom";
+import { tokenUtils } from "@/lib/utils";
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
+  const navigate = useNavigate();
   
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -22,6 +25,14 @@ export default function ResetPassword() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { toast } = useToast();
+
+  // ตรวจสอบว่าผู้ใช้ล็อกอินแล้วหรือไม่
+  useEffect(() => {
+    if (tokenUtils.isLoggedIn()) {
+      console.log('✅ ผู้ใช้ล็อกอินแล้ว - เปลี่ยนไปยังหน้า Dashboard');
+      navigate('/dashboard');
+    }
+  }, [navigate]);
 
   // ตรวจสอบ token เมื่อโหลดหน้า
   useEffect(() => {

@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { HealthCard } from "@/components/health/HealthCard";
 import { HealthChart } from "@/components/health/HealthChart";
@@ -11,6 +13,7 @@ import { AlertTriangle, CheckCircle, XCircle, TrendingUp, MessageCircle, Calenda
 import { Link } from "react-router-dom";
 import { useState, useMemo } from "react";
 import { useOnboarding } from "@/contexts/OnboardingContext";
+import { tokenUtils } from "@/lib/utils";
 
 // จำลองข้อมูลสุขภาพ
 const mockHealthData = {
@@ -137,8 +140,18 @@ const getNutritionBadge = (status: string) => {
 };
 
 export default function Dashboard() {
-  const [period, setPeriod] = useState("week");
+  const navigate = useNavigate();
   const { onboardingData } = useOnboarding();
+  const [selectedPeriod, setSelectedPeriod] = useState("week");
+
+  // ตรวจสอบว่าผู้ใช้ล็อกอินแล้วหรือไม่
+  useEffect(() => {
+    if (!tokenUtils.isLoggedIn()) {
+      console.log('🚫 ผู้ใช้ไม่ได้เข้าสู่ระบบ - เปลี่ยนไปยังหน้า login');
+      navigate('/login');
+      return;
+    }
+  }, [navigate]);
 
   const { bmr, tdee } = useMemo(() => {
     const height = onboardingData.height || 0; // cm

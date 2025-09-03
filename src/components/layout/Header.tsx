@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Link, NavLink } from "react-router-dom";
 import { useProfilePicture } from "@/hooks/useProfilePicture";
 import { useProfile } from "@/hooks/useProfile";
+import { tokenUtils } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -159,11 +160,12 @@ export function Header() {
                     โปรไฟล์
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/login" className="flex items-center gap-2 text-destructive">
-                    <LogOut className="h-4 w-4" />
-                    ออกจากระบบ
-                  </Link>
+                <DropdownMenuItem 
+                  onClick={() => tokenUtils.logout()}
+                  className="flex items-center gap-2 text-destructive cursor-pointer"
+                >
+                  <LogOut className="h-4 w-4" />
+                  ออกจากระบบ
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

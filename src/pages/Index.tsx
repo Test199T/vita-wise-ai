@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,8 +13,19 @@ import {
   ArrowRight,
   Star
 } from "lucide-react";
+import { tokenUtils } from "@/lib/utils";
 
 const Index = () => {
+  const navigate = useNavigate();
+
+  // ตรวจสอบว่าผู้ใช้ล็อกอินแล้วหรือไม่
+  useEffect(() => {
+    if (tokenUtils.isLoggedIn()) {
+      console.log('✅ ผู้ใช้ล็อกอินแล้ว - เปลี่ยนไปยังหน้า Dashboard');
+      navigate('/dashboard');
+    }
+  }, [navigate]);
+
   return (
     <div
       className="relative min-h-screen bg-cover bg-center bg-no-repeat"

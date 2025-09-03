@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Mail, CheckCircle, AlertCircle } from "lucide-react";
 import { apiService } from "@/services/api";
+import { tokenUtils } from "@/lib/utils";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -15,6 +17,15 @@ export default function ForgotPassword() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState("");
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  // ตรวจสอบว่าผู้ใช้ล็อกอินแล้วหรือไม่
+  useEffect(() => {
+    if (tokenUtils.isLoggedIn()) {
+      console.log('✅ ผู้ใช้ล็อกอินแล้ว - เปลี่ยนไปยังหน้า Dashboard');
+      navigate('/dashboard');
+    }
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
