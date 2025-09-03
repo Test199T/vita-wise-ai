@@ -541,8 +541,56 @@ class APIService {
       weight_kg: onboardingData.weight as number,
       activity_level: this.mapActivityLevel(onboardingData.activityLevel as string),
       
-      // Store additional data in a separate field or handle differently
-      // For now, we'll only send the basic fields that the backend accepts
+      // เพิ่มข้อมูล 5 ตัวที่ขาดหายไป
+      health_data: {
+        blood_pressure_systolic: this.extractBloodPressure(onboardingData.bloodPressure as string, 'systolic'),
+        blood_pressure_diastolic: this.extractBloodPressure(onboardingData.bloodPressure as string, 'diastolic'),
+        blood_sugar_mg_dl: onboardingData.bloodSugar ? parseFloat(onboardingData.bloodSugar as string) : undefined,
+        bmi: bmi,
+        waist_circumference: onboardingData.waist as number,
+      },
+      
+      health_goals: {
+        goal_type: this.mapHealthGoal(onboardingData.healthGoal as string),
+        title: this.getHealthGoalTitle(onboardingData.healthGoal as string),
+        description: onboardingData.motivation as string,
+        target_value: onboardingData.timeline as number,
+        unit: 'months',
+        start_date: new Date().toISOString().split('T')[0],
+        target_date: this.calculateTargetDate(onboardingData.timeline as number),
+        status: 'active',
+        priority: 'medium',
+      },
+      
+      nutrition_goals: {
+        daily_calories: 2000, // ค่าเริ่มต้น
+        protein_g: 60,
+        carbs_g: 250,
+        fat_g: 65,
+        fiber_g: 25,
+        sodium_mg: 2300,
+        water_liters: (onboardingData as unknown as Record<string, unknown>).waterIntakeGlasses as number || 6,
+      },
+      
+      daily_behavior: {
+        exercise_frequency: onboardingData.exerciseFrequency as 'never' | '1-2' | '3-5' | 'daily',
+        sleep_hours: onboardingData.sleepHours as number,
+        meals_per_day: onboardingData.mealsPerDay as number,
+        smoking: onboardingData.smoking as boolean,
+        alcohol_frequency: onboardingData.alcoholFrequency as 'never' | 'rarely' | 'weekly' | 'daily',
+        caffeine_cups_per_day: (onboardingData as unknown as Record<string, unknown>).caffeineCupsPerDay as number || 0,
+        screen_time_hours: (onboardingData as unknown as Record<string, unknown>).screenTimeHours as 'lt2' | '2-4' | '4-6' | 'gt6' || '2-4',
+        stress_level: (onboardingData as unknown as Record<string, unknown>).stressLevel as 'low' | 'medium' | 'high' || 'medium',
+        water_intake_glasses: (onboardingData as unknown as Record<string, unknown>).waterIntakeGlasses as number || 6,
+      },
+      
+      medical_history: {
+        conditions: onboardingData.medicalConditions as string[] || [],
+        surgeries: onboardingData.surgeries as string || '',
+        allergies: onboardingData.allergies as string || '',
+        medications: [],
+        family_history: '',
+      },
     };
   }
 

@@ -31,7 +31,8 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import { useOnboarding } from "@/contexts/OnboardingContext";
 import { useToast } from "@/hooks/use-toast";
-import React from "react"; // Added missing import
+import React from "react";
+import { apiService } from "@/services/api"; // เพิ่ม import API service
 
 interface OnboardingData {
   // Step 1: Health Goals
@@ -64,6 +65,15 @@ interface OnboardingData {
   medicalConditions: string[];
   surgeries: string;
   allergies: string;
+  
+  // เพิ่มข้อมูล lifestyle ที่ขาดหายไป
+  waterIntakeGlasses: number;
+  otherLifestyleNotes: string;
+  caffeineCupsPerDay: number;
+  screenTimeHours: string;
+  stressLevel: string;
+  relaxationFrequency: string;
+  lateMealFrequency: string;
 }
 
 const Onboarding = () => {
@@ -337,31 +347,40 @@ const Onboarding = () => {
           
           console.log('✅ พบ JWT Token:', token.substring(0, 20) + '...');
           
-                     // สร้างข้อมูลสำหรับส่งไปหลังบ้าน
-           const onboardingDataForBackend = {
-             // ใช้ field names แบบเดิมที่ backend ต้องการ
-             firstName: data.firstName || registrationData?.firstName || '',
-             lastName: data.lastName || registrationData?.lastName || '',
-             sex: data.sex || '',
-             birthDate: data.birthDate || '',
-             height: data.height || 0,
-             weight: data.weight || 0,
-             healthGoal: data.healthGoal || '',
-             timeline: data.timeline || 0,
-             motivation: data.motivation || '',
-             waist: data.waist || 0,
-             bloodPressure: data.bloodPressure || '',
-             bloodSugar: data.bloodSugar || '',
-             exerciseFrequency: data.exerciseFrequency || '',
-             sleepHours: data.sleepHours || 0,
-             mealsPerDay: data.mealsPerDay || 0,
-             smoking: data.smoking || false,
-             alcoholFrequency: data.alcoholFrequency || '',
-             activityLevel: data.activityLevel || '',
-             medicalConditions: data.medicalConditions || [],
-             surgeries: data.surgeries || '',
-             allergies: data.allergies || ''
-           };
+          // สร้างข้อมูลสำหรับส่งไปหลังบ้าน
+          const onboardingDataForBackend = {
+            // ใช้ field names แบบเดิมที่ backend ต้องการ
+            firstName: data.firstName || registrationData?.firstName || '',
+            lastName: data.lastName || registrationData?.lastName || '',
+            sex: data.sex || '',
+            birthDate: data.birthDate || '',
+            height: data.height || 0,
+            weight: data.weight || 0,
+            healthGoal: data.healthGoal || '',
+            timeline: data.timeline || 0,
+            motivation: data.motivation || '',
+            waist: data.waist || 0,
+            bloodPressure: data.bloodPressure || '',
+            bloodSugar: data.bloodSugar || '',
+            exerciseFrequency: data.exerciseFrequency || '',
+            sleepHours: data.sleepHours || 0,
+            mealsPerDay: data.mealsPerDay || 0,
+            smoking: data.smoking || false,
+            alcoholFrequency: data.alcoholFrequency || '',
+            activityLevel: data.activityLevel || '',
+            medicalConditions: data.medicalConditions || [],
+            surgeries: data.surgeries || '',
+            allergies: data.allergies || '',
+            
+            // เพิ่มข้อมูล lifestyle ที่ขาดหายไป
+            waterIntakeGlasses: (data as unknown as Record<string, unknown>).waterIntakeGlasses as number || 0,
+            otherLifestyleNotes: (data as unknown as Record<string, unknown>).otherLifestyleNotes as string || '',
+            caffeineCupsPerDay: (data as unknown as Record<string, unknown>).caffeineCupsPerDay as number || 0,
+            screenTimeHours: (data as unknown as Record<string, unknown>).screenTimeHours as string || '2-4',
+            stressLevel: (data as unknown as Record<string, unknown>).stressLevel as string || 'medium',
+            relaxationFrequency: (data as unknown as Record<string, unknown>).relaxationFrequency as string || '1-2',
+            lateMealFrequency: (data as unknown as Record<string, unknown>).lateMealFrequency as string || 'rarely'
+          };
           
           // ตรวจสอบข้อมูลที่จำเป็นก่อนส่ง
           console.log('🔍 ข้อมูลที่จะส่งไป backend:', onboardingDataForBackend);
@@ -381,16 +400,33 @@ const Onboarding = () => {
             return;
           }
           
-          // ข้อมูลจะถูกส่งไปยัง backend ผ่าน completeOnboarding() ใน OnboardingContext
-          console.log('📝 ข้อมูล Onboarding พร้อมส่งไปยัง backend:', onboardingDataForBackend);
-          console.log('🔍 ข้อมูลที่สำคัญ:', {
-            firstName: onboardingDataForBackend.firstName,
-            lastName: onboardingDataForBackend.lastName,
-            sex: onboardingDataForBackend.sex,
-            birthDate: onboardingDataForBackend.birthDate,
-            height: onboardingDataForBackend.height,
-            weight: onboardingDataForBackend.weight
-          });
+          // บันทึกข้อมูลลงฐานข้อมูลผ่าน API Service
+          console.log('💾 เริ่มบันทึกข้อมูลลงฐานข้อมูล...');
+          
+          try {
+            // ใช้ API Service เพื่อบันทึกข้อมูล onboarding
+            const savedProfile = await apiService.saveOnboardingData(onboardingDataForBackend);
+            
+            console.log('✅ บันทึกข้อมูลลงฐานข้อมูลสำเร็จ:', savedProfile);
+            
+            toast({
+              title: "🎉 บันทึกข้อมูลสำเร็จ!",
+              description: "ข้อมูลของคุณถูกบันทึกลงฐานข้อมูลเรียบร้อยแล้ว",
+              variant: "default",
+            });
+            
+          } catch (apiError) {
+            console.error('❌ Error saving data to database:', apiError);
+            
+            toast({
+              title: "⚠️ ไม่สามารถบันทึกลงฐานข้อมูลได้",
+              description: "ข้อมูลจะถูกบันทึกในเครื่องชั่วคราว และจะลองบันทึกลงฐานข้อมูลอีกครั้งในภายหลัง",
+              variant: "destructive",
+            });
+            
+            // แม้จะบันทึกลงฐานข้อมูลไม่สำเร็จ ก็ยังให้เสร็จสิ้น onboarding ได้
+          }
+          
         } catch (apiError) {
           console.error('❌ Error sending data to backend:', apiError);
           // ไม่แสดง error ให้ผู้ใช้เห็น เพราะ Onboarding เสร็จสิ้นแล้ว
@@ -403,65 +439,64 @@ const Onboarding = () => {
           variant: "default",
         });
         
-                 // บันทึกข้อมูลใน localStorage และไปหน้า Dashboard
-         // อัพเดทข้อมูลล่าสุดก่อนเรียก completeOnboarding
-         console.log('🔄 Syncing final data to context before completion...');
-         
-         // ตรวจสอบข้อมูลชื่อจากหลายแหล่ง
-         const finalFirstName = data.firstName || registrationData?.firstName || '';
-         const finalLastName = data.lastName || registrationData?.lastName || '';
-         
-         console.log('🔍 Final name data:', {
-           firstName: {
-             fromData: data.firstName,
-             fromRegistration: registrationData?.firstName,
-             final: finalFirstName
-           },
-           lastName: {
-             fromData: data.lastName,
-             fromRegistration: registrationData?.lastName,
-             final: finalLastName
-           }
-         });
-         
-         // อัพเดทข้อมูลใน context
-         Object.keys(data).forEach(key => {
-           let value = data[key as keyof OnboardingData];
-           
-           // สำหรับข้อมูลชื่อ ให้ใช้ข้อมูลจากหลายแหล่ง
-           if (key === 'firstName') {
-             value = finalFirstName;
-           } else if (key === 'lastName') {
-             value = finalLastName;
-           }
-           
-           if (value !== undefined && value !== null && value !== "") {
-             updateOnboardingData(key as keyof OnboardingData, value);
-             console.log(`✅ Synced ${key}:`, value);
-           } else {
-             console.log(`⏭️ Skipped syncing ${key} (empty value):`, value);
-           }
-         });
-         
-         // ส่งข้อมูลชื่อไปยัง API service โดยตรง
-         if (finalFirstName && finalLastName) {
-           console.log('📝 Sending name data to API service:', { firstName: finalFirstName, lastName: finalLastName });
-           
-           // อัพเดทข้อมูลใน context อีกครั้งเพื่อให้แน่ใจ
-           updateOnboardingData('firstName', finalFirstName);
-           updateOnboardingData('lastName', finalLastName);
-           
-           // เพิ่มข้อมูลชื่อจาก registrationData เพื่อให้ API service สามารถเข้าถึงได้
-           updateOnboardingData('registrationFirstName' as keyof OnboardingData, finalFirstName);
-           updateOnboardingData('registrationLastName' as keyof OnboardingData, finalLastName);
-           
-           // รอให้ข้อมูลถูกอัพเดทใน context
-           await new Promise(resolve => setTimeout(resolve, 100));
-         }
-         
-         console.log('🎯 Final data synced, calling completeOnboarding...');
-         await completeOnboarding();
-         navigate("/dashboard");
+        // อัพเดทข้อมูลล่าสุดก่อนเรียก completeOnboarding
+        console.log('🔄 Syncing final data to context before completion...');
+        
+        // ตรวจสอบข้อมูลชื่อจากหลายแหล่ง
+        const finalFirstName = data.firstName || registrationData?.firstName || '';
+        const finalLastName = data.lastName || registrationData?.lastName || '';
+        
+        console.log('🔍 Final name data:', {
+          firstName: {
+            fromData: data.firstName,
+            fromRegistration: registrationData?.firstName,
+            final: finalFirstName
+          },
+          lastName: {
+            fromData: data.lastName,
+            fromRegistration: registrationData?.lastName,
+            final: finalLastName
+          }
+        });
+        
+        // อัพเดทข้อมูลใน context
+        Object.keys(data).forEach(key => {
+          let value = data[key as keyof OnboardingData];
+          
+          // สำหรับข้อมูลชื่อ ให้ใช้ข้อมูลจากหลายแหล่ง
+          if (key === 'firstName') {
+            value = finalFirstName;
+          } else if (key === 'lastName') {
+            value = finalLastName;
+          }
+          
+          if (value !== undefined && value !== null && value !== "") {
+            updateOnboardingData(key as keyof OnboardingData, value);
+            console.log(`✅ Synced ${key}:`, value);
+          } else {
+            console.log(`⏭️ Skipped syncing ${key} (empty value):`, value);
+          }
+        });
+        
+        // ส่งข้อมูลชื่อไปยัง API service โดยตรง
+        if (finalFirstName && finalLastName) {
+          console.log('📝 Sending name data to API service:', { firstName: finalFirstName, lastName: finalLastName });
+          
+          // อัพเดทข้อมูลใน context อีกครั้งเพื่อให้แน่ใจ
+          updateOnboardingData('firstName', finalFirstName);
+          updateOnboardingData('lastName', finalLastName);
+          
+          // เพิ่มข้อมูลชื่อจาก registrationData เพื่อให้ API service สามารถเข้าถึงได้
+          updateOnboardingData('registrationFirstName' as keyof OnboardingData, finalFirstName);
+          updateOnboardingData('registrationLastName' as keyof OnboardingData, finalLastName);
+          
+          // รอให้ข้อมูลถูกอัพเดทใน context
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        console.log('🎯 Final data synced, calling completeOnboarding...');
+        await completeOnboarding();
+        navigate("/dashboard");
       } catch (error) {
         console.error('Error completing onboarding:', error);
         // Still navigate even if there's an error
@@ -856,16 +891,6 @@ const Onboarding = () => {
                        <span className="font-medium">เพศ:</span> {data.sex === 'male' ? 'ชาย' : 'หญิง'}
                      </div>
                    </div>
-                  {registrationData.hasJWT && (
-                    <div className="mt-2 p-2 bg-blue-100 rounded border border-blue-300">
-                      <p className="text-xs text-blue-800 font-medium">
-                        🔐 เข้าสู่ระบบด้วย JWT แล้ว
-                      </p>
-                      <p className="text-xs text-blue-700 mt-1">
-                        ข้อมูลจะถูกส่งไปยังฐานข้อมูลเมื่อเสร็จสิ้นการตั้งค่า
-                      </p>
-                    </div>
-                  )}
                   <p className="text-xs text-green-700 mt-2">
                     💡 คุณสามารถแก้ไขข้อมูลเหล่านี้ได้หากต้องการ
                   </p>

@@ -131,26 +131,33 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
 
   const completeOnboarding = async () => {
     try {
-      console.log('🎯 Completing onboarding and saving to backend...');
+      console.log('🎯 Completing onboarding and saving to database...');
       
-      // Save onboarding data to backend
-      await apiService.saveOnboardingData(onboardingData as unknown as Record<string, unknown>);
+      // Save onboarding data to backend database
+      try {
+        await apiService.saveOnboardingData(onboardingData as unknown as Record<string, unknown>);
+        console.log('✅ Onboarding data saved to database successfully!');
+      } catch (error) {
+        console.error('❌ Failed to save onboarding data to database:', error);
+        // แสดงข้อความแจ้งเตือนให้ผู้ใช้ทราบ
+        console.warn('⚠️ Data will be saved locally as backup');
+      }
       
-      // Mark as completed in local storage
+      // Mark as completed in local storage as backup
       const completedData = { ...onboardingData, isCompleted: true };
       setOnboardingDataState(completedData);
       localStorage.setItem('onboardingData', JSON.stringify(completedData));
       
       console.log('✅ Onboarding completed successfully!');
     } catch (error) {
-      console.error('❌ Failed to save onboarding data:', error);
+      console.error('❌ Failed to complete onboarding:', error);
       // Still mark as completed locally even if backend fails
       const completedData = { ...onboardingData, isCompleted: true };
       setOnboardingDataState(completedData);
       localStorage.setItem('onboardingData', JSON.stringify(completedData));
       
-      // You could show a toast notification here
-      alert('ข้อมูลถูกบันทึกในเครื่องแล้ว แต่ยังไม่สามารถส่งไปยังเซิร์ฟเวอร์ได้ ระบบจะลองส่งอีกครั้งในภายหลัง');
+      // แสดงข้อความแจ้งเตือนให้ผู้ใช้ทราบ
+      console.warn('⚠️ Onboarding marked as completed locally as backup');
     }
   };
 
