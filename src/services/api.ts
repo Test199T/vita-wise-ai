@@ -1260,6 +1260,152 @@ class APIService {
       throw error;
     }
   }
+
+  // ฟังก์ชันสำหรับ Dashboard - Exercise Statistics
+  async getExerciseStats(date?: string): Promise<any> {
+    console.log('📊 Getting exercise stats...');
+    
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      throw new Error('No valid authentication token found');
+    }
+
+    try {
+      const url = date 
+        ? `${this.baseURL}/exercise-log/stats?date=${date}`
+        : `${this.baseURL}/exercise-log/stats`;
+        
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: this.getHeaders(),
+        signal: AbortSignal.timeout(10000)
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.log('Could not parse error response:', parseError);
+        }
+        
+        switch (response.status) {
+          case 401:
+            throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
+          case 500:
+            throw new Error('Internal Server Error: เกิดข้อผิดพลาดที่เซิร์ฟเวอร์');
+          default:
+            throw new Error(errorMessage);
+        }
+      }
+
+      const result = await this.handleResponse<any>(response);
+      console.log('✅ Exercise stats loaded successfully');
+      return result;
+    } catch (error) {
+      console.error('❌ Error getting exercise stats:', error);
+      throw error;
+    }
+  }
+
+  // ฟังก์ชันสำหรับ Dashboard - Calories Summary
+  async getCaloriesSummary(startDate?: string, endDate?: string): Promise<any> {
+    console.log('🔥 Getting calories summary...');
+    
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      throw new Error('No valid authentication token found');
+    }
+
+    try {
+      let url = `${this.baseURL}/exercise-log/calories/summary`;
+      const params = new URLSearchParams();
+      
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+        
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: this.getHeaders(),
+        signal: AbortSignal.timeout(10000)
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.log('Could not parse error response:', parseError);
+        }
+        
+        switch (response.status) {
+          case 401:
+            throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
+          case 500:
+            throw new Error('Internal Server Error: เกิดข้อผิดพลาดที่เซิร์ฟเวอร์');
+          default:
+            throw new Error(errorMessage);
+        }
+      }
+
+      const result = await this.handleResponse<any>(response);
+      console.log('✅ Calories summary loaded successfully');
+      return result;
+    } catch (error) {
+      console.error('❌ Error getting calories summary:', error);
+      throw error;
+    }
+  }
+
+  // ฟังก์ชันสำหรับ Dashboard - Exercise Streak
+  async getExerciseStreak(): Promise<any> {
+    console.log('🔥 Getting exercise streak...');
+    
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      throw new Error('No valid authentication token found');
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}/exercise-log/streak/current`, {
+        method: 'GET',
+        headers: this.getHeaders(),
+        signal: AbortSignal.timeout(10000)
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.log('Could not parse error response:', parseError);
+        }
+        
+        switch (response.status) {
+          case 401:
+            throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
+          case 500:
+            throw new Error('Internal Server Error: เกิดข้อผิดพลาดที่เซิร์ฟเวอร์');
+          default:
+            throw new Error(errorMessage);
+        }
+      }
+
+      const result = await this.handleResponse<any>(response);
+      console.log('✅ Exercise streak loaded successfully');
+      return result;
+    } catch (error) {
+      console.error('❌ Error getting exercise streak:', error);
+      throw error;
+    }
+  }
 }
 
 // Export a singleton instance

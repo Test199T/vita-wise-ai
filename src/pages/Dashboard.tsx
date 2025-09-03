@@ -9,107 +9,109 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 // lucide-react kept for inlined status icons/badges; main tiles use Iconify via HealthCard
-import { AlertTriangle, CheckCircle, XCircle, TrendingUp, MessageCircle, Calendar, Pill, BarChart3, Target, Clock, LineChart } from "lucide-react";
+import { AlertTriangle, CheckCircle, XCircle, TrendingUp, MessageCircle, Calendar, Pill, BarChart3, Target, Clock, LineChart, Dumbbell, Flame } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useMemo } from "react";
 import { useOnboarding } from "@/contexts/OnboardingContext";
 import { tokenUtils } from "@/lib/utils";
+import { apiService } from "@/services/api";
+import { useToast } from "@/hooks/use-toast";
 
 // จำลองข้อมูลสุขภาพ
 const mockHealthData = {
-  sleep: { hours: 7.5, trend: "up", target: 8 },
-  water: { liters: 1.8, trend: "stable", target: 2.5 },
-  calories: { count: 1850, trend: "down", target: 2000 },
+  sleep: { hours: 0, trend: "stable", target: 8 },
+  water: { liters: 0, trend: "stable", target: 2.5 },
+  calories: { count: 0, trend: "stable", target: 2000 },
   exercise: { minutes: 35, trend: "up", target: 45 },
 };
 
 // ข้อมูลโภชนาการ
 const nutritionData = {
-  protein: { current: 65, target: 80, unit: "g", trend: "down" },
-  carbs: { current: 220, target: 250, unit: "g", trend: "stable" },
-  fats: { current: 75, target: 65, unit: "g", trend: "up" },
-  fiber: { current: 18, target: 25, unit: "g", trend: "down" },
-  vitaminC: { current: 45, target: 90, unit: "mg", trend: "down" },
-  vitaminD: { current: 8, target: 15, unit: "mcg", trend: "down" },
-  calcium: { current: 850, target: 1000, unit: "mg", trend: "down" },
-  iron: { current: 12, target: 18, unit: "mg", trend: "down" },
-  potassium: { current: 2800, target: 3500, unit: "mg", trend: "down" },
-  sodium: { current: 2800, target: 2300, unit: "mg", trend: "up" },
+  protein: { current: 0, target: 80, unit: "g", trend: "stable" },
+  carbs: { current: 0, target: 250, unit: "g", trend: "stable" },
+  fats: { current: 0, target: 65, unit: "g", trend: "stable" },
+  fiber: { current: 0, target: 25, unit: "g", trend: "stable" },
+  vitaminC: { current: 0, target: 90, unit: "mg", trend: "stable" },
+  vitaminD: { current: 0, target: 15, unit: "mcg", trend: "stable" },
+  calcium: { current: 0, target: 1000, unit: "mg", trend: "stable" },
+  iron: { current: 0, target: 18, unit: "mg", trend: "stable" },
+  potassium: { current: 0, target: 3500, unit: "mg", trend: "stable" },
+  sodium: { current: 0, target: 2300, unit: "mg", trend: "stable" },
 };
 
 const sleepData = [
-  { name: "จันทร์", value: 7 },
-  { name: "อังคาร", value: 6.5 },
-  { name: "พุธ", value: 8 },
-  { name: "พฤหัส", value: 7.5 },
-  { name: "ศุกร์", value: 6 },
-  { name: "เสาร์", value: 8.5 },
-  { name: "อาทิตย์", value: 7.5 },
+  { name: "จันทร์", value: 0 },
+  { name: "อังคาร", value: 0 },
+  { name: "พุธ", value: 0 },
+  { name: "พฤหัส", value: 0 },
+  { name: "ศุกร์", value: 0 },
+  { name: "เสาร์", value: 0 },
+  { name: "อาทิตย์", value: 0 },
 ];
 
 const exerciseData = [
-  { name: "จันทร์", value: 30 },
-  { name: "อังคาร", value: 40 },
-  { name: "พุธ", value: 35 },
-  { name: "พฤหัส", value: 38 },
-  { name: "ศุกร์", value: 32 },
-  { name: "เสาร์", value: 45 },
-  { name: "อาทิตย์", value: 37 },
+  { name: "จันทร์", value: 0 },
+  { name: "อังคาร", value: 0 },
+  { name: "พุธ", value: 0 },
+  { name: "พฤหัส", value: 0 },
+  { name: "ศุกร์", value: 0 },
+  { name: "เสาร์", value: 0 },
+  { name: "อาทิตย์", value: 0 },
 ];
 
 const waterData = [
-  { name: "จันทร์", value: 2.2 },
-  { name: "อังคาร", value: 1.8 },
-  { name: "พุธ", value: 2.5 },
-  { name: "พฤหัส", value: 2.0 },
-  { name: "ศุกร์", value: 1.5 },
-  { name: "เสาร์", value: 2.8 },
-  { name: "อาทิตย์", value: 1.8 },
+  { name: "จันทร์", value: 0 },
+  { name: "อังคาร", value: 0 },
+  { name: "พุธ", value: 0 },
+  { name: "พฤหัส", value: 0 },
+  { name: "ศุกร์", value: 0 },
+  { name: "เสาร์", value: 0 },
+  { name: "อาทิตย์", value: 0 },
 ];
 
 const caloriesData = [
-  { name: "จันทร์", value: 1950 },
-  { name: "อังคาร", value: 2100 },
-  { name: "พุธ", value: 1850 },
-  { name: "พฤหัส", value: 2200 },
-  { name: "ศุกร์", value: 1750 },
-  { name: "เสาร์", value: 2300 },
-  { name: "อาทิตย์", value: 1850 },
+  { name: "จันทร์", value: 0 },
+  { name: "อังคาร", value: 0 },
+  { name: "พุธ", value: 0 },
+  { name: "พฤหัส", value: 0 },
+  { name: "ศุกร์", value: 0 },
+  { name: "เสาร์", value: 0 },
+  { name: "อาทิตย์", value: 0 },
 ];
 
 const proteinData = [
-  { name: "จันทร์", value: 75 },
-  { name: "อังคาร", value: 85 },
-  { name: "พุธ", value: 70 },
-  { name: "พฤหัส", value: 90 },
-  { name: "ศุกร์", value: 65 },
-  { name: "เสาร์", value: 95 },
-  { name: "อาทิตย์", value: 65 },
+  { name: "จันทร์", value: 0 },
+  { name: "อังคาร", value: 0 },
+  { name: "พุธ", value: 0 },
+  { name: "พฤหัส", value: 0 },
+  { name: "ศุกร์", value: 0 },
+  { name: "เสาร์", value: 0 },
+  { name: "อาทิตย์", value: 0 },
 ];
 
 // ข้อมูลสถิติเพิ่มเติม
 const sleepWeeklyData = [
-  { name: "สัปดาห์ 1", value: 7.2 },
-  { name: "สัปดาห์ 2", value: 6.8 },
-  { name: "สัปดาห์ 3", value: 7.5 },
-  { name: "สัปดาห์ 4", value: 7.8 },
+  { name: "สัปดาห์ 1", value: 0 },
+  { name: "สัปดาห์ 2", value: 0 },
+  { name: "สัปดาห์ 3", value: 0 },
+  { name: "สัปดาห์ 4", value: 0 },
 ];
 
 const moodWeeklyData = [
-  { name: "จันทร์", value: 4 },
-  { name: "อังคาร", value: 3 },
-  { name: "พุธ", value: 5 },
-  { name: "พฤหัส", value: 4 },
-  { name: "ศุกร์", value: 2 },
-  { name: "เสาร์", value: 5 },
-  { name: "อาทิตย์", value: 4 },
+  { name: "จันทร์", value: 0 },
+  { name: "อังคาร", value: 0 },
+  { name: "พุธ", value: 0 },
+  { name: "พฤหัส", value: 0 },
+  { name: "ศุกร์", value: 0 },
+  { name: "เสาร์", value: 0 },
+  { name: "อาทิตย์", value: 0 },
 ];
 
 const achievements = [
-  { title: "นักเดินทางแห่งสุขภาพ", description: "เดินครบเป้าหมาย 7 วันติดต่อกัน", icon: "🏃‍♂️" },
-  { title: "ผู้ดื่มน้ำมาสเตอร์", description: "ดื่มน้ำครบเป้าหมาย 30 วันติดต่อกัน", icon: "💧" },
-  { title: "นักนอนมืออาชีพ", description: "นอนครบ 8 ชั่วโมง 5 วันติดต่อกัน", icon: "😴" },
-  { title: "ผู้ดูแลตนเองขั้นเทพ", description: "บันทึกข้อมูลครบทุกวันเป็นเวลา 1 เดือน", icon: "🏆" },
+  { title: "รอข้อมูล", description: "รอ API ข้อมูลความสำเร็จ", icon: "⏳" },
+  { title: "รอข้อมูล", description: "รอ API ข้อมูลความสำเร็จ", icon: "⏳" },
+  { title: "รอข้อมูล", description: "รอ API ข้อมูลความสำเร็จ", icon: "⏳" },
+  { title: "รอข้อมูล", description: "รอ API ข้อมูลความสำเร็จ", icon: "⏳" },
 ];
 
 // ฟังก์ชันสำหรับตรวจสอบสถานะสารอาหาร
@@ -143,6 +145,15 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { onboardingData } = useOnboarding();
   const [selectedPeriod, setSelectedPeriod] = useState("week");
+  
+  // เพิ่ม state สำหรับข้อมูลการออกกำลังกาย
+  const [exerciseStats, setExerciseStats] = useState<any>(null);
+  const [caloriesSummary, setCaloriesSummary] = useState<any>(null);
+  const [exerciseStreak, setExerciseStreak] = useState<any>(null);
+  const [recentExercises, setRecentExercises] = useState<any[]>([]);
+  const [isLoadingExerciseData, setIsLoadingExerciseData] = useState(false);
+  
+  const { toast } = useToast();
 
   // ตรวจสอบว่าผู้ใช้ล็อกอินแล้วหรือไม่
   useEffect(() => {
@@ -163,6 +174,77 @@ export default function Dashboard() {
 
     return () => clearInterval(interval);
   }, [navigate]);
+
+  // ฟังก์ชันโหลดข้อมูลการออกกำลังกายจาก Backend
+  const loadExerciseData = async () => {
+    if (isLoadingExerciseData) return;
+    
+    setIsLoadingExerciseData(true);
+    
+    try {
+      console.log('📥 โหลดข้อมูลการออกกำลังกายจาก Backend...');
+      
+      // 1. โหลดสถิติรวม
+      const statsResponse = await apiService.getExerciseStats();
+      if (statsResponse?.data) {
+        setExerciseStats(statsResponse.data);
+        console.log('✅ โหลดสถิติสำเร็จ:', statsResponse.data);
+      }
+      
+      // 2. โหลดสรุปแคลอรี
+      const caloriesResponse = await apiService.getCaloriesSummary();
+      if (caloriesResponse?.data) {
+        setCaloriesSummary(caloriesResponse.data);
+        console.log('✅ โหลดสรุปแคลอรีสำเร็จ:', caloriesResponse.data);
+      }
+      
+      // 3. โหลด Exercise Streak
+      const streakResponse = await apiService.getExerciseStreak();
+      if (streakResponse?.data) {
+        setExerciseStreak(streakResponse.data);
+        console.log('✅ โหลด Exercise Streak สำเร็จ:', streakResponse.data);
+      }
+      
+      // 4. โหลดรายการล่าสุด
+      const recentResponse = await apiService.getExerciseLogs(); // 5 รายการล่าสุด
+      if (recentResponse && recentResponse.length > 0) {
+        setRecentExercises(recentResponse.slice(0, 5)); // เอาแค่ 5 รายการแรก
+        console.log('✅ โหลดรายการล่าสุดสำเร็จ:', recentResponse.length, 'รายการ');
+      }
+      
+      toast({ 
+        title: 'โหลดข้อมูลสำเร็จ', 
+        description: 'โหลดข้อมูลการออกกำลังกายเรียบร้อยแล้ว' 
+      });
+      
+    } catch (error) {
+      console.error('❌ Error loading exercise data:', error);
+      
+      let errorMessage = 'ไม่สามารถโหลดข้อมูลการออกกำลังกายได้';
+      if (error instanceof Error) {
+        if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+          errorMessage = 'ไม่มีสิทธิ์ในการเข้าถึงข้อมูล กรุณาเข้าสู่ระบบใหม่';
+        } else if (error.message.includes('500') || error.message.includes('Internal Server Error')) {
+          errorMessage = 'เกิดข้อผิดพลาดที่เซิร์ฟเวอร์ กรุณาลองใหม่อีกครั้ง';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast({ 
+        title: 'เกิดข้อผิดพลาด', 
+        description: errorMessage,
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoadingExerciseData(false);
+    }
+  };
+
+  // โหลดข้อมูลการออกกำลังกายเมื่อเปิดหน้า
+  useEffect(() => {
+    loadExerciseData();
+  }, []);
 
   const { bmr, tdee } = useMemo(() => {
     const height = onboardingData.height || 0; // cm
@@ -203,6 +285,39 @@ export default function Dashboard() {
     return { bmr: Math.round(calculatedBmr), tdee: Math.round(calculatedTdee) };
   }, [onboardingData]);
 
+  // สร้างข้อมูลกราฟการออกกำลังกายจากข้อมูลจริง
+  const generateExerciseChartData = () => {
+    const days = ["จันทร์", "อังคาร", "พุธ", "พฤหัส", "ศุกร์", "เสาร์", "อาทิตย์"];
+    const chartData = days.map(day => ({ name: day, value: 0 }));
+    
+    // ถ้ามีข้อมูลการออกกำลังกาย ให้แจกจ่ายไปยังวันต่างๆ
+    if (recentExercises && recentExercises.length > 0) {
+      recentExercises.forEach(exercise => {
+        if (exercise.exercise_date) {
+          const exerciseDate = new Date(exercise.exercise_date);
+          const dayIndex = exerciseDate.getDay() === 0 ? 6 : exerciseDate.getDay() - 1; // แปลง Sunday=0 ให้เป็น index 6
+          chartData[dayIndex].value += exercise.duration_minutes || 0;
+        }
+      });
+    }
+    
+    return chartData;
+  };
+
+  // คำนวณค่าเฉลี่ยต่อวัน (Daily Average) ที่ถูกต้อง
+  const calculateDailyAverage = () => {
+    if (!exerciseStats?.total_duration || !exerciseStats?.total_exercises) {
+      return 0;
+    }
+    
+    // ค่าเฉลี่ยต่อวัน = เวลารวม ÷ จำนวนวันที่มีกิจกรรม
+    return Math.round(exerciseStats.total_duration / exerciseStats.total_exercises);
+  };
+
+  const dailyAverage = calculateDailyAverage();
+
+  const realExerciseData = generateExerciseChartData();
+
   return (
     <MainLayout>
       <div className="space-y-6 fade-in">
@@ -217,6 +332,19 @@ export default function Dashboard() {
               ติดตามสุขภาพและสถิติของคุณประจำวัน
             </p>
           </div>
+          
+          {/* ปุ่มรีเฟรชข้อมูลการออกกำลังกาย */}
+          <Button 
+            variant="outline" 
+            onClick={loadExerciseData}
+            disabled={isLoadingExerciseData}
+            className="gap-2"
+          >
+            <svg className={`h-4 w-4 ${isLoadingExerciseData ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {isLoadingExerciseData ? 'กำลังโหลด...' : 'รีเฟรชข้อมูลการออกกำลังกาย'}
+          </Button>
           <div className="flex gap-2 items-center">
             <Button asChild variant="outline">
               <Link to="/health-goals">
@@ -256,7 +384,7 @@ export default function Dashboard() {
             </div>
             <div>
               <div className="text-sm text-muted-foreground">ออกกำลังกาย</div>
-              <div className="font-semibold">เฉลี่ย {mockHealthData.exercise.minutes} นาที/วัน</div>
+              <div className="font-semibold">เฉลี่ย {dailyAverage} นาที/วัน</div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground">น้ำดื่ม</div>
@@ -267,44 +395,44 @@ export default function Dashboard() {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="min-h-[140px] flex flex-col justify-between">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">การปรับปรุงโดยรวม</CardTitle>
-              <TrendingUp className="h-4 w-4 text-accent" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-accent">+15%</div>
-              <p className="text-xs text-muted-foreground">
-                เปรียบเทียบกับเดือนที่แล้ว
-              </p>
-            </CardContent>
-          </Card>
+                     <Card className="min-h-[140px] flex flex-col justify-between">
+             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+               <CardTitle className="text-sm font-medium">การปรับปรุงโดยรวม</CardTitle>
+               <TrendingUp className="h-4 w-4 text-accent" />
+             </CardHeader>
+             <CardContent>
+               <div className="text-2xl font-bold text-accent">0%</div>
+               <p className="text-xs text-muted-foreground">
+                 รอ API ข้อมูลการปรับปรุง
+               </p>
+             </CardContent>
+           </Card>
 
-          <Card className="min-h-[140px] flex flex-col justify-between">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">วันที่บันทึกข้อมูล</CardTitle>
-              <iconify-icon icon="lucide:activity" width="16" height="16" className="text-primary"></iconify-icon>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">24/30</div>
-              <p className="text-xs text-muted-foreground">
-                วันในเดือนนี้
-              </p>
-            </CardContent>
-          </Card>
+                     <Card className="min-h-[140px] flex flex-col justify-between">
+             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+               <CardTitle className="text-sm font-medium">วันที่บันทึกข้อมูล</CardTitle>
+               <iconify-icon icon="lucide:activity" width="16" height="16" className="text-primary"></iconify-icon>
+             </CardHeader>
+             <CardContent>
+               <div className="text-2xl font-bold">0/30</div>
+               <p className="text-xs text-muted-foreground">
+                 รอ API ข้อมูลการบันทึก
+               </p>
+             </CardContent>
+           </Card>
 
-          <Card className="min-h-[140px] flex flex-col justify-between">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">เป้าหมายที่บรรลุ</CardTitle>
-              <Target className="h-4 w-4 text-secondary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">18/21</div>
-              <p className="text-xs text-muted-foreground">
-                เป้าหมายสัปดาห์นี้
-              </p>
-            </CardContent>
-          </Card>
+                     <Card className="min-h-[140px] flex flex-col justify-between">
+             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+               <CardTitle className="text-sm font-medium">เป้าหมายที่บรรลุ</CardTitle>
+               <Target className="h-4 w-4 text-secondary" />
+             </CardHeader>
+             <CardContent>
+               <div className="text-2xl font-bold">0/21</div>
+               <p className="text-xs text-muted-foreground">
+                 รอ API ข้อมูลเป้าหมาย
+               </p>
+             </CardContent>
+           </Card>
 
           <Card className="min-h-[140px] flex flex-col justify-between">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -312,9 +440,9 @@ export default function Dashboard() {
               <iconify-icon icon="lucide:activity" width="16" height="16" className="text-accent"></iconify-icon>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-accent">36 นาที</div>
+              <div className="text-2xl font-bold text-accent">{dailyAverage} นาที</div>
               <p className="text-xs text-muted-foreground">
-                ต่อวันในสัปดาห์นี้
+                เฉลี่ยต่อวัน
               </p>
             </CardContent>
           </Card>
@@ -347,14 +475,14 @@ export default function Dashboard() {
             trend={mockHealthData.calories.trend as "up" | "down" | "stable"}
             color="warning"
           />
-          <HealthCard
-            title="การออกกำลังกาย"
-            value={`${mockHealthData.exercise.minutes} นาที`}
-            description={`เป้าหมาย ${mockHealthData.exercise.target} นาที`}
-            icon="lucide:activity"
-            trend={mockHealthData.exercise.trend as "up" | "down" | "stable"}
-            color="accent"
-          />
+                     <HealthCard
+             title="การออกกำลังกาย"
+             value={`${exerciseStats?.total_duration || 0} นาที`}
+             description={`เป้าหมาย ${mockHealthData.exercise.target} นาที`}
+             icon="lucide:activity"
+             trend={exerciseStats?.total_duration > 0 ? "up" : "stable"}
+             color="accent"
+           />
         </div>
 
         {/* BMR / TDEE Overview */}
@@ -365,10 +493,8 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {(() => {
-              const sampleBmr = 1520;
-              const sampleTdee = 2100;
-              const bmrDisplay = bmr > 0 ? bmr : sampleBmr;
-              const tdeeDisplay = tdee > 0 ? tdee : sampleTdee;
+              const bmrDisplay = bmr > 0 ? bmr : 0;
+              const tdeeDisplay = tdee > 0 ? tdee : 0;
               const isSample = !(bmr > 0 && tdee > 0);
               return (
                 <>
@@ -376,14 +502,14 @@ export default function Dashboard() {
                     <div className="text-sm text-muted-foreground">ประมาณการ BMR</div>
                     <div className="text-2xl font-semibold">{bmrDisplay.toLocaleString()} kcal</div>
                     {isSample && (
-                      <div className="text-xs text-muted-foreground mt-1">ตัวอย่างค่า (ตั้งค่าข้อมูลเพื่อคำนวณจริง)</div>
+                      <div className="text-xs text-muted-foreground mt-1">รอ API ข้อมูลร่างกาย (ตั้งค่าข้อมูลเพื่อคำนวณจริง)</div>
                     )}
                   </div>
                   <div className="p-4 rounded-lg bg-muted/50">
                     <div className="text-sm text-muted-foreground">ประมาณการ TDEE</div>
                     <div className="text-2xl font-semibold">{tdeeDisplay.toLocaleString()} kcal</div>
                     {isSample && (
-                      <div className="text-xs text-muted-foreground mt-1">ตัวอย่างค่า (ตั้งค่าข้อมูลเพื่อคำนวณจริง)</div>
+                      <div className="text-xs text-muted-foreground mt-1">รอ API ข้อมูลร่างกาย (ตั้งค่าข้อมูลเพื่อคำนวณจริง)</div>
                     )}
                   </div>
                 </>
@@ -434,13 +560,13 @@ export default function Dashboard() {
                     type="line"
                     color="hsl(197, 76%, 64%)"
                   />
-                  <HealthChart
-                    title="แนวโน้มการออกกำลังกาย"
-                    description="นาทีการออกกำลังกายในสัปดาห์ที่ผ่านมา"
-                    data={exerciseData}
-                    type="line"
-                    color="hsl(200, 70%, 60%)"
-                  />
+                                     <HealthChart
+                     title="แนวโน้มการออกกำลังกาย"
+                     description="นาทีการออกกำลังกายในสัปดาห์ที่ผ่านมา"
+                     data={realExerciseData}
+                     type="line"
+                     color="hsl(200, 70%, 60%)"
+                   />
                   <HealthChart
                     title="แนวโน้มการดื่มน้ำ"
                     description="ลิตรน้ำที่ดื่มในสัปดาห์ที่ผ่านมา"
@@ -482,13 +608,13 @@ export default function Dashboard() {
                     type="bar"
                     color="hsl(142, 69%, 58%)"
                   />
-                  <HealthChart
-                    title="แนวโน้มการออกกำลังกายรายสัปดาห์"
-                    description="นาทีการออกกำลังกายเฉลี่ยในแต่ละสัปดาห์"
-                    data={exerciseData}
-                    type="bar"
-                    color="hsl(200, 70%, 60%)"
-                  />
+                                     <HealthChart
+                     title="แนวโน้มการออกกำลังกายรายสัปดาห์"
+                     description="นาทีการออกกำลังกายเฉลี่ยในแต่ละสัปดาห์"
+                     data={realExerciseData}
+                     type="bar"
+                     color="hsl(200, 70%, 60%)"
+                   />
                 </div>
               </TabsContent>
 
@@ -579,39 +705,39 @@ export default function Dashboard() {
               <TabsContent value="insights" className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <Badge className="bg-accent/10 text-accent">ข้อมูลดี</Badge>
-                      <span className="text-sm font-medium">การนอนหลับดีขึ้น 12%</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      คุณนอนหลับได้ดีขึ้นเมื่อเปรียบเทียบกับเดือนที่แล้ว โดยเฉลี่ยแล้วคุณนอนครบ 7.5 ชั่วโมงต่อคืน
-                    </p>
+                                         <div className="flex items-center gap-2">
+                       <Badge className="bg-accent/10 text-accent">รอข้อมูล</Badge>
+                       <span className="text-sm font-medium">รอ API ข้อมูลการนอนหลับ</span>
+                     </div>
+                     <p className="text-sm text-muted-foreground">
+                       รอ API ข้อมูลการนอนหลับเพื่อแสดงสถิติและแนวโน้ม
+                     </p>
 
-                    <div className="flex items-center gap-2">
-                      <Badge className="bg-warning/10 text-warning">ต้องปรับปรุง</Badge>
-                      <span className="text-sm font-medium">การดื่มน้ำยังไม่ถึงเป้า</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      คุณดื่มน้ำเฉลี่ยเพียง 1.9 ลิตรต่อวัน ซึ่งน้อยกว่าเป้าหมาย 2.5 ลิตร
-                    </p>
+                                         <div className="flex items-center gap-2">
+                       <Badge className="bg-warning/10 text-warning">รอข้อมูล</Badge>
+                       <span className="text-sm font-medium">รอ API ข้อมูลการดื่มน้ำ</span>
+                     </div>
+                     <p className="text-sm text-muted-foreground">
+                       รอ API ข้อมูลการดื่มน้ำเพื่อแสดงสถิติและแนวโน้ม
+                     </p>
                   </div>
 
                   <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <Badge className="bg-accent/10 text-accent">ยอดเยี่ยม</Badge>
-                      <span className="text-sm font-medium">การออกกำลังกายสม่ำเสมอ</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      คุณเดินเฉลี่ย 9,000 ก้าวต่อวัน ซึ่งใกล้เคียงกับเป้าหมาย 10,000 ก้าว
-                    </p>
+                                         <div className="flex items-center gap-2">
+                       <Badge className="bg-accent/10 text-accent">ข้อมูลจริง</Badge>
+                       <span className="text-sm font-medium">การออกกำลังกายจาก API</span>
+                     </div>
+                     <p className="text-sm text-muted-foreground">
+                       ข้อมูลการออกกำลังกายแสดงจาก API จริง ไม่ใช่ Mock Data
+                     </p>
 
-                    <div className="flex items-center gap-2">
-                      <Badge className="bg-secondary/10 text-secondary">ดี</Badge>
-                      <span className="text-sm font-medium">อารมณ์เสถียร</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      อารมณ์โดยรวมของคุณอยู่ในระดับดี (4/5) และมีความสม่ำเสมอ
-                    </p>
+                                         <div className="flex items-center gap-2">
+                       <Badge className="bg-secondary/10 text-secondary">รอข้อมูล</Badge>
+                       <span className="text-sm font-medium">รอ API ข้อมูลอารมณ์</span>
+                     </div>
+                     <p className="text-sm text-muted-foreground">
+                       รอ API ข้อมูลอารมณ์เพื่อแสดงสถิติและแนวโน้ม
+                     </p>
                   </div>
                 </div>
               </TabsContent>
@@ -619,31 +745,71 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Achievements */}
-        <Card className="health-stat-card bg-white rounded-lg shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <iconify-icon icon="lucide:award" width="20" height="20"></iconify-icon>
-              ความสำเร็จ
-            </CardTitle>
-            <CardDescription>
-              รางวัลที่คุณได้รับจากการดูแลสุขภาพ
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
-              {achievements.map((achievement, index) => (
-                <div key={index} className="flex items-center gap-3 p-3 bg-muted rounded-lg flex-wrap">
-                  <div className="text-2xl">{achievement.icon}</div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-sm truncate">{achievement.title}</h4>
-                    <p className="text-xs text-muted-foreground truncate">{achievement.description}</p>
+        {/* ข้อมูลการออกกำลังกาย */}
+        {exerciseStats && (
+          <Card className="health-stat-card bg-white rounded-lg shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Dumbbell className="h-5 w-5" />
+                สถิติการออกกำลังกาย
+              </CardTitle>
+              <CardDescription>
+                สถิติการออกกำลังกายของคุณจากข้อมูลจริง
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-primary">{exerciseStats.total_exercises}</div>
+                  <div className="text-sm text-muted-foreground">ครั้งที่ออกกำลังกาย</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{exerciseStats.total_duration}</div>
+                  <div className="text-sm text-muted-foreground">นาทีรวม</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-orange-600">{exerciseStats.total_calories_burned}</div>
+                  <div className="text-sm text-muted-foreground">แคลอรีรวม</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{exerciseStats.total_distance}</div>
+                  <div className="text-sm text-muted-foreground">กม. รวม</div>
+                </div>
+              </div>
+              
+              {/* แสดงข้อมูลแยกตามประเภทและความหนัก */}
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-semibold text-sm mb-3">แยกตามประเภท</h4>
+                  <div className="space-y-2">
+                    {exerciseStats.exercises_by_type && Object.entries(exerciseStats.exercises_by_type).map(([type, count]) => (
+                      <div key={type} className="flex items-center justify-between">
+                        <span className="text-sm capitalize">{type === 'cardio' ? 'คาร์ดิโอ' : type === 'strength' ? 'ยกน้ำหนัก' : type}</span>
+                        <Badge variant="secondary">{String(count)} ครั้ง</Badge>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                
+                <div>
+                  <h4 className="font-semibold text-sm mb-3">แยกตามความหนัก</h4>
+                  <div className="space-y-2">
+                    {exerciseStats.exercises_by_intensity && Object.entries(exerciseStats.exercises_by_intensity).map(([intensity, count]) => (
+                      <div key={intensity} className="flex items-center justify-between">
+                        <span className="text-sm capitalize">
+                          {intensity === 'low' ? 'ต่ำ' : intensity === 'moderate' ? 'ปานกลาง' : intensity === 'high' ? 'สูง' : intensity}
+                        </span>
+                        <Badge variant="secondary">{String(count)} ครั้ง</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        
 
         {/* Today's Summary */}
         <Card className="health-stat-card">
@@ -701,13 +867,13 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">ความคืบหน้าการออกกำลังกาย</span>
                   <span className="text-sm text-muted-foreground">
-                    {Math.round((mockHealthData.exercise.minutes / mockHealthData.exercise.target) * 100)}%
+                    {Math.round((exerciseStats?.total_duration || 0) / mockHealthData.exercise.target * 100)}%
                   </span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2">
                   <div
                     className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${Math.min((mockHealthData.exercise.minutes / mockHealthData.exercise.target) * 100, 100)}%` }}
+                    style={{ width: `${Math.min((exerciseStats?.total_duration || 0) / mockHealthData.exercise.target * 100, 100)}%` }}
                   />
                 </div>
               </div>
@@ -718,7 +884,7 @@ export default function Dashboard() {
                   <ul className="space-y-1 text-sm text-muted-foreground">
                     <li>• ดื่มน้ำเพิ่มอีก {mockHealthData.water.target - mockHealthData.water.liters} ลิตร</li>
                     <li>• นอนให้ครบ {mockHealthData.sleep.target} ชั่วโมง</li>
-                    <li>• ออกกำลังกายเพิ่มอีก {mockHealthData.exercise.target - mockHealthData.exercise.minutes} นาที</li>
+                    <li>• ออกกำลังกายเพิ่มอีก {mockHealthData.exercise.target - (exerciseStats?.total_duration || 0)} นาที</li>
                     <li>• เพิ่มโปรตีนอีก {nutritionData.protein.target - nutritionData.protein.current} กรัม</li>
                     <li>• ลดไขมันลง {nutritionData.fats.current - nutritionData.fats.target} กรัม</li>
                     <li>• เพิ่มไฟเบอร์อีก {nutritionData.fiber.target - nutritionData.fiber.current} กรัม</li>
