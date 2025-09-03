@@ -98,6 +98,37 @@ export interface APIError {
   status: number;
 }
 
+// Exercise Log Interface
+export interface ExerciseLog {
+  id?: number | string; // ID จาก Backend
+  exercise_name: string;
+  exercise_type: string;
+  duration_minutes: number;
+  sets?: number | null;
+  reps?: number | null;
+  weight_kg?: number | null;
+  distance_km?: number | null;
+  calories_burned: number;
+  intensity: string;
+  notes?: string;
+  exercise_date: string;
+  exercise_time: string;
+}
+
+// Exercise Log API Response
+interface ExerciseLogResponse {
+  data?: ExerciseLog;
+  message?: string;
+  errors?: Record<string, string[]>;
+}
+
+// API Response Interface
+interface APIResponse<T> {
+  data?: T;
+  message?: string;
+  errors?: Record<string, string[]>;
+}
+
 // API Response Interface
 interface APIResponse<T> {
   data?: T;
@@ -985,6 +1016,249 @@ class APIService {
     
     console.log('✅ Password reset successfully');
     return;
+  }
+
+  // Create exercise log entry
+  async createExerciseLog(exerciseData: ExerciseLog): Promise<ExerciseLog> {
+    console.log('Creating exercise log entry...', exerciseData);
+
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      throw new Error('No valid authentication token found');
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}/exercise-log`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(exerciseData),
+        signal: AbortSignal.timeout(10000) // 10 second timeout
+      });
+
+      console.log('Exercise log API response:', {
+        status: response.status,
+        statusText: response.statusText
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const result = await this.handleResponse<ExerciseLogResponse>(response);
+      
+      if (result.data) {
+        console.log('Exercise log created successfully');
+        return result.data;
+      } else {
+        throw new Error('No exercise log data received from server');
+      }
+    } catch (error) {
+      console.error('Error creating exercise log:', error);
+      throw error;
+    }
+  }
+
+  // Get exercise logs for a user
+  async getExerciseLogs(): Promise<ExerciseLog[]> {
+    console.log('Fetching exercise logs...');
+
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      throw new Error('No valid authentication token found');
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}/exercise-log`, {
+        method: 'GET',
+        headers: this.getHeaders(),
+        signal: AbortSignal.timeout(10000)
+      });
+
+      console.log('Get exercise logs API response:', {
+        status: response.status,
+        statusText: response.statusText
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const result = await this.handleResponse<{ data?: ExerciseLog[] }>(response);
+      
+      if (result.data) {
+        console.log('Exercise logs fetched successfully');
+        return result.data;
+      } else {
+        console.log('No exercise logs found for user');
+        return [];
+      }
+    } catch (error) {
+      console.error('Error fetching exercise logs:', error);
+      throw error;
+    }
+  }
+
+  // Delete exercise log entry
+  async deleteExerciseLog(exerciseLogId: string | number): Promise<void> {
+    console.log('🗑️ Deleting exercise log entry...', exerciseLogId);
+    console.log('🌐 API URL:', `${this.baseURL}/exercise-log/${exerciseLogId}`);
+
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      throw new Error('No valid authentication token found');
+    }
+
+    console.log('🔑 Token found:', token.substring(0, 20) + '...');
+
+    try {
+      const response = await fetch(`${this.baseURL}/exercise-log/${exerciseLogId}`, {
+        method: 'DELETE',
+        headers: this.getHeaders(),
+        signal: AbortSignal.timeout(10000) // 10 second timeout
+      });
+
+      console.log('📡 Delete exercise log API response:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.log('Could not parse error response:', parseError);
+        }
+        
+        // แยกประเภท error ตาม HTTP status code
+        switch (response.status) {
+          case 401:
+            throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
+          case 403:
+            throw new Error('Forbidden: ไม่มีสิทธิ์ในการลบข้อมูลนี้');
+          case 404:
+            throw new Error('Not Found: ไม่พบข้อมูลที่ต้องการลบ');
+          case 500:
+            throw new Error('Internal Server Error: เกิดข้อผิดพลาดที่เซิร์ฟเวอร์');
+          default:
+            throw new Error(errorMessage);
+        }
+      }
+
+      // ตรวจสอบ response body ถ้ามี
+      try {
+        const responseText = await response.text();
+        if (responseText) {
+          console.log('📄 Response body:', responseText);
+        }
+      } catch (textError) {
+        // ไม่มี response body (ปกติสำหรับ DELETE)
+      }
+
+      console.log('✅ Exercise log deleted successfully from backend');
+    } catch (error) {
+      console.error('❌ Error deleting exercise log:', error);
+      
+      // ถ้าเป็น network error หรือ timeout
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
+      }
+      
+      // ถ้าเป็น timeout error
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('การลบข้อมูลใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง');
+      }
+      
+      throw error;
+    }
+  }
+
+  // Update exercise log entry
+  async updateExerciseLog(exerciseLogId: string | number, updateData: Partial<ExerciseLog>): Promise<ExerciseLog> {
+    console.log('✏️ Updating exercise log entry...', exerciseLogId);
+    console.log('🌐 API URL:', `${this.baseURL}/exercise-log/${exerciseLogId}`);
+    console.log('📝 Update data:', updateData);
+
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      throw new Error('No valid authentication token found');
+    }
+
+    console.log('🔑 Token found:', token.substring(0, 20) + '...');
+
+    try {
+      const response = await fetch(`${this.baseURL}/exercise-log/${exerciseLogId}`, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify(updateData),
+        signal: AbortSignal.timeout(10000) // 10 second timeout
+      });
+
+      console.log('📡 Update exercise log API response:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.log('Could not parse error response:', parseError);
+        }
+        
+        // แยกประเภท error ตาม HTTP status code
+        switch (response.status) {
+          case 400:
+            throw new Error('Bad Request: ข้อมูลที่ส่งไปไม่ถูกต้อง');
+          case 401:
+            throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
+          case 403:
+            throw new Error('Forbidden: ไม่มีสิทธิ์ในการอัปเดตข้อมูลนี้');
+          case 404:
+            throw new Error('Not Found: ไม่พบข้อมูลที่ต้องการอัปเดต');
+          case 500:
+            throw new Error('Internal Server Error: เกิดข้อผิดพลาดที่เซิร์ฟเวอร์');
+          default:
+            throw new Error(errorMessage);
+        }
+      }
+
+      // อ่าน response body
+      const result = await this.handleResponse<ExerciseLogResponse>(response);
+      
+      if (result.data) {
+        console.log('✅ Exercise log updated successfully from backend');
+        console.log('📄 Updated data:', result.data);
+        return result.data;
+      } else {
+        throw new Error('No updated exercise log data received from server');
+      }
+    } catch (error) {
+      console.error('❌ Error updating exercise log:', error);
+      
+      // ถ้าเป็น network error หรือ timeout
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
+      }
+      
+      // ถ้าเป็น timeout error
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('การอัปเดตข้อมูลใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง');
+      }
+      
+      throw error;
+    }
   }
 }
 
