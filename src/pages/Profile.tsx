@@ -302,9 +302,11 @@ export default function Profile() {
     try {
       // Map form data to API format
       const updateData: Partial<UserProfile> = {
-        first_name: profileData.firstName,
-        last_name: profileData.lastName,
-        email: profileData.email,
+        // ถ้าผู้ใช้ไม่กรอกชื่อ ให้เป็นค่าว่าง (จะไม่อัพเดตชื่อในฐานข้อมูล)
+        // ถ้าผู้ใช้กรอกชื่อใหม่ ให้อัพเดตเป็นชื่อใหม่
+        first_name: profileData.firstName.trim() || undefined,
+        last_name: profileData.lastName.trim() || undefined,
+        email: profileData.email.trim() || undefined,
         gender: profileData.gender as 'male' | 'female' | 'other',
         height_cm: parseFloat(profileData.height) || undefined,
         weight_kg: parseFloat(profileData.weight) || undefined,
@@ -313,12 +315,38 @@ export default function Profile() {
           : undefined,
       };
 
+      // ลบ field ที่เป็น undefined ออก เพื่อไม่ให้อัพเดตข้อมูลที่ไม่ต้องการ
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key as keyof typeof updateData] === undefined) {
+          delete updateData[key as keyof typeof updateData];
+        }
+      });
+
+      console.log('🔍 ข้อมูลที่จะอัพเดต:', updateData);
+      console.log('🔍 ชื่อที่กรอก:', {
+        firstName: profileData.firstName,
+        lastName: profileData.lastName,
+        willUpdate: {
+          first_name: updateData.first_name,
+          last_name: updateData.last_name
+        }
+      });
+
       const success = await updateProfile(updateData);
       if (success) {
         setIsEditing(false);
+        toast({
+          title: "✅ บันทึกสำเร็จ",
+          description: "ข้อมูลโปรไฟล์ถูกอัพเดตเรียบร้อยแล้ว",
+        });
       }
     } catch (error) {
       console.error('Error saving profile:', error);
+      toast({
+        title: "❌ บันทึกไม่สำเร็จ",
+        description: "เกิดข้อผิดพลาดในการบันทึกข้อมูล",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
