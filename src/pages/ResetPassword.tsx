@@ -29,7 +29,7 @@ export default function ResetPassword() {
   // ตรวจสอบว่าผู้ใช้ล็อกอินแล้วหรือไม่
   useEffect(() => {
     if (tokenUtils.isLoggedIn()) {
-      console.log('✅ ผู้ใช้ล็อกอินแล้ว - เปลี่ยนไปยังหน้า Dashboard');
+      console.log('✅ ResetPassword: ผู้ใช้ล็อกอินแล้ว - เปลี่ยนไปยังหน้า Dashboard');
       navigate('/dashboard');
     }
   }, [navigate]);

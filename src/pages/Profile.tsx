@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +47,7 @@ import {
 import { tokenUtils } from "@/lib/utils";
 
 export default function Profile() {
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -170,12 +172,12 @@ export default function Profile() {
           <div className="text-center">
             <h2 className="text-xl font-semibold mb-2">กรุณาเข้าสู่ระบบ</h2>
             <p className="text-muted-foreground">คุณต้องเข้าสู่ระบบเพื่อดูข้อมูลโปรไฟล์</p>
-            <Button 
-              onClick={() => window.location.href = "/login"} 
-              className="mt-4 health-button"
-            >
-              เข้าสู่ระบบ
-            </Button>
+                          <Button 
+                onClick={() => navigate("/login")} 
+                className="mt-4 health-button"
+              >
+                เข้าสู่ระบบ
+              </Button>
           </div>
         </div>
       </MainLayout>
@@ -418,7 +420,7 @@ export default function Profile() {
                 </Button>
                 <Button 
                   variant="outline" 
-                  onClick={() => window.location.href = "/onboarding"}
+                  onClick={() => navigate("/onboarding")}
                   className="w-full sm:w-auto"
                 >
                   <Settings className="h-4 w-4 mr-2" />
