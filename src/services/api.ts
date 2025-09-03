@@ -115,6 +115,30 @@ export interface ExerciseLog {
   exercise_time: string;
 }
 
+// Food Log Interface
+export interface FoodLogItem {
+  food_name: string;
+  meal_type: string;
+  serving_size: number;
+  serving_unit: string;
+  calories_per_serving: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  fiber_g: number;
+  sugar_g: number;
+  sodium_mg: number;
+  consumed_at: string;
+  notes?: string;
+}
+
+// Food Log API Response
+interface FoodLogResponse {
+  data?: FoodLogItem;
+  message?: string;
+  errors?: Record<string, string[]>;
+}
+
 // Exercise Log API Response
 interface ExerciseLogResponse {
   data?: ExerciseLog;
@@ -1404,6 +1428,137 @@ class APIService {
     } catch (error) {
       console.error('❌ Error getting exercise streak:', error);
       throw error;
+    }
+  }
+
+  // ฟังก์ชันสำหรับบันทึก Food Log
+  async createFoodLog(foodLogData: FoodLogItem): Promise<FoodLogResponse> {
+    console.log('🍽️ Creating food log...', foodLogData);
+    
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      throw new Error('No valid authentication token found');
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}/food-log`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(foodLogData),
+        signal: AbortSignal.timeout(10000)
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.log('Could not parse error response:', parseError);
+        }
+        
+        switch (response.status) {
+          case 400:
+            throw new Error('Bad Request: ข้อมูลไม่ถูกต้อง');
+          case 401:
+            throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
+          case 500:
+            throw new Error('Internal Server Error: เกิดข้อผิดพลาดที่เซิร์ฟเวอร์');
+          default:
+            throw new Error(errorMessage);
+        }
+      }
+
+      const result = await this.handleResponse<FoodLogResponse>(response);
+      console.log('✅ Food log created successfully');
+      return result;
+    } catch (error) {
+      console.error('❌ Error creating food log:', error);
+      throw error;
+    }
+  }
+
+  // ฟังก์ชันสำหรับดึงข้อมูล Food Logs ทั้งหมด
+  async getFoodLogs(): Promise<FoodLogItem[]> {
+    console.log('📋 Fetching food logs...');
+    
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      throw new Error('No valid authentication token found');
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}/food-log`, {
+        method: 'GET',
+        headers: this.getHeaders(),
+        signal: AbortSignal.timeout(10000)
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.log('Could not parse error response:', parseError);
+        }
+        
+        switch (response.status) {
+          case 400:
+            throw new Error('Bad Request: ข้อมูลไม่ถูกต้อง');
+          case 401:
+            throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
+          case 500:
+            throw new Error('Internal Server Error: เกิดข้อผิดพลาดที่เซิร์ฟเวอร์');
+          default:
+            throw new Error(errorMessage);
+        }
+      }
+
+      const result = await this.handleResponse<{ data: FoodLogItem[] }>(response);
+      console.log('✅ Food logs fetched successfully:', result.data);
+      return result.data || [];
+    } catch (error) {
+      console.error('❌ Error fetching food logs:', error);
+      throw error;
+    }
+  }
+
+  // ฟังก์ชันสำหรับดึงข้อมูล Food Logs ของ User เฉพาะ
+  async getUserFoodLogs(): Promise<FoodLogItem[]> {
+    console.log('📋 Fetching current user food logs...');
+    
+    try {
+      // ดึงข้อมูล profile ของ user ปัจจุบันเพื่อหา user ID
+      const userProfile = await this.getCurrentUserProfile();
+      console.log('👤 Current user profile:', { id: userProfile.id, email: userProfile.email });
+      
+      // ดึงข้อมูล food logs ทั้งหมดจาก API
+      const allFoodLogs = await this.getFoodLogs();
+      
+      // กรองเฉพาะข้อมูลของ user ปัจจุบัน
+      // หมายเหตุ: ข้อมูลจาก API ควรมี user_id field แต่ถ้าไม่มี เราจะใช้ email เป็น fallback
+      const userFoodLogs = allFoodLogs.filter(log => {
+        // ถ้า API ส่ง user_id มา ให้ใช้ user_id
+        if ('user_id' in log && log.user_id === userProfile.id) {
+          return true;
+        }
+        // ถ้าไม่มี user_id ให้ใช้ email เป็น fallback (ถ้า API ส่ง email มา)
+        if ('user_email' in log && log.user_email === userProfile.email) {
+          return true;
+        }
+        // ถ้าไม่มีข้อมูล user ให้แสดงเฉพาะข้อมูลที่ไม่มี user_id (fallback)
+        return !('user_id' in log) && !('user_email' in log);
+      });
+      
+      console.log(`✅ Filtered ${userFoodLogs.length} food logs for user ${userProfile.id} from total ${allFoodLogs.length}`);
+      return userFoodLogs;
+      
+    } catch (error) {
+      console.error('❌ Error fetching user food logs:', error);
+      // ถ้าไม่สามารถดึง profile ได้ ให้ fallback ไปใช้ getFoodLogs() แบบเดิม
+      console.log('⚠️ Falling back to getFoodLogs() due to profile fetch error');
+      return await this.getFoodLogs();
     }
   }
 }

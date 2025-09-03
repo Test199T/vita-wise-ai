@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,12 +18,18 @@ import {
   AlertTriangle, 
   CheckCircle, 
   XCircle,
-  BarChart3
+  BarChart3,
+  TestTube,
+  RefreshCw,
+  Edit,
+  Trash2,
+  Search
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useOnboarding } from "@/contexts/OnboardingContext";
+import { apiService, FoodLogItem } from "@/services/api";
 
 interface FoodItem {
   name: string;
@@ -86,51 +92,8 @@ export default function FoodLog() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const filteredFoods = foodCatalog.filter((f) => f.name.includes(query.trim())).slice(0, 8);
-  const [foodLogs, setFoodLogs] = useState<FoodLog[]>([
-    {
-      food_log_id: "1",
-      log_date: "2024-01-01",
-      meal_time: "เช้า",
-      food_items: [
-        { name: "ข้าวโพดต้ม", amount: "1 ข้าง", calories: 80 },
-        { name: "ไข่ต้ม", amount: "2 ฟอง", calories: 140 }
-      ],
-      total_calories: 220,
-      total_protein: 12,
-      total_carbs: 20,
-      total_fats: 8,
-      total_fiber: 3,
-      total_vitaminC: 15,
-      total_vitaminD: 2,
-      total_calcium: 120,
-      total_iron: 2,
-      total_potassium: 300,
-      total_sodium: 400,
-      notes: "อิ่มดี มีพลังงาน"
-    },
-    {
-      food_log_id: "2",
-      log_date: "2024-01-01", 
-      meal_time: "กลางวัน",
-      food_items: [
-        { name: "ข้าวกล้อง", amount: "1 ถ้วย", calories: 150 },
-        { name: "ผัดผักรวม", amount: "1 จาน", calories: 120 },
-        { name: "ไก่ย่าง", amount: "100g", calories: 180 }
-      ],
-      total_calories: 450,
-      total_protein: 25,
-      total_carbs: 45,
-      total_fats: 12,
-      total_fiber: 8,
-      total_vitaminC: 45,
-      total_vitaminD: 3,
-      total_calcium: 180,
-      total_iron: 4,
-      total_potassium: 600,
-      total_sodium: 800,
-      notes: "อร่อย สมดุล"
-    }
-  ]);
+  const [foodLogs, setFoodLogs] = useState<FoodLog[]>([]); // Removed mock data
+  const [isLoading, setIsLoading] = useState(false); // Added isLoading state
 
   const [formData, setFormData] = useState({
     log_date: new Date().toISOString().split('T')[0],
@@ -161,9 +124,76 @@ export default function FoodLog() {
 
   const [isEditOpen, setIsEditOpen] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // ฟังก์ชันสำหรับดึงข้อมูล Food Logs จาก API
+  const fetchFoodLogs = async () => {
+    try {
+      setIsLoading(true);
+      const apiFoodLogs = await apiService.getUserFoodLogs(); // เปลี่ยนเป็น getUserFoodLogs เพื่อดึงเฉพาะข้อมูลของ user ปัจจุบัน
+      
+             // แปลงข้อมูลจาก API เป็นรูปแบบที่ใช้ใน component
+       const convertedFoodLogs: FoodLog[] = apiFoodLogs.map((apiLog, index) => ({
+         food_log_id: String(index + 1), // Temporary ID, ideally from API
+         log_date: new Date(apiLog.consumed_at).toISOString().split('T')[0],
+         meal_time: apiLog.meal_type === "breakfast" ? "เช้า" : 
+                    apiLog.meal_type === "lunch" ? "กลางวัน" : 
+                    apiLog.meal_type === "dinner" ? "เย็น" : 
+                    apiLog.meal_type === "morning_snack" ? "สาย" :
+                    apiLog.meal_type === "afternoon_snack" ? "บ่าย" :
+                    apiLog.meal_type === "night_snack" ? "ดึก" : "อื่นๆ",
+         food_items: [{ 
+           name: apiLog.food_name || "อาหารทั่วไป", 
+           amount: `${apiLog.serving_size || 1} ${apiLog.serving_unit || 'serving'}`, 
+           calories: Number(apiLog.calories_per_serving || 0) 
+         }],
+         total_calories: Number(apiLog.calories_per_serving || 0),
+         total_protein: Number(apiLog.protein_g || 0),
+         total_carbs: Number(apiLog.carbs_g || 0),
+         total_fats: Number(apiLog.fat_g || 0),
+         total_fiber: Number(apiLog.fiber_g || 0),
+         total_sugar: Number(apiLog.sugar_g || 0),
+         total_sodium: Number(apiLog.sodium_mg || 0),
+         total_vitaminC: 0, // No direct mapping from API
+         total_vitaminD: 0, // No direct mapping from API
+         total_calcium: 0, // No direct mapping from API
+         total_iron: 0, // No direct mapping from API
+         total_potassium: 0, // No direct mapping from API
+         notes: apiLog.notes || ""
+       }));
+      
+      setFoodLogs(convertedFoodLogs);
+      console.log('✅ User food logs loaded from API:', convertedFoodLogs);
+      
+    } catch (error) {
+      console.error('❌ Error fetching user food logs:', error);
+      toast({ 
+        title: "โหลดข้อมูลล้มเหลว", 
+        description: error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการโหลดข้อมูล",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ดึงข้อมูลเมื่อ component โหลด
+  useEffect(() => {
+    fetchFoodLogs();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.food_items || !formData.total_calories) {
+      toast({
+        title: "ข้อมูลไม่ครบถ้วน",
+        description: "กรุณากรอกข้อมูลให้ครบถ้วน",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (editingId) {
+      // แก้ไขบันทึกที่มีอยู่ (ยังคงใช้ local state สำหรับตอนนี้)
       const next = foodLogs.map(l => l.food_log_id === editingId ? {
         ...l,
         log_date: formData.log_date,
@@ -185,27 +215,74 @@ export default function FoodLog() {
       setFoodLogs(next);
       toast({ title: "อัปเดตบันทึกแล้ว" });
     } else {
-      const newLog: FoodLog = {
-        food_log_id: crypto.randomUUID(),
-        log_date: formData.log_date,
-        meal_time: formData.meal_time,
-        food_items: formData.food_items ? [{ name: formData.food_items, amount: '', calories: Number(formData.total_calories || 0) }] : [],
-        total_calories: Number(formData.total_calories || 0),
-        total_protein: Number(formData.total_protein || 0),
-        total_carbs: Number(formData.total_carbs || 0),
-        total_fats: Number(formData.total_fats || 0),
-        total_fiber: Number(formData.total_fiber || 0),
-        total_vitaminC: Number(formData.total_vitaminC || 0),
-        total_vitaminD: Number(formData.total_vitaminD || 0),
-        total_calcium: Number(formData.total_calcium || 0),
-        total_iron: Number(formData.total_iron || 0),
-        total_potassium: Number(formData.total_potassium || 0),
-        total_sodium: Number(formData.total_sodium || 0),
-        notes: formData.notes,
-      };
-      setFoodLogs([newLog, ...foodLogs]);
-      toast({ title: "บันทึกสำเร็จ", description: "บันทึกอาหารเรียบร้อยแล้ว" });
+      // เพิ่มบันทึกใหม่ผ่าน API
+      try {
+                 // แปลงข้อมูลจาก form เป็นรูปแบบที่ API ต้องการ
+         const apiData: FoodLogItem = {
+           food_name: formData.food_items || "อาหารทั่วไป",
+           meal_type: formData.meal_time === "เช้า" ? "breakfast" : 
+                      formData.meal_time === "กลางวัน" ? "lunch" : 
+                      formData.meal_time === "เย็น" ? "dinner" : 
+                      formData.meal_time === "สาย" ? "morning_snack" :
+                      formData.meal_time === "บ่าย" ? "afternoon_snack" :
+                      formData.meal_time === "ดึก" ? "night_snack" : "other",
+           serving_size: 1, // ใช้ 1 เป็น default
+           serving_unit: "serving", // ใช้ "serving" แทน "calories"
+           calories_per_serving: Number(formData.total_calories || 0),
+          protein_g: Number(formData.total_protein || 0),
+          carbs_g: Number(formData.total_carbs || 0),
+          fat_g: Number(formData.total_fats || 0),
+          fiber_g: Number(formData.total_fiber || 0),
+          sugar_g: 0, // ไม่มีข้อมูลในฟอร์ม
+          sodium_mg: Number(formData.total_sodium || 0),
+          consumed_at: new Date(formData.log_date).toISOString(),
+          notes: formData.notes
+        };
+
+        console.log('🍽️ Submitting food log to API:', apiData);
+        
+        const response = await apiService.createFoodLog(apiData);
+        
+        console.log('✅ API Response:', response);
+        
+        // เพิ่มบันทึกใหม่เข้า local state หลังจาก API สำเร็จ
+        const newLog: FoodLog = {
+          food_log_id: crypto.randomUUID(),
+          log_date: formData.log_date,
+          meal_time: formData.meal_time,
+          food_items: formData.food_items ? [{ name: formData.food_items, amount: '', calories: Number(formData.total_calories || 0) }] : [],
+          total_calories: Number(formData.total_calories || 0),
+          total_protein: Number(formData.total_protein || 0),
+          total_carbs: Number(formData.total_carbs || 0),
+          total_fats: Number(formData.total_fats || 0),
+          total_fiber: Number(formData.total_fiber || 0),
+          total_vitaminC: Number(formData.total_vitaminC || 0),
+          total_vitaminD: Number(formData.total_vitaminD || 0),
+          total_calcium: Number(formData.total_calcium || 0),
+          total_iron: Number(formData.total_iron || 0),
+          total_potassium: Number(formData.total_potassium || 0),
+          total_sodium: Number(formData.total_sodium || 0),
+          notes: formData.notes,
+        };
+        
+        // ดึงข้อมูลใหม่จาก API แทนการเพิ่มเข้า local state
+        await fetchFoodLogs();
+        toast({ 
+          title: "บันทึกสำเร็จ", 
+          description: "บันทึกข้อมูลอาหารเรียบร้อยแล้ว",
+        });
+        
+      } catch (error) {
+        console.error('❌ Error creating food log:', error);
+        toast({ 
+          title: "บันทึกล้มเหลว", 
+          description: error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการบันทึกข้อมูล",
+          variant: "destructive"
+        });
+        return; // ไม่ต้องทำอะไรต่อถ้า API ล้มเหลว
+      }
     }
+    
     setEditingId(null);
     setShowForm(false);
     setFormData({
@@ -264,6 +341,46 @@ export default function FoodLog() {
       case "deficient": return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">ขาด</Badge>;
       case "excessive": return <Badge variant="secondary" className="bg-red-100 text-red-800">เกิน</Badge>;
       default: return <Badge variant="secondary">เหมาะสม</Badge>;
+    }
+  };
+
+  // ฟังก์ชันสำหรับทดสอบการเรียก API Food Log
+  const testFoodLogAPI = async () => {
+    try {
+      const testData: FoodLogItem = {
+        food_name: "Grilled Chicken Breast",
+        meal_type: "lunch",
+        serving_size: 150,
+        serving_unit: "grams",
+        calories_per_serving: 165,
+        protein_g: 31.0,
+        carbs_g: 0.0,
+        fat_g: 3.6,
+        fiber_g: 0.0,
+        sugar_g: 0.0,
+        sodium_mg: 74,
+        consumed_at: "2025-09-02T12:30:00Z",
+        notes: "Healthy lean protein for lunch"
+      };
+
+      console.log('🧪 Testing Food Log API with data:', testData);
+      
+      const response = await apiService.createFoodLog(testData);
+      
+      console.log('✅ API Response:', response);
+      toast({ 
+        title: "API Test สำเร็จ", 
+        description: "การเรียก API Food Log สำเร็จแล้ว",
+        variant: "default"
+      });
+      
+    } catch (error) {
+      console.error('❌ API Test Error:', error);
+      toast({ 
+        title: "API Test ล้มเหลว", 
+        description: error instanceof Error ? error.message : "เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ",
+        variant: "destructive"
+      });
     }
   };
 
@@ -376,10 +493,31 @@ export default function FoodLog() {
             <h1 className="text-3xl font-bold text-primary">บันทึกอาหาร</h1>
             <p className="text-muted-foreground">ติดตามการรับประทานอาหารและโภชนาการ</p>
           </div>
-          <Button onClick={() => setShowForm(!showForm)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            เพิ่มบันทึกอาหาร
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={testFoodLogAPI} 
+              variant="outline" 
+              className="flex items-center gap-2"
+              title="ทดสอบการเรียก API Food Log"
+            >
+              <TestTube className="h-4 w-4" />
+              ทดสอบ API
+            </Button>
+            <Button 
+              onClick={fetchFoodLogs} 
+              variant="outline" 
+              className="flex items-center gap-2"
+              disabled={isLoading}
+              title="โหลดข้อมูลใหม่จากเซิร์ฟเวอร์"
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              รีเฟรช
+            </Button>
+            <Button onClick={() => setShowForm(!showForm)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              เพิ่มบันทึกอาหาร
+            </Button>
+          </div>
         </div>
 
         {showForm && (
@@ -737,97 +875,113 @@ export default function FoodLog() {
 
         <div className="grid gap-4">
           <h2 className="text-xl font-semibold">ประวัติการรับประทานอาหาร</h2>
-          {foodLogs.map((log) => (
-            <Card key={log.food_log_id}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className={`p-2 rounded-lg ${getMealIcon(log.meal_time)}`}>
-                      <Utensils className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold">มื้อ{log.meal_time}</h3>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
-                        {new Date(log.log_date).toLocaleDateString('th-TH')}
+          
+          {isLoading ? (
+            <div className="flex items-center justify-center p-8">
+              <div className="flex items-center gap-2">
+                <RefreshCw className="h-5 w-5 animate-spin" />
+                <span>กำลังโหลดข้อมูล...</span>
+              </div>
+            </div>
+          ) : foodLogs.length === 0 ? (
+            <div className="text-center p-8 text-muted-foreground">
+              <Utensils className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>ยังไม่มีบันทึกอาหาร</p>
+              <p className="text-sm">เริ่มต้นบันทึกอาหารมื้อแรกของคุณ</p>
+            </div>
+          ) : (
+            foodLogs.map((log) => (
+              <Card key={log.food_log_id}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className={`p-2 rounded-lg ${getMealIcon(log.meal_time)}`}>
+                        <Utensils className="h-5 w-5 text-white" />
                       </div>
+                      <div>
+                        <h3 className="font-semibold">มื้อ{log.meal_time}</h3>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="h-4 w-4" />
+                          {new Date(log.log_date).toLocaleDateString('th-TH')}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => startEdit(log)}>แก้ไข</Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" size="sm">ลบ</Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
+                            <AlertDialogDescription>ต้องการลบรายการมื้อ{log.meal_time} นี้หรือไม่?</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deleteLog(log)}>ลบ</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => startEdit(log)}>แก้ไข</Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="sm">ลบ</Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
-                          <AlertDialogDescription>ต้องการลบรายการมื้อ{log.meal_time} นี้หรือไม่?</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => deleteLog(log)}>ลบ</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                  <div className="mt-4">
+                    <h4 className="text-sm font-medium mb-2">รายการอาหาร:</h4>
+                    <div className="space-y-1">
+                      {log.food_items.map((item, index) => (
+                        <div key={index} className="flex justify-between text-sm">
+                          <span>{item.name} ({item.amount})</span>
+                          <span>{item.calories} แคล</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-                
-                <div className="mt-4">
-                  <h4 className="text-sm font-medium mb-2">รายการอาหาร:</h4>
-                  <div className="space-y-1">
-                    {log.food_items.map((item, index) => (
-                      <div key={index} className="flex justify-between text-sm">
-                        <span>{item.name} ({item.amount})</span>
-                        <span>{item.calories} แคล</span>
-                      </div>
-                    ))}
+                  
+                  <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
+                    <div className="text-center p-2 bg-blue-50 rounded">
+                      <div className="font-semibold text-blue-600">{log.total_protein}g</div>
+                      <div className="text-blue-500">โปรตีน</div>
+                    </div>
+                    <div className="text-center p-2 bg-green-50 rounded">
+                      <div className="font-semibold text-green-600">{log.total_carbs}g</div>
+                      <div className="text-green-500">คาร์โบ</div>
+                    </div>
+                    <div className="text-center p-2 bg-orange-50 rounded">
+                      <div className="font-semibold text-orange-600">{log.total_fats}g</div>
+                      <div className="text-orange-500">ไขมัน</div>
+                    </div>
                   </div>
-                </div>
-                
-                <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
-                  <div className="text-center p-2 bg-blue-50 rounded">
-                    <div className="font-semibold text-blue-600">{log.total_protein}g</div>
-                    <div className="text-blue-500">โปรตีน</div>
-                  </div>
-                  <div className="text-center p-2 bg-green-50 rounded">
-                    <div className="font-semibold text-green-600">{log.total_carbs}g</div>
-                    <div className="text-green-500">คาร์โบ</div>
-                  </div>
-                  <div className="text-center p-2 bg-orange-50 rounded">
-                    <div className="font-semibold text-orange-600">{log.total_fats}g</div>
-                    <div className="text-orange-500">ไขมัน</div>
-                  </div>
-                </div>
 
-                <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                  <div className="text-center p-2 bg-purple-50 rounded">
-                    <div className="font-semibold text-purple-600">{log.total_fiber}g</div>
-                    <div className="text-purple-500">ไฟเบอร์</div>
+                  <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                    <div className="text-center p-2 bg-purple-50 rounded">
+                      <div className="font-semibold text-purple-600">{log.total_fiber}g</div>
+                      <div className="text-purple-500">ไฟเบอร์</div>
+                    </div>
+                    <div className="text-center p-2 bg-yellow-50 rounded">
+                      <div className="font-semibold text-yellow-600">{log.total_vitaminC}mg</div>
+                      <div className="text-yellow-500">วิตามิน C</div>
+                    </div>
+                    <div className="text-center p-2 bg-indigo-50 rounded">
+                      <div className="font-semibold text-indigo-600">{log.total_calcium}mg</div>
+                      <div className="text-indigo-500">แคลเซียม</div>
+                    </div>
+                    <div className="text-center p-2 bg-red-50 rounded">
+                      <div className="font-semibold text-red-600">{log.total_iron}mg</div>
+                      <div className="text-red-500">เหล็ก</div>
+                    </div>
                   </div>
-                  <div className="text-center p-2 bg-yellow-50 rounded">
-                    <div className="font-semibold text-yellow-600">{log.total_vitaminC}mg</div>
-                    <div className="text-yellow-500">วิตามิน C</div>
-                  </div>
-                  <div className="text-center p-2 bg-indigo-50 rounded">
-                    <div className="font-semibold text-indigo-600">{log.total_calcium}mg</div>
-                    <div className="text-indigo-500">แคลเซียม</div>
-                  </div>
-                  <div className="text-center p-2 bg-red-50 rounded">
-                    <div className="font-semibold text-red-600">{log.total_iron}mg</div>
-                    <div className="text-red-500">เหล็ก</div>
-                  </div>
-                </div>
-                
-                {log.notes && (
-                  <div className="mt-3 p-2 bg-muted rounded-md">
-                    <p className="text-sm text-muted-foreground">{log.notes}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                  
+                  {log.notes && (
+                    <div className="mt-3 p-2 bg-muted rounded-md">
+                      <p className="text-sm text-muted-foreground">{log.notes}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))
+          )}
         </div>
 
         {/* Edit Dialog */}
