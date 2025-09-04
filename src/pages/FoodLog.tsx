@@ -32,6 +32,37 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { useOnboarding } from "@/contexts/OnboardingContext";
 import { apiService, FoodLogItem } from "@/services/api";
 
+// ฟังก์ชันสำหรับจัดการวันที่โดยไม่ให้เลื่อนไป 1 วัน
+const getLocalDateString = (date?: Date | string) => {
+  const targetDate = date ? new Date(date) : new Date();
+  const year = targetDate.getFullYear();
+  const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+  const day = String(targetDate.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// ฟังก์ชันสำหรับแสดงผลวันที่ในรูปแบบไทย
+const getThaiDateString = (date?: Date | string) => {
+  const targetDate = date ? new Date(date) : new Date();
+  return targetDate.toLocaleDateString('th-TH', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+};
+
+// ฟังก์ชันสำหรับแปลงวันที่ท้องถิ่นเป็น ISO string โดยไม่ให้เลื่อนไป 1 วัน
+const getLocalISOString = (dateString: string) => {
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const day = date.getDate();
+  
+  // สร้างวันที่ใหม่โดยใช้ local time components
+  const localDate = new Date(year, month, day, 12, 0, 0, 0);
+  return localDate.toISOString();
+};
+
 interface FoodItem {
   name: string;
   amount: string;
@@ -115,7 +146,7 @@ export default function FoodLog() {
   const [updatingId, setUpdatingId] = useState<string | null>(null); // Added updatingId state for update loading
 
   const [formData, setFormData] = useState({
-    log_date: new Date().toISOString().split('T')[0],
+    log_date: getLocalDateString(),
     meal_time: "",
     meal_clock_time: "",
     food_items: "",
@@ -169,7 +200,7 @@ export default function FoodLog() {
          });
          return {
            food_log_id: actualId || String(index + 1), // Use actual database ID from API
-         log_date: new Date(apiLog.consumed_at).toISOString().split('T')[0],
+         log_date: getLocalDateString(apiLog.consumed_at),
                              meal_time: apiLog.meal_type === "breakfast" ? "เช้า" : 
                       apiLog.meal_type === "lunch" ? "กลางวัน" : 
                       apiLog.meal_type === "dinner" ? "เย็น" : 
@@ -287,7 +318,7 @@ export default function FoodLog() {
            fiber_g: Number(formData.total_fiber || 0),
            sugar_g: Number(formData.total_sugar || 0),
            sodium_mg: Number(formData.total_sodium || 0),
-          consumed_at: new Date(formData.log_date).toISOString(),
+          consumed_at: getLocalISOString(formData.log_date),
           notes: formData.notes
         };
 
@@ -339,7 +370,7 @@ export default function FoodLog() {
     setEditingId(null);
     setShowForm(false);
            setFormData({
-         log_date: new Date().toISOString().split('T')[0],
+         log_date: getLocalDateString(),
          meal_time: "",
          meal_clock_time: "",
          food_items: "",
@@ -551,7 +582,7 @@ export default function FoodLog() {
          fiber_g: Number(formData.total_fiber || 0),
          sugar_g: Number(formData.total_sugar || 0),
          sodium_mg: Number(formData.total_sodium || 0),
-         consumed_at: new Date(formData.log_date).toISOString(),
+         consumed_at: getLocalISOString(formData.log_date),
          notes: formData.notes || ""
        };
       
@@ -1136,7 +1167,7 @@ export default function FoodLog() {
                          <h3 className="text-xl font-bold text-gray-800">มื้อ{log.meal_time}</h3>
                          <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
                            <Calendar className="h-4 w-4" />
-                           {new Date(log.log_date).toLocaleDateString('th-TH')}
+                           {getThaiDateString(log.log_date)}
                          </div>
                        </div>
                      </div>
