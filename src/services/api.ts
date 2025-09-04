@@ -1395,6 +1395,154 @@ class APIService {
     }
   }
 
+  // ฟังก์ชันสำหรับ Dashboard - Nutrition Analysis
+  async getNutritionAnalysis(date?: string): Promise<any> {
+    console.log('🥗 Getting nutrition analysis...');
+    
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      throw new Error('No valid authentication token found');
+    }
+
+    try {
+      const url = date 
+        ? `${this.baseURL}/food-log/nutrition-analysis?date=${date}`
+        : `${this.baseURL}/food-log/nutrition-analysis`;
+        
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: this.getHeaders(),
+        signal: AbortSignal.timeout(10000)
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.log('Could not parse error response:', parseError);
+        }
+        
+        switch (response.status) {
+          case 401:
+            throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
+          case 500:
+            throw new Error('Internal Server Error: เกิดข้อผิดพลาดที่เซิร์ฟเวอร์');
+          default:
+            throw new Error(errorMessage);
+        }
+      }
+
+      const result = await this.handleResponse<any>(response);
+      console.log('✅ Nutrition analysis loaded successfully');
+      return result;
+    } catch (error) {
+      console.error('❌ Error getting nutrition analysis:', error);
+      throw error;
+    }
+  }
+
+  // ฟังก์ชันสำหรับ Dashboard - Food Log Summary
+  async getFoodLogSummary(period: string = 'day', startDate?: string, endDate?: string): Promise<any> {
+    console.log('📋 Getting food log summary...');
+    
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      throw new Error('No valid authentication token found');
+    }
+
+    try {
+      let url = `${this.baseURL}/food-log/summary?period=${period}`;
+      const params = new URLSearchParams();
+      
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+      
+      if (params.toString()) {
+        url += `&${params.toString()}`;
+      }
+        
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: this.getHeaders(),
+        signal: AbortSignal.timeout(10000)
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.log('Could not parse error response:', parseError);
+        }
+        
+        switch (response.status) {
+          case 401:
+            throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
+          case 500:
+            throw new Error('Internal Server Error: เกิดข้อผิดพลาดที่เซิร์ฟเวอร์');
+          default:
+            throw new Error(errorMessage);
+        }
+      }
+
+      const result = await this.handleResponse<any>(response);
+      console.log('✅ Food log summary loaded successfully');
+      return result;
+    } catch (error) {
+      console.error('❌ Error getting food log summary:', error);
+      throw error;
+    }
+  }
+
+  // ฟังก์ชันสำหรับ Dashboard - Food Log Dashboard
+  async getFoodLogDashboard(): Promise<any> {
+    console.log('📊 Getting food log dashboard data...');
+    
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      throw new Error('No valid authentication token found');
+    }
+
+    try {
+      const url = `${this.baseURL}/food-log/dashboard`;
+        
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: this.getHeaders(),
+        signal: AbortSignal.timeout(10000)
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.log('Could not parse error response:', parseError);
+        }
+        
+        switch (response.status) {
+          case 401:
+            throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
+          case 500:
+            throw new Error('Internal Server Error: เกิดข้อผิดพลาดที่เซิร์ฟเวอร์');
+          default:
+            throw new Error(errorMessage);
+        }
+      }
+
+      const result = await this.handleResponse<any>(response);
+      console.log('✅ Food log dashboard data loaded successfully');
+      return result;
+    } catch (error) {
+      console.error('❌ Error getting food log dashboard data:', error);
+      throw error;
+    }
+  }
+
   // ฟังก์ชันสำหรับ Dashboard - Exercise Streak
   async getExerciseStreak(): Promise<any> {
     console.log('🔥 Getting exercise streak...');

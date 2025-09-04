@@ -17,26 +17,25 @@ import { tokenUtils } from "@/lib/utils";
 import { apiService } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 
-// จำลองข้อมูลสุขภาพ
+// จำลองข้อมูลสุขภาพ (ส่วนที่ไม่เกี่ยวกับอาหาร)
 const mockHealthData = {
   sleep: { hours: 0, trend: "stable", target: 8 },
   water: { liters: 0, trend: "stable", target: 2.5 },
-  calories: { count: 0, trend: "stable", target: 2000 },
   exercise: { minutes: 35, trend: "up", target: 45 },
 };
 
-// ข้อมูลโภชนาการ
-const nutritionData = {
-  protein: { current: 0, target: 80, unit: "g", trend: "stable" },
-  carbs: { current: 0, target: 250, unit: "g", trend: "stable" },
-  fats: { current: 0, target: 65, unit: "g", trend: "stable" },
-  fiber: { current: 0, target: 25, unit: "g", trend: "stable" },
-  vitaminC: { current: 0, target: 90, unit: "mg", trend: "stable" },
-  vitaminD: { current: 0, target: 15, unit: "mcg", trend: "stable" },
-  calcium: { current: 0, target: 1000, unit: "mg", trend: "stable" },
-  iron: { current: 0, target: 18, unit: "mg", trend: "stable" },
-  potassium: { current: 0, target: 3500, unit: "mg", trend: "stable" },
-  sodium: { current: 0, target: 2300, unit: "mg", trend: "stable" },
+// ข้อมูลโภชนาการ (ค่าเป้าหมาย)
+const nutritionTargets = {
+  protein: 80,
+  carbs: 250,
+  fats: 65,
+  fiber: 25,
+  vitaminC: 90,
+  vitaminD: 15,
+  calcium: 1000,
+  iron: 18,
+  potassium: 3500,
+  sodium: 2300,
 };
 
 const sleepData = [
@@ -69,15 +68,22 @@ const waterData = [
   { name: "อาทิตย์", value: 0 },
 ];
 
-const caloriesData = [
-  { name: "จันทร์", value: 0 },
-  { name: "อังคาร", value: 0 },
-  { name: "พุธ", value: 0 },
-  { name: "พฤหัส", value: 0 },
-  { name: "ศุกร์", value: 0 },
-  { name: "เสาร์", value: 0 },
-  { name: "อาทิตย์", value: 0 },
-];
+// สร้างข้อมูลแคลอรี่จาก API
+const generateCaloriesData = (weeklyTrends?: any[]) => {
+  const days = ["จันทร์", "อังคาร", "พุธ", "พฤหัส", "ศุกร์", "เสาร์", "อาทิตย์"];
+  
+  if (!weeklyTrends || weeklyTrends.length === 0) {
+    return days.map(day => ({ name: day, value: 0 }));
+  }
+  
+  return days.map((day, index) => {
+    const trendData = weeklyTrends[index];
+    return {
+      name: day,
+      value: trendData?.calories || 0
+    };
+  });
+};
 
 const proteinData = [
   { name: "จันทร์", value: 0 },
@@ -153,6 +159,12 @@ export default function Dashboard() {
   const [recentExercises, setRecentExercises] = useState<any[]>([]);
   const [isLoadingExerciseData, setIsLoadingExerciseData] = useState(false);
   
+  // เพิ่ม state สำหรับข้อมูลอาหารและโภชนาการ
+  const [nutritionAnalysis, setNutritionAnalysis] = useState<any>(null);
+  const [foodLogSummary, setFoodLogSummary] = useState<any>(null);
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [isLoadingFoodData, setIsLoadingFoodData] = useState(false);
+  
   const { toast } = useToast();
 
   // ตรวจสอบว่าผู้ใช้ล็อกอินแล้วหรือไม่
@@ -174,6 +186,65 @@ export default function Dashboard() {
 
     return () => clearInterval(interval);
   }, [navigate]);
+
+  // ฟังก์ชันโหลดข้อมูลอาหารและโภชนาการจาก Backend
+  const loadFoodData = async () => {
+    if (isLoadingFoodData) return;
+    
+    setIsLoadingFoodData(true);
+    
+    try {
+      console.log('📥 โหลดข้อมูลอาหารและโภชนาการจาก Backend...');
+      
+      // 1. โหลดการวิเคราะห์โภชนาการ
+      const nutritionResponse = await apiService.getNutritionAnalysis();
+      if (nutritionResponse?.data) {
+        setNutritionAnalysis(nutritionResponse.data);
+        console.log('✅ โหลดการวิเคราะห์โภชนาการสำเร็จ:', nutritionResponse.data);
+      }
+      
+      // 2. โหลดสรุปอาหารประจำวัน
+      const summaryResponse = await apiService.getFoodLogSummary();
+      if (summaryResponse?.data) {
+        setFoodLogSummary(summaryResponse.data);
+        console.log('✅ โหลดสรุปอาหารประจำวันสำเร็จ:', summaryResponse.data);
+      }
+      
+      // 3. โหลดข้อมูล Dashboard
+      const dashboardResponse = await apiService.getFoodLogDashboard();
+      if (dashboardResponse?.data) {
+        setDashboardData(dashboardResponse.data);
+        console.log('✅ โหลดข้อมูล Dashboard สำเร็จ:', dashboardResponse.data);
+      }
+      
+      toast({ 
+        title: 'โหลดข้อมูลสำเร็จ', 
+        description: 'โหลดข้อมูลอาหารและโภชนาการเรียบร้อยแล้ว' 
+      });
+      
+    } catch (error) {
+      console.error('❌ Error loading food data:', error);
+      
+      let errorMessage = 'ไม่สามารถโหลดข้อมูลอาหารและโภชนาการได้';
+      if (error instanceof Error) {
+        if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+          errorMessage = 'ไม่มีสิทธิ์ในการเข้าถึงข้อมูล กรุณาเข้าสู่ระบบใหม่';
+        } else if (error.message.includes('500') || error.message.includes('Internal Server Error')) {
+          errorMessage = 'เกิดข้อผิดพลาดที่เซิร์ฟเวอร์ กรุณาลองใหม่อีกครั้ง';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast({ 
+        title: 'เกิดข้อผิดพลาด', 
+        description: errorMessage,
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoadingFoodData(false);
+    }
+  };
 
   // ฟังก์ชันโหลดข้อมูลการออกกำลังกายจาก Backend
   const loadExerciseData = async () => {
@@ -244,6 +315,11 @@ export default function Dashboard() {
   // โหลดข้อมูลการออกกำลังกายเมื่อเปิดหน้า
   useEffect(() => {
     loadExerciseData();
+  }, []);
+
+  // โหลดข้อมูลอาหารและโภชนาการเมื่อเปิดหน้า
+  useEffect(() => {
+    loadFoodData();
   }, []);
 
   const { bmr, tdee } = useMemo(() => {
@@ -333,18 +409,32 @@ export default function Dashboard() {
             </p>
           </div>
           
-          {/* ปุ่มรีเฟรชข้อมูลการออกกำลังกาย */}
-          <Button 
-            variant="outline" 
-            onClick={loadExerciseData}
-            disabled={isLoadingExerciseData}
-            className="gap-2"
-          >
-            <svg className={`h-4 w-4 ${isLoadingExerciseData ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            {isLoadingExerciseData ? 'กำลังโหลด...' : 'รีเฟรชข้อมูลการออกกำลังกาย'}
-          </Button>
+          {/* ปุ่มรีเฟรชข้อมูล */}
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={loadExerciseData}
+              disabled={isLoadingExerciseData}
+              className="gap-2"
+            >
+              <svg className={`h-4 w-4 ${isLoadingExerciseData ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {isLoadingExerciseData ? 'กำลังโหลด...' : 'รีเฟรชข้อมูลการออกกำลังกาย'}
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              onClick={loadFoodData}
+              disabled={isLoadingFoodData}
+              className="gap-2"
+            >
+              <svg className={`h-4 w-4 ${isLoadingFoodData ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.001 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {isLoadingFoodData ? 'กำลังโหลด...' : 'รีเฟรชข้อมูลอาหาร'}
+            </Button>
+          </div>
           <div className="flex gap-2 items-center">
             <Button asChild variant="outline">
               <Link to="/health-goals">
@@ -380,7 +470,14 @@ export default function Dashboard() {
             </div>
             <div>
               <div className="text-sm text-muted-foreground">โภชนาการ</div>
-              <div className="font-semibold">แคลอรี่วันนี้ {caloriesData[caloriesData.length-1].value} แคล</div>
+              <div className="font-semibold">
+                แคลอรี่วันนี้ {dashboardData?.today?.nutrition?.calories || 0} แคล
+                {nutritionAnalysis?.nutrition_score && (
+                  <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                    คะแนน: {nutritionAnalysis.nutrition_score}/100
+                  </span>
+                )}
+              </div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground">ออกกำลังกาย</div>
@@ -395,44 +492,51 @@ export default function Dashboard() {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                     <Card className="min-h-[140px] flex flex-col justify-between">
-             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-               <CardTitle className="text-sm font-medium">การปรับปรุงโดยรวม</CardTitle>
-               <TrendingUp className="h-4 w-4 text-accent" />
-             </CardHeader>
-             <CardContent>
-               <div className="text-2xl font-bold text-accent">0%</div>
-               <p className="text-xs text-muted-foreground">
-                 รอ API ข้อมูลการปรับปรุง
-               </p>
-             </CardContent>
-           </Card>
+          <Card className="min-h-[140px] flex flex-col justify-between">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">คะแนนโภชนาการ</CardTitle>
+              <TrendingUp className="h-4 w-4 text-accent" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-accent">
+                {nutritionAnalysis?.nutrition_score || 0}/100
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {nutritionAnalysis?.nutrition_score ? 'คะแนนโภชนาการวันนี้' : 'รอข้อมูลโภชนาการ'}
+              </p>
+            </CardContent>
+          </Card>
 
-                     <Card className="min-h-[140px] flex flex-col justify-between">
-             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-               <CardTitle className="text-sm font-medium">วันที่บันทึกข้อมูล</CardTitle>
-               <iconify-icon icon="lucide:activity" width="16" height="16" className="text-primary"></iconify-icon>
-             </CardHeader>
-             <CardContent>
-               <div className="text-2xl font-bold">0/30</div>
-               <p className="text-xs text-muted-foreground">
-                 รอ API ข้อมูลการบันทึก
-               </p>
-             </CardContent>
-           </Card>
+          <Card className="min-h-[140px] flex flex-col justify-between">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">มื้ออาหารวันนี้</CardTitle>
+              <iconify-icon icon="lucide:utensils" width="16" height="16" className="text-primary"></iconify-icon>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {dashboardData?.today?.nutrition?.meals_logged || 0}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {dashboardData?.today?.nutrition?.meals_logged ? 'มื้ออาหารที่บันทึก' : 'รอข้อมูลมื้ออาหาร'}
+              </p>
+            </CardContent>
+          </Card>
 
-                     <Card className="min-h-[140px] flex flex-col justify-between">
-             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-               <CardTitle className="text-sm font-medium">เป้าหมายที่บรรลุ</CardTitle>
-               <Target className="h-4 w-4 text-secondary" />
-             </CardHeader>
-             <CardContent>
-               <div className="text-2xl font-bold">0/21</div>
-               <p className="text-xs text-muted-foreground">
-                 รอ API ข้อมูลเป้าหมาย
-               </p>
-             </CardContent>
-           </Card>
+          <Card className="min-h-[140px] flex flex-col justify-between">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">แคลอรี่เฉลี่ยต่อวัน</CardTitle>
+              <Target className="h-4 w-4 text-secondary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {dashboardData?.quick_stats?.average_daily_calories ? 
+                  Math.round(dashboardData.quick_stats.average_daily_calories) : 0}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {dashboardData?.quick_stats?.average_daily_calories ? 'แคลอรี่เฉลี่ยต่อวัน' : 'รอข้อมูลแคลอรี่'}
+              </p>
+            </CardContent>
+          </Card>
 
           <Card className="min-h-[140px] flex flex-col justify-between">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -469,10 +573,10 @@ export default function Dashboard() {
           />
           <HealthCard
             title="แคลอรี่"
-            value={`${mockHealthData.calories.count} แคล`}
-            description={`เป้าหมาย ${mockHealthData.calories.target} แคล`}
+            value={`${dashboardData?.today?.nutrition?.calories || 0} แคล`}
+            description={`เป้าหมาย ${tdee || 2000} แคล`}
             icon="lucide:utensils"
-            trend={mockHealthData.calories.trend as "up" | "down" | "stable"}
+            trend={dashboardData?.today?.nutrition?.calories > 0 ? "up" : "stable" as "up" | "down" | "stable"}
             color="warning"
           />
                      <HealthCard
@@ -577,7 +681,7 @@ export default function Dashboard() {
                   <HealthChart
                     title="แนวโน้มแคลอรี่"
                     description="แคลอรี่ที่บริโภคในสัปดาห์ที่ผ่านมา"
-                    data={caloriesData}
+                    data={generateCaloriesData(dashboardData?.weekly_trends)}
                     type="line"
                     color="hsl(45, 100%, 50%)"
                   />
@@ -628,28 +732,29 @@ export default function Dashboard() {
                       สารอาหารหลัก (Macronutrients)
                     </h4>
                     <div className="space-y-3">
-                      {Object.entries(nutritionData).slice(0, 4).map(([key, data]) => {
-                        const status = getNutritionStatus(data.current, data.target);
+                      {[
+                        { key: 'protein', label: 'โปรตีน', current: nutritionAnalysis?.total_protein || 0, target: nutritionTargets.protein, unit: 'g' },
+                        { key: 'carbs', label: 'คาร์โบไฮเดรต', current: nutritionAnalysis?.total_carbs || 0, target: nutritionTargets.carbs, unit: 'g' },
+                        { key: 'fats', label: 'ไขมัน', current: nutritionAnalysis?.total_fat || 0, target: nutritionTargets.fats, unit: 'g' },
+                        { key: 'fiber', label: 'ไฟเบอร์', current: nutritionAnalysis?.total_fiber || 0, target: nutritionTargets.fiber, unit: 'g' }
+                      ].map(({ key, label, current, target, unit }) => {
+                        const status = getNutritionStatus(current, target);
                         return (
                           <div key={key} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                             <div className="flex items-center gap-3">
                               {getNutritionIcon(status)}
                               <div>
-                                <div className="font-medium capitalize">
-                                  {key === 'protein' ? 'โปรตีน' : 
-                                   key === 'carbs' ? 'คาร์โบไฮเดรต' : 
-                                   key === 'fats' ? 'ไขมัน' : 'ไฟเบอร์'}
-                                </div>
+                                <div className="font-medium">{label}</div>
                                 <div className="text-sm text-muted-foreground">
-                                  {data.current}/{data.target} {data.unit}
+                                  {current}/{target} {unit}
                                 </div>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
                               {getNutritionBadge(status)}
                               <div className="text-xs text-muted-foreground">
-                                {status === 'deficient' ? `ขาด ${data.target - data.current} ${data.unit}` :
-                                 status === 'excessive' ? `เกิน ${data.current - data.target} ${data.unit}` :
+                                {status === 'deficient' ? `ขาด ${target - current} ${unit}` :
+                                 status === 'excessive' ? `เกิน ${current - target} ${unit}` :
                                  'เหมาะสม'}
                               </div>
                             </div>
@@ -666,30 +771,31 @@ export default function Dashboard() {
                       วิตามินและแร่ธาตุ (Micronutrients)
                     </h4>
                     <div className="space-y-3">
-                      {Object.entries(nutritionData).slice(4).map(([key, data]) => {
-                        const status = getNutritionStatus(data.current, data.target);
+                      {[
+                        { key: 'vitaminC', label: 'วิตามิน C', current: 0, target: nutritionTargets.vitaminC, unit: 'mg' },
+                        { key: 'vitaminD', label: 'วิตามิน D', current: 0, target: nutritionTargets.vitaminD, unit: 'mcg' },
+                        { key: 'calcium', label: 'แคลเซียม', current: 0, target: nutritionTargets.calcium, unit: 'mg' },
+                        { key: 'iron', label: 'เหล็ก', current: 0, target: nutritionTargets.iron, unit: 'mg' },
+                        { key: 'potassium', label: 'โพแทสเซียม', current: 0, target: nutritionTargets.potassium, unit: 'mg' },
+                        { key: 'sodium', label: 'โซเดียม', current: nutritionAnalysis?.total_sodium || 0, target: nutritionTargets.sodium, unit: 'mg' }
+                      ].map(({ key, label, current, target, unit }) => {
+                        const status = getNutritionStatus(current, target);
                         return (
                           <div key={key} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                             <div className="flex items-center gap-3">
                               {getNutritionIcon(status)}
                               <div>
-                                <div className="font-medium capitalize">
-                                  {key === 'vitaminC' ? 'วิตามิน C' : 
-                                   key === 'vitaminD' ? 'วิตามิน D' : 
-                                   key === 'calcium' ? 'แคลเซียม' : 
-                                   key === 'iron' ? 'เหล็ก' : 
-                                   key === 'potassium' ? 'โพแทสเซียม' : 'โซเดียม'}
-                                </div>
+                                <div className="font-medium">{label}</div>
                                 <div className="text-sm text-muted-foreground">
-                                  {data.current}/{data.target} {data.unit}
+                                  {current}/{target} {unit}
                                 </div>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
                               {getNutritionBadge(status)}
                               <div className="text-xs text-muted-foreground">
-                                {status === 'deficient' ? `ขาด ${data.target - data.current} ${data.unit}` :
-                                 status === 'excessive' ? `เกิน ${data.current - data.target} ${data.unit}` :
+                                {status === 'deficient' ? `ขาด ${target - current} ${unit}` :
+                                 status === 'excessive' ? `เกิน ${current - target} ${unit}` :
                                  'เหมาะสม'}
                               </div>
                             </div>
@@ -809,6 +915,100 @@ export default function Dashboard() {
           </Card>
         )}
 
+        {/* ข้อมูลอาหารและโภชนาการ */}
+        {(nutritionAnalysis || foodLogSummary || dashboardData) && (
+          <Card className="health-stat-card bg-white rounded-lg shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Flame className="h-5 w-5" />
+                สถิติอาหารและโภชนาการ
+              </CardTitle>
+              <CardDescription>
+                ข้อมูลอาหารและโภชนาการของคุณจากข้อมูลจริง
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-orange-600">
+                    {dashboardData?.today?.nutrition?.calories || nutritionAnalysis?.total_calories || 0}
+                  </div>
+                  <div className="text-sm text-muted-foreground">แคลอรี่วันนี้</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">
+                    {dashboardData?.today?.nutrition?.protein || nutritionAnalysis?.total_protein || 0}
+                  </div>
+                  <div className="text-sm text-muted-foreground">โปรตีน (g)</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {dashboardData?.today?.nutrition?.carbs || nutritionAnalysis?.total_carbs || 0}
+                  </div>
+                  <div className="text-sm text-muted-foreground">คาร์โบไฮเดรต (g)</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-yellow-600">
+                    {dashboardData?.today?.nutrition?.fat || nutritionAnalysis?.total_fat || 0}
+                  </div>
+                  <div className="text-sm text-muted-foreground">ไขมัน (g)</div>
+                </div>
+              </div>
+              
+              {/* แสดงข้อมูลมื้ออาหาร */}
+              {dashboardData?.today?.meal_distribution && (
+                <div className="mt-6">
+                  <h4 className="font-semibold text-sm mb-3">แคลอรี่แยกตามมื้ออาหาร</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {Object.entries(dashboardData.today.meal_distribution).map(([meal, calories]) => (
+                      <div key={meal} className="text-center p-3 bg-muted/30 rounded-lg">
+                        <div className="text-lg font-semibold text-primary">
+                          {calories as number} แคล
+                        </div>
+                        <div className="text-sm text-muted-foreground capitalize">
+                          {meal === 'breakfast' ? 'อาหารเช้า' : 
+                           meal === 'lunch' ? 'อาหารกลางวัน' : 
+                           meal === 'dinner' ? 'อาหารเย็น' : 'ของว่าง'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* แสดงคำแนะนำจาก AI */}
+              {nutritionAnalysis?.recommendations && (
+                <div className="mt-6">
+                  <h4 className="font-semibold text-sm mb-3">คำแนะนำจาก AI</h4>
+                  <div className="space-y-2">
+                    {nutritionAnalysis.recommendations.map((recommendation: string, index: number) => (
+                      <div key={index} className="flex items-start gap-2 p-2 bg-blue-50 rounded-lg">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                        <span className="text-sm text-blue-800">{recommendation}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* แสดงข้อมูลเชิงลึก */}
+              {nutritionAnalysis?.insights && (
+                <div className="mt-6">
+                  <h4 className="font-semibold text-sm mb-3">ข้อมูลเชิงลึก</h4>
+                  <div className="space-y-2">
+                    {nutritionAnalysis.insights.map((insight: string, index: number) => (
+                      <div key={index} className="flex items-start gap-2 p-2 bg-green-50 rounded-lg">
+                        <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
+                        <span className="text-sm text-green-800">{insight}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         
 
         {/* Today's Summary */}
@@ -854,13 +1054,13 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">ความคืบหน้าแคลอรี่</span>
                   <span className="text-sm text-muted-foreground">
-                    {Math.round((mockHealthData.calories.count / mockHealthData.calories.target) * 100)}%
+                    {Math.round(((dashboardData?.today?.nutrition?.calories || 0) / (tdee || 2000)) * 100)}%
                   </span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2">
                   <div
                     className="bg-orange-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${Math.min((mockHealthData.calories.count / mockHealthData.calories.target) * 100, 100)}%` }}
+                    style={{ width: `${Math.min(((dashboardData?.today?.nutrition?.calories || 0) / (tdee || 2000)) * 100, 100)}%` }}
                   />
                 </div>
 
@@ -885,9 +1085,21 @@ export default function Dashboard() {
                     <li>• ดื่มน้ำเพิ่มอีก {mockHealthData.water.target - mockHealthData.water.liters} ลิตร</li>
                     <li>• นอนให้ครบ {mockHealthData.sleep.target} ชั่วโมง</li>
                     <li>• ออกกำลังกายเพิ่มอีก {mockHealthData.exercise.target - (exerciseStats?.total_duration || 0)} นาที</li>
-                    <li>• เพิ่มโปรตีนอีก {nutritionData.protein.target - nutritionData.protein.current} กรัม</li>
-                    <li>• ลดไขมันลง {nutritionData.fats.current - nutritionData.fats.target} กรัม</li>
-                    <li>• เพิ่มไฟเบอร์อีก {nutritionData.fiber.target - nutritionData.fiber.current} กรัม</li>
+                    {nutritionAnalysis?.total_protein !== undefined && (
+                      <li>• เพิ่มโปรตีนอีก {Math.max(0, 80 - nutritionAnalysis.total_protein)} กรัม</li>
+                    )}
+                    {nutritionAnalysis?.total_carbs !== undefined && (
+                      <li>• เพิ่มคาร์โบไฮเดรตอีก {Math.max(0, 250 - nutritionAnalysis.total_carbs)} กรัม</li>
+                    )}
+                    {nutritionAnalysis?.total_fat !== undefined && (
+                      <li>• เพิ่มไขมันอีก {Math.max(0, 65 - nutritionAnalysis.total_fat)} กรัม</li>
+                    )}
+                    {nutritionAnalysis?.total_fiber !== undefined && (
+                      <li>• เพิ่มไฟเบอร์อีก {Math.max(0, 25 - nutritionAnalysis.total_fiber)} กรัม</li>
+                    )}
+                    {!nutritionAnalysis && (
+                      <li>• รอข้อมูลโภชนาการเพื่อคำแนะนำที่แม่นยำ</li>
+                    )}
                   </ul>
                 </div>
 
