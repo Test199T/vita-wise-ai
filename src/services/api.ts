@@ -117,6 +117,12 @@ export interface ExerciseLog {
 
 // Food Log Interface
 export interface FoodLogItem {
+  id?: string; // Database ID for deletion (optional for new entries)
+  _id?: string; // Alternative ID field name (MongoDB style)
+  uuid?: string; // Alternative ID field name
+  food_log_id?: string; // Alternative ID field name
+  user_id?: number; // User ID for filtering
+  user_email?: string; // User email for fallback filtering
   food_name: string;
   meal_type: string;
   serving_size: number;
@@ -130,6 +136,8 @@ export interface FoodLogItem {
   sodium_mg: number;
   consumed_at: string;
   notes?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // Food Log API Response
@@ -1517,6 +1525,7 @@ class APIService {
 
       const result = await this.handleResponse<{ data: FoodLogItem[] }>(response);
       console.log('✅ Food logs fetched successfully:', result.data);
+      console.log('🔍 Raw API response structure:', JSON.stringify(result, null, 2));
       return result.data || [];
     } catch (error) {
       console.error('❌ Error fetching food logs:', error);
@@ -1552,6 +1561,7 @@ class APIService {
       });
       
       console.log(`✅ Filtered ${userFoodLogs.length} food logs for user ${userProfile.id} from total ${allFoodLogs.length}`);
+      console.log('🔍 Sample user food log structure:', userFoodLogs.length > 0 ? JSON.stringify(userFoodLogs[0], null, 2) : 'No logs found');
       return userFoodLogs;
       
     } catch (error) {
@@ -1559,6 +1569,111 @@ class APIService {
       // ถ้าไม่สามารถดึง profile ได้ ให้ fallback ไปใช้ getFoodLogs() แบบเดิม
       console.log('⚠️ Falling back to getFoodLogs() due to profile fetch error');
       return await this.getFoodLogs();
+    }
+  }
+
+  // ฟังก์ชันสำหรับลบ Food Log
+  async deleteFoodLog(foodLogId: string): Promise<{ message: string }> {
+    console.log('🗑️ Deleting food log...', foodLogId);
+    console.log('🔗 DELETE URL:', `${this.baseURL}/food-log/${foodLogId}`);
+    
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      throw new Error('No valid authentication token found');
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}/food-log/${foodLogId}`, {
+        method: 'DELETE',
+        headers: this.getHeaders(),
+        signal: AbortSignal.timeout(10000)
+      });
+
+      console.log('🔍 Delete API response status:', { status: response.status, statusText: response.statusText, ok: response.ok });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.log('Could not parse error response:', parseError);
+        }
+        
+        switch (response.status) {
+          case 400:
+            throw new Error('Bad Request: ข้อมูลไม่ถูกต้อง');
+          case 401:
+            throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
+          case 404:
+            throw new Error('Not Found: ไม่พบรายการอาหารที่ต้องการลบ');
+          case 500:
+            throw new Error('Internal Server Error: เกิดข้อผิดพลาดที่เซิร์ฟเวอร์');
+          default:
+            throw new Error(errorMessage);
+        }
+      }
+
+      const result = await this.handleResponse<{ message: string }>(response);
+      console.log('✅ Food log deleted successfully');
+      console.log('🔍 Delete API response:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Error deleting food log:', error);
+      throw error;
+    }
+  }
+
+  // ฟังก์ชันสำหรับอัปเดต Food Log
+  async updateFoodLog(foodLogId: string, foodLogData: Partial<FoodLogItem>): Promise<FoodLogResponse> {
+    console.log('✏️ Updating food log...', { foodLogId, foodLogData });
+    console.log('🔗 PUT URL:', `${this.baseURL}/food-log/${foodLogId}`);
+    
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      throw new Error('No valid authentication token found');
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}/food-log/${foodLogId}`, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify(foodLogData),
+        signal: AbortSignal.timeout(10000)
+      });
+
+      console.log('🔍 Update API response status:', { status: response.status, statusText: response.statusText, ok: response.ok });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.log('Could not parse error response:', parseError);
+        }
+        
+        switch (response.status) {
+          case 400:
+            throw new Error('Bad Request: ข้อมูลไม่ถูกต้อง');
+          case 401:
+            throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
+          case 404:
+            throw new Error('Not Found: ไม่พบรายการอาหารที่ต้องการอัปเดต');
+          case 500:
+            throw new Error('Internal Server Error: เกิดข้อผิดพลาดที่เซิร์ฟเวอร์');
+          default:
+            throw new Error(errorMessage);
+        }
+      }
+
+      const result = await this.handleResponse<FoodLogResponse>(response);
+      console.log('✅ Food log updated successfully');
+      console.log('🔍 Update API response:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Error updating food log:', error);
+      throw error;
     }
   }
 }

@@ -23,7 +23,8 @@ import {
   RefreshCw,
   Edit,
   Trash2,
-  Search
+  Search,
+  Loader2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -47,6 +48,7 @@ interface FoodLog {
   total_carbs: number;
   total_fats: number;
   total_fiber: number;
+  total_sugar: number;
   total_vitaminC: number;
   total_vitaminD: number;
   total_calcium: number;
@@ -85,6 +87,21 @@ const foodCatalog = [
   { name: "กล้วย", calories: 105 },
 ];
 
+// ฟังก์ชันสำหรับคำนวณแคลอรี่จากสารอาหารหลัก
+const calculateCaloriesFromMacros = (protein: number, carbs: number, fats: number) => {
+  // สูตรคำนวณแคลอรี่: โปรตีน 4 แคล/กรัม, คาร์โบ 4 แคล/กรัม, ไขมัน 9 แคล/กรัม
+  return (protein * 4) + (carbs * 4) + (fats * 9);
+};
+
+// ฟังก์ชันสำหรับอัปเดตแคลอรี่อัตโนมัติเมื่อมีการเปลี่ยนแปลงสารอาหารหลัก
+const updateCaloriesFromMacros = (protein: string, carbs: string, fats: string) => {
+  const proteinNum = Number(protein) || 0;
+  const carbsNum = Number(carbs) || 0;
+  const fatsNum = Number(fats) || 0;
+  const calculatedCalories = calculateCaloriesFromMacros(proteinNum, carbsNum, fatsNum);
+  return calculatedCalories;
+};
+
 export default function FoodLog() {
   const { toast } = useToast();
   const { onboardingData } = useOnboarding();
@@ -94,6 +111,8 @@ export default function FoodLog() {
   const filteredFoods = foodCatalog.filter((f) => f.name.includes(query.trim())).slice(0, 8);
   const [foodLogs, setFoodLogs] = useState<FoodLog[]>([]); // Removed mock data
   const [isLoading, setIsLoading] = useState(false); // Added isLoading state
+  const [deletingId, setDeletingId] = useState<string | null>(null); // Added deletingId state for delete loading
+  const [updatingId, setUpdatingId] = useState<string | null>(null); // Added updatingId state for update loading
 
   const [formData, setFormData] = useState({
     log_date: new Date().toISOString().split('T')[0],
@@ -105,6 +124,7 @@ export default function FoodLog() {
     total_carbs: "",
     total_fats: "",
     total_fiber: "",
+    total_sugar: "",
     total_vitaminC: "",
     total_vitaminD: "",
     total_calcium: "",
@@ -116,11 +136,18 @@ export default function FoodLog() {
 
   const addSuggestedFood = (name: string) => {
     const prefix = formData.food_items ? formData.food_items + ", " : "";
-    setFormData({ ...formData, food_items: `${prefix}${name} 1 ที่` });
+    const foodItem = foodCatalog.find(f => f.name === name);
+    const suggestedCalories = foodItem ? foodItem.calories : 0;
+    
+    setFormData({ 
+      ...formData, 
+      food_items: `${prefix}${name} 1 ที่`,
+      total_calories: String(suggestedCalories)
+    });
     setQuery("");
   };
 
-  const mealTimes = ["เช้า", "สาย", "กลางวัน", "บ่าย", "เย็น", "ดึก", "อื่นๆ"];
+  const mealTimes = ["เช้า", "กลางวัน", "เย็น", "ของว่าง"];
 
   const [isEditOpen, setIsEditOpen] = useState(false);
 
@@ -131,21 +158,36 @@ export default function FoodLog() {
       const apiFoodLogs = await apiService.getUserFoodLogs(); // เปลี่ยนเป็น getUserFoodLogs เพื่อดึงเฉพาะข้อมูลของ user ปัจจุบัน
       
              // แปลงข้อมูลจาก API เป็นรูปแบบที่ใช้ใน component
-       const convertedFoodLogs: FoodLog[] = apiFoodLogs.map((apiLog, index) => ({
-         food_log_id: String(index + 1), // Temporary ID, ideally from API
+       const convertedFoodLogs: FoodLog[] = apiFoodLogs.map((apiLog, index) => {
+         // Check for different possible ID field names
+         const actualId = apiLog.id || apiLog._id || apiLog.uuid || apiLog.food_log_id;
+         console.log('🔍 Processing API log:', { 
+           apiLog, 
+           hasId: !!actualId, 
+           id: actualId,
+           possibleIds: { id: apiLog.id, _id: apiLog._id, uuid: apiLog.uuid, food_log_id: apiLog.food_log_id }
+         });
+         return {
+           food_log_id: actualId || String(index + 1), // Use actual database ID from API
          log_date: new Date(apiLog.consumed_at).toISOString().split('T')[0],
-         meal_time: apiLog.meal_type === "breakfast" ? "เช้า" : 
-                    apiLog.meal_type === "lunch" ? "กลางวัน" : 
-                    apiLog.meal_type === "dinner" ? "เย็น" : 
-                    apiLog.meal_type === "morning_snack" ? "สาย" :
-                    apiLog.meal_type === "afternoon_snack" ? "บ่าย" :
-                    apiLog.meal_type === "night_snack" ? "ดึก" : "อื่นๆ",
+                             meal_time: apiLog.meal_type === "breakfast" ? "เช้า" : 
+                      apiLog.meal_type === "lunch" ? "กลางวัน" : 
+                      apiLog.meal_type === "dinner" ? "เย็น" : 
+                      apiLog.meal_type === "snack" ? "ของว่าง" : "ของว่าง",
          food_items: [{ 
            name: apiLog.food_name || "อาหารทั่วไป", 
            amount: `${apiLog.serving_size || 1} ${apiLog.serving_unit || 'serving'}`, 
-           calories: Number(apiLog.calories_per_serving || 0) 
+           calories: Number(apiLog.calories_per_serving || 0) || calculateCaloriesFromMacros(
+             Number(apiLog.protein_g || 0),
+             Number(apiLog.carbs_g || 0),
+             Number(apiLog.fat_g || 0)
+           )
          }],
-         total_calories: Number(apiLog.calories_per_serving || 0),
+         total_calories: Number(apiLog.calories_per_serving || 0) || calculateCaloriesFromMacros(
+           Number(apiLog.protein_g || 0),
+           Number(apiLog.carbs_g || 0),
+           Number(apiLog.fat_g || 0)
+         ),
          total_protein: Number(apiLog.protein_g || 0),
          total_carbs: Number(apiLog.carbs_g || 0),
          total_fats: Number(apiLog.fat_g || 0),
@@ -158,7 +200,8 @@ export default function FoodLog() {
          total_iron: 0, // No direct mapping from API
          total_potassium: 0, // No direct mapping from API
          notes: apiLog.notes || ""
-       }));
+       };
+       });
       
       setFoodLogs(convertedFoodLogs);
       console.log('✅ User food logs loaded from API:', convertedFoodLogs);
@@ -183,7 +226,7 @@ export default function FoodLog() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.food_items || !formData.total_calories) {
+    if (!formData.food_items) {
       toast({
         title: "ข้อมูลไม่ครบถ้วน",
         description: "กรุณากรอกข้อมูลให้ครบถ้วน",
@@ -192,49 +235,58 @@ export default function FoodLog() {
       return;
     }
 
+    // คำนวณแคลอรี่จากสารอาหารหลักหากไม่มีข้อมูลแคลอรี่
+    let finalCalories = Number(formData.total_calories) || 0;
+    if (finalCalories === 0) {
+      finalCalories = calculateCaloriesFromMacros(
+        Number(formData.total_protein) || 0,
+        Number(formData.total_carbs) || 0,
+        Number(formData.total_fats) || 0
+      );
+    }
+
     if (editingId) {
       // แก้ไขบันทึกที่มีอยู่ (ยังคงใช้ local state สำหรับตอนนี้)
-      const next = foodLogs.map(l => l.food_log_id === editingId ? {
-        ...l,
-        log_date: formData.log_date,
-        meal_time: formData.meal_time,
-        food_items: formData.food_items ? [{ name: formData.food_items, amount: '', calories: Number(formData.total_calories || 0) }] : l.food_items,
-        total_calories: Number(formData.total_calories || 0),
-        total_protein: Number(formData.total_protein || 0),
-        total_carbs: Number(formData.total_carbs || 0),
-        total_fats: Number(formData.total_fats || 0),
-        total_fiber: Number(formData.total_fiber || 0),
-        total_vitaminC: Number(formData.total_vitaminC || 0),
-        total_vitaminD: Number(formData.total_vitaminD || 0),
-        total_calcium: Number(formData.total_calcium || 0),
-        total_iron: Number(formData.total_iron || 0),
-        total_potassium: Number(formData.total_potassium || 0),
-        total_sodium: Number(formData.total_sodium || 0),
-        notes: formData.notes,
-      } : l);
+             const next = foodLogs.map(l => l.food_log_id === editingId ? {
+         ...l,
+         log_date: formData.log_date,
+         meal_time: formData.meal_time,
+         food_items: formData.food_items ? [{ name: formData.food_items, amount: '', calories: finalCalories }] : l.food_items,
+         total_calories: finalCalories,
+         total_protein: Number(formData.total_protein || 0),
+         total_carbs: Number(formData.total_carbs || 0),
+         total_fats: Number(formData.total_fats || 0),
+         total_fiber: Number(formData.total_fiber || 0),
+         total_sugar: Number(formData.total_sugar || 0),
+         total_vitaminC: Number(formData.total_vitaminC || 0),
+         total_vitaminD: Number(formData.total_vitaminD || 0),
+         total_calcium: Number(formData.total_calcium || 0),
+         total_iron: Number(formData.total_iron || 0),
+         total_potassium: Number(formData.total_potassium || 0),
+         total_sodium: Number(formData.total_sodium || 0),
+         notes: formData.notes,
+       } : l);
       setFoodLogs(next);
       toast({ title: "อัปเดตบันทึกแล้ว" });
     } else {
       // เพิ่มบันทึกใหม่ผ่าน API
       try {
                  // แปลงข้อมูลจาก form เป็นรูปแบบที่ API ต้องการ
-         const apiData: FoodLogItem = {
-           food_name: formData.food_items || "อาหารทั่วไป",
-           meal_type: formData.meal_time === "เช้า" ? "breakfast" : 
-                      formData.meal_time === "กลางวัน" ? "lunch" : 
-                      formData.meal_time === "เย็น" ? "dinner" : 
-                      formData.meal_time === "สาย" ? "morning_snack" :
-                      formData.meal_time === "บ่าย" ? "afternoon_snack" :
-                      formData.meal_time === "ดึก" ? "night_snack" : "other",
+                   const apiData: FoodLogItem = {
+            food_name: formData.food_items || "อาหารทั่วไป",
+            meal_type: formData.meal_time === "เช้า" ? "breakfast" : 
+                       formData.meal_time === "กลางวัน" ? "lunch" : 
+                       formData.meal_time === "เย็น" ? "dinner" : 
+                       formData.meal_time === "ของว่าง" ? "snack" : "snack",
            serving_size: 1, // ใช้ 1 เป็น default
            serving_unit: "serving", // ใช้ "serving" แทน "calories"
-           calories_per_serving: Number(formData.total_calories || 0),
-          protein_g: Number(formData.total_protein || 0),
-          carbs_g: Number(formData.total_carbs || 0),
-          fat_g: Number(formData.total_fats || 0),
-          fiber_g: Number(formData.total_fiber || 0),
-          sugar_g: 0, // ไม่มีข้อมูลในฟอร์ม
-          sodium_mg: Number(formData.total_sodium || 0),
+           calories_per_serving: finalCalories,
+                     protein_g: Number(formData.total_protein || 0),
+           carbs_g: Number(formData.total_carbs || 0),
+           fat_g: Number(formData.total_fats || 0),
+           fiber_g: Number(formData.total_fiber || 0),
+           sugar_g: Number(formData.total_sugar || 0),
+           sodium_mg: Number(formData.total_sodium || 0),
           consumed_at: new Date(formData.log_date).toISOString(),
           notes: formData.notes
         };
@@ -245,25 +297,26 @@ export default function FoodLog() {
         
         console.log('✅ API Response:', response);
         
-        // เพิ่มบันทึกใหม่เข้า local state หลังจาก API สำเร็จ
-        const newLog: FoodLog = {
-          food_log_id: crypto.randomUUID(),
-          log_date: formData.log_date,
-          meal_time: formData.meal_time,
-          food_items: formData.food_items ? [{ name: formData.food_items, amount: '', calories: Number(formData.total_calories || 0) }] : [],
-          total_calories: Number(formData.total_calories || 0),
-          total_protein: Number(formData.total_protein || 0),
-          total_carbs: Number(formData.total_carbs || 0),
-          total_fats: Number(formData.total_fats || 0),
-          total_fiber: Number(formData.total_fiber || 0),
-          total_vitaminC: Number(formData.total_vitaminC || 0),
-          total_vitaminD: Number(formData.total_vitaminD || 0),
-          total_calcium: Number(formData.total_calcium || 0),
-          total_iron: Number(formData.total_iron || 0),
-          total_potassium: Number(formData.total_potassium || 0),
-          total_sodium: Number(formData.total_sodium || 0),
-          notes: formData.notes,
-        };
+                 // เพิ่มบันทึกใหม่เข้า local state หลังจาก API สำเร็จ
+         const newLog: FoodLog = {
+           food_log_id: crypto.randomUUID(),
+           log_date: formData.log_date,
+           meal_time: formData.meal_time,
+           food_items: formData.food_items ? [{ name: formData.food_items, amount: '', calories: finalCalories }] : [],
+           total_calories: finalCalories,
+           total_protein: Number(formData.total_protein || 0),
+           total_carbs: Number(formData.total_carbs || 0),
+           total_fats: Number(formData.total_fats || 0),
+           total_fiber: Number(formData.total_fiber || 0),
+           total_sugar: Number(formData.total_sugar || 0),
+           total_vitaminC: Number(formData.total_vitaminC || 0),
+           total_vitaminD: Number(formData.total_vitaminD || 0),
+           total_calcium: Number(formData.total_calcium || 0),
+           total_iron: Number(formData.total_iron || 0),
+           total_potassium: Number(formData.total_potassium || 0),
+           total_sodium: Number(formData.total_sodium || 0),
+           notes: formData.notes,
+         };
         
         // ดึงข้อมูลใหม่จาก API แทนการเพิ่มเข้า local state
         await fetchFoodLogs();
@@ -285,37 +338,36 @@ export default function FoodLog() {
     
     setEditingId(null);
     setShowForm(false);
-    setFormData({
-      log_date: new Date().toISOString().split('T')[0],
-      meal_time: "",
-      meal_clock_time: "",
-      food_items: "",
-      total_calories: "",
-      total_protein: "",
-      total_carbs: "",
-      total_fats: "",
-      total_fiber: "",
-      total_vitaminC: "",
-      total_vitaminD: "",
-      total_calcium: "",
-      total_iron: "",
-      total_potassium: "",
-      total_sodium: "",
-      notes: ""
-    });
+           setFormData({
+         log_date: new Date().toISOString().split('T')[0],
+         meal_time: "",
+         meal_clock_time: "",
+         food_items: "",
+         total_calories: "",
+         total_protein: "",
+         total_carbs: "",
+         total_fats: "",
+         total_fiber: "",
+         total_sugar: "",
+         total_vitaminC: "",
+         total_vitaminD: "",
+         total_calcium: "",
+         total_iron: "",
+         total_potassium: "",
+         total_sodium: "",
+         notes: ""
+       });
   };
 
-  const getMealIcon = (mealTime: string) => {
-    const mealColors = {
-      "เช้า": "bg-yellow-500",
-      "สาย": "bg-orange-500", 
-      "กลางวัน": "bg-red-500",
-      "บ่าย": "bg-purple-500",
-      "เย็น": "bg-blue-500",
-      "ดึก": "bg-gray-500"
-    };
-    return mealColors[mealTime as keyof typeof mealColors] || "bg-gray-500";
-  };
+     const getMealIcon = (mealTime: string) => {
+     const mealColors = {
+       "เช้า": "bg-yellow-500",
+       "กลางวัน": "bg-red-500",
+       "เย็น": "bg-blue-500",
+       "ของว่าง": "bg-purple-500"
+     };
+     return mealColors[mealTime as keyof typeof mealColors] || "bg-gray-500";
+   };
 
   // ฟังก์ชันสำหรับตรวจสอบสถานะสารอาหาร
   const getNutritionStatus = (current: number, target: number) => {
@@ -384,53 +436,79 @@ export default function FoodLog() {
     }
   };
 
+     // ฟังก์ชันสำหรับทดสอบการแปลงมื้ออาหาร
+   const testMealTimeConversion = () => {
+     console.log('🧪 Testing meal time conversion:');
+     
+     const testMealTimes = ["เช้า", "กลางวัน", "เย็น", "ของว่าง"];
+     
+     testMealTimes.forEach(mealTime => {
+       const converted = mealTime === "เช้า" ? "breakfast" : 
+                        mealTime === "กลางวัน" ? "lunch" : 
+                        mealTime === "เย็น" ? "dinner" : 
+                        mealTime === "ของว่าง" ? "snack" : "snack";
+       
+       console.log(`  ${mealTime} → ${converted}`);
+     });
+   };
+
   // คำนวณยอดรวมโภชนาการ
-  const calculateTotalNutrition = () => {
-    const totals = {
-      calories: 0,
-      protein: 0,
-      carbs: 0,
-      fats: 0,
-      fiber: 0,
-      vitaminC: 0,
-      vitaminD: 0,
-      calcium: 0,
-      iron: 0,
-      potassium: 0,
-      sodium: 0,
-    };
+     const calculateTotalNutrition = () => {
+     const totals = {
+       calories: 0,
+       protein: 0,
+       carbs: 0,
+       fats: 0,
+       fiber: 0,
+       sugar: 0,
+       vitaminC: 0,
+       vitaminD: 0,
+       calcium: 0,
+       iron: 0,
+       potassium: 0,
+       sodium: 0,
+     };
 
-    foodLogs.forEach(log => {
-      totals.calories += log.total_calories;
-      totals.protein += log.total_protein;
-      totals.carbs += log.total_carbs;
-      totals.fats += log.total_fats;
-      totals.fiber += log.total_fiber;
-      totals.vitaminC += log.total_vitaminC;
-      totals.vitaminD += log.total_vitaminD;
-      totals.calcium += log.total_calcium;
-      totals.iron += log.total_iron;
-      totals.potassium += log.total_potassium;
-      totals.sodium += log.total_sodium;
-    });
+     foodLogs.forEach(log => {
+       totals.calories += log.total_calories;
+       totals.protein += log.total_protein;
+       totals.carbs += log.total_carbs;
+       totals.fats += log.total_fats;
+       totals.fiber += log.total_fiber;
+       totals.sugar += log.total_sugar;
+       totals.vitaminC += log.total_vitaminC;
+       totals.vitaminD += log.total_vitaminD;
+       totals.calcium += log.total_calcium;
+       totals.iron += log.total_iron;
+       totals.potassium += log.total_potassium;
+       totals.sodium += log.total_sodium;
+     });
 
-    return totals;
-  };
+     return totals;
+   };
 
   const totalNutrition = calculateTotalNutrition();
 
   const startEdit = (log: FoodLog) => {
     setEditingId(log.food_log_id);
+    // คำนวณแคลอรี่จากสารอาหารหลักหากไม่มีข้อมูลแคลอรี่
+    const calculatedCalories = log.total_calories || calculateCaloriesFromMacros(
+      log.total_protein || 0,
+      log.total_carbs || 0,
+      log.total_fats || 0
+    );
+    
     setFormData({
       log_date: log.log_date,
       meal_time: log.meal_time,
       meal_clock_time: "",
       food_items: log.food_items?.map((it) => it.name).join(", "),
-      total_calories: String(log.total_calories || ""),
+      total_calories: String(calculatedCalories),
       total_protein: String(log.total_protein || ""),
       total_carbs: String(log.total_carbs || ""),
       total_fats: String(log.total_fats || ""),
       total_fiber: String(log.total_fiber || ""),
+      total_sugar: String(log.total_sugar || ""),
       total_vitaminC: String(log.total_vitaminC || ""),
       total_vitaminD: String(log.total_vitaminD || ""),
       total_calcium: String(log.total_calcium || ""),
@@ -442,36 +520,117 @@ export default function FoodLog() {
     setIsEditOpen(true);
   };
 
-  const handleEditSubmit = (e: React.FormEvent) => {
+  const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingId) return;
-    const next = foodLogs.map(l => l.food_log_id === editingId ? {
-      ...l,
-      log_date: formData.log_date,
-      meal_time: formData.meal_time,
-      food_items: formData.food_items ? [{ name: formData.food_items, amount: '', calories: Number(formData.total_calories || 0) }] : l.food_items,
-      total_calories: Number(formData.total_calories || 0),
-      total_protein: Number(formData.total_protein || 0),
-      total_carbs: Number(formData.total_carbs || 0),
-      total_fats: Number(formData.total_fats || 0),
-      total_fiber: Number(formData.total_fiber || 0),
-      total_vitaminC: Number(formData.total_vitaminC || 0),
-      total_vitaminD: Number(formData.total_vitaminD || 0),
-      total_calcium: Number(formData.total_calcium || 0),
-      total_iron: Number(formData.total_iron || 0),
-      total_potassium: Number(formData.total_potassium || 0),
-      total_sodium: Number(formData.total_sodium || 0),
-      notes: formData.notes,
-    } : l);
-    setFoodLogs(next);
-    toast({ title: "อัปเดตบันทึกแล้ว" });
-    setIsEditOpen(false);
-    setEditingId(null);
+    
+    try {
+      // คำนวณแคลอรี่จากสารอาหารหลักหากไม่มีข้อมูลแคลอรี่
+      let finalCalories = Number(formData.total_calories) || 0;
+      if (finalCalories === 0) {
+        finalCalories = calculateCaloriesFromMacros(
+          Number(formData.total_protein) || 0,
+          Number(formData.total_carbs) || 0,
+          Number(formData.total_fats) || 0
+        );
+      }
+      
+             // เตรียมข้อมูลสำหรับส่งไปยัง API
+               const updateData = {
+          food_name: formData.food_items || "อาหารทั่วไป",
+          meal_type: formData.meal_time === "เช้า" ? "breakfast" : 
+                     formData.meal_time === "กลางวัน" ? "lunch" : 
+                     formData.meal_time === "เย็น" ? "dinner" : 
+                     formData.meal_time === "ของว่าง" ? "snack" : "snack",
+         serving_size: 1,
+         serving_unit: "serving",
+         calories_per_serving: finalCalories,
+         protein_g: Number(formData.total_protein || 0),
+         carbs_g: Number(formData.total_carbs || 0),
+         fat_g: Number(formData.total_fats || 0),
+         fiber_g: Number(formData.total_fiber || 0),
+         sugar_g: Number(formData.total_sugar || 0),
+         sodium_mg: Number(formData.total_sodium || 0),
+         consumed_at: new Date(formData.log_date).toISOString(),
+         notes: formData.notes || ""
+       };
+      
+      console.log('✏️ Updating food log with data:', { editingId, updateData });
+      
+      // เริ่ม loading state
+      setUpdatingId(editingId);
+      
+      // เรียก API เพื่ออัปเดตข้อมูลในฐานข้อมูล
+      await apiService.updateFoodLog(editingId, updateData);
+      
+             // อัปเดต local state หลังจาก API สำเร็จ
+       const next = foodLogs.map(l => l.food_log_id === editingId ? {
+         ...l,
+         log_date: formData.log_date,
+         meal_time: formData.meal_time,
+         food_items: formData.food_items ? [{ name: formData.food_items, amount: '', calories: finalCalories }] : l.food_items,
+         total_calories: finalCalories,
+         total_protein: Number(formData.total_protein || 0),
+         total_carbs: Number(formData.total_carbs || 0),
+         total_fats: Number(formData.total_fats || 0),
+         total_fiber: Number(formData.total_fiber || 0),
+         total_sugar: Number(formData.total_sugar || 0),
+         total_vitaminC: Number(formData.total_vitaminC || 0),
+         total_vitaminD: Number(formData.total_vitaminD || 0),
+         total_calcium: Number(formData.total_calcium || 0),
+         total_iron: Number(formData.total_iron || 0),
+         total_potassium: Number(formData.total_potassium || 0),
+         total_sodium: Number(formData.total_sodium || 0),
+         notes: formData.notes,
+       } : l);
+      setFoodLogs(next);
+      
+      toast({ 
+        title: "อัปเดตบันทึกแล้ว", 
+        description: "อัปเดตรายการอาหารในฐานข้อมูลเรียบร้อยแล้ว"
+      });
+      
+      setIsEditOpen(false);
+      setEditingId(null);
+      
+    } catch (error) {
+      console.error('❌ Error updating food log:', error);
+      toast({ 
+        title: "อัปเดตล้มเหลว", 
+        description: error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัปเดตข้อมูล",
+        variant: "destructive"
+      });
+    } finally {
+      setUpdatingId(null); // หยุด loading state
+    }
   };
 
-  const deleteLog = (log: FoodLog) => {
-    setFoodLogs(prev => prev.filter(l => l.food_log_id !== log.food_log_id));
-    toast({ title: "ลบรายการแล้ว" });
+  const deleteLog = async (log: FoodLog) => {
+    try {
+      console.log('🗑️ Attempting to delete food log:', { log, food_log_id: log.food_log_id });
+      setDeletingId(log.food_log_id); // เริ่ม loading state
+      
+      // เรียก API เพื่อลบข้อมูลในฐานข้อมูล
+      await apiService.deleteFoodLog(log.food_log_id);
+      
+      // ลบออกจาก local state หลังจาก API สำเร็จ
+      setFoodLogs(prev => prev.filter(l => l.food_log_id !== log.food_log_id));
+      
+      toast({ 
+        title: "ลบรายการแล้ว", 
+        description: "ลบรายการอาหารเรียบร้อยแล้ว"
+      });
+      
+    } catch (error) {
+      console.error('❌ Error deleting food log:', error);
+      toast({ 
+        title: "ลบรายการล้มเหลว", 
+        description: error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการลบข้อมูล",
+        variant: "destructive"
+      });
+    } finally {
+      setDeletingId(null); // หยุด loading state
+    }
   };
 
   const nutritionTargets = useMemo(() => {
@@ -488,37 +647,49 @@ export default function FoodLog() {
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-primary">บันทึกอาหาร</h1>
-            <p className="text-muted-foreground">ติดตามการรับประทานอาหารและโภชนาการ</p>
+                                   <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-primary">บันทึกอาหาร</h1>
+              <p className="text-muted-foreground">ติดตามการรับประทานอาหารและโภชนาการ</p>
+            </div>
+            <div className="flex gap-2">
+                             <Button 
+                 onClick={testFoodLogAPI} 
+                 variant="outline" 
+                 className="flex items-center gap-2"
+                 title="ทดสอบการเรียก API Food Log"
+               >
+                 <TestTube className="h-4 w-4" />
+                 ทดสอบ API
+               </Button>
+               <Button 
+                 onClick={testMealTimeConversion} 
+                 variant="outline" 
+                 className="flex items-center gap-2"
+                 title="ทดสอบการแปลงมื้ออาหาร"
+               >
+                 <TestTube className="h-4 w-4" />
+                 ทดสอบมื้ออาหาร
+               </Button>
+              <Button 
+                onClick={fetchFoodLogs} 
+                variant="outline" 
+                className="flex items-center gap-2"
+                disabled={isLoading}
+                title="โหลดข้อมูลใหม่จากเซิร์ฟเวอร์"
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                รีเฟรช
+              </Button>
+              <Button 
+                onClick={() => setShowForm(!showForm)} 
+                className="gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                เพิ่มบันทึกอาหาร
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button 
-              onClick={testFoodLogAPI} 
-              variant="outline" 
-              className="flex items-center gap-2"
-              title="ทดสอบการเรียก API Food Log"
-            >
-              <TestTube className="h-4 w-4" />
-              ทดสอบ API
-            </Button>
-            <Button 
-              onClick={fetchFoodLogs} 
-              variant="outline" 
-              className="flex items-center gap-2"
-              disabled={isLoading}
-              title="โหลดข้อมูลใหม่จากเซิร์ฟเวอร์"
-            >
-              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              รีเฟรช
-            </Button>
-            <Button onClick={() => setShowForm(!showForm)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              เพิ่มบันทึกอาหาร
-            </Button>
-          </div>
-        </div>
 
         {showForm && (
           <Card>
@@ -596,7 +767,7 @@ export default function FoodLog() {
                   </TabsList>
 
                   <TabsContent value="macros" className="space-y-4">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="calories">แคลอรี</Label>
                         <Input
@@ -606,6 +777,9 @@ export default function FoodLog() {
                           value={formData.total_calories}
                           onChange={(e) => setFormData({...formData, total_calories: e.target.value})}
                         />
+                        <p className="text-xs text-muted-foreground">
+                          แคลอรี่จะถูกคำนวณอัตโนมัติจากโปรตีน คาร์โบ และไขมัน
+                        </p>
                       </div>
 
                       <div className="space-y-2">
@@ -615,7 +789,15 @@ export default function FoodLog() {
                           type="number"
                           placeholder="25"
                           value={formData.total_protein}
-                          onChange={(e) => setFormData({...formData, total_protein: e.target.value})}
+                          onChange={(e) => {
+                            const newProtein = e.target.value;
+                            const calculatedCalories = updateCaloriesFromMacros(newProtein, formData.total_carbs, formData.total_fats);
+                            setFormData({
+                              ...formData, 
+                              total_protein: newProtein,
+                              total_calories: String(calculatedCalories)
+                            });
+                          }}
                         />
                       </div>
 
@@ -626,7 +808,15 @@ export default function FoodLog() {
                           type="number"
                           placeholder="45"
                           value={formData.total_carbs}
-                          onChange={(e) => setFormData({...formData, total_carbs: e.target.value})}
+                          onChange={(e) => {
+                            const newCarbs = e.target.value;
+                            const calculatedCalories = updateCaloriesFromMacros(formData.total_protein, newCarbs, formData.total_fats);
+                            setFormData({
+                              ...formData, 
+                              total_carbs: newCarbs,
+                              total_calories: String(calculatedCalories)
+                            });
+                          }}
                         />
                       </div>
 
@@ -637,7 +827,15 @@ export default function FoodLog() {
                           type="number"
                           placeholder="12"
                           value={formData.total_fats}
-                          onChange={(e) => setFormData({...formData, total_fats: e.target.value})}
+                          onChange={(e) => {
+                            const newFats = e.target.value;
+                            const calculatedCalories = updateCaloriesFromMacros(formData.total_protein, formData.total_carbs, newFats);
+                            setFormData({
+                              ...formData, 
+                              total_fats: newFats,
+                              total_calories: String(calculatedCalories)
+                            });
+                          }}
                         />
                       </div>
 
@@ -649,6 +847,17 @@ export default function FoodLog() {
                           placeholder="8"
                           value={formData.total_fiber}
                           onChange={(e) => setFormData({...formData, total_fiber: e.target.value})}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="sugar">น้ำตาล (g)</Label>
+                        <Input
+                          id="sugar"
+                          type="number"
+                          placeholder="12"
+                          value={formData.total_sugar}
+                          onChange={(e) => setFormData({...formData, total_sugar: e.target.value})}
                         />
                       </div>
                     </div>
@@ -748,17 +957,17 @@ export default function FoodLog() {
           </Card>
         )}
 
-        {/* Nutrition Summary */}
-        <Card className="health-stat-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              สรุปโภชนาการวันนี้
-            </CardTitle>
-            <CardDescription>
-              ข้อมูลโภชนาการรวมจากทุกมื้ออาหาร
-            </CardDescription>
-          </CardHeader>
+                                   {/* Nutrition Summary */}
+          <Card className="health-stat-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                สรุปโภชนาการวันนี้
+              </CardTitle>
+              <CardDescription>
+                ข้อมูลโภชนาการรวมจากทุกมื้ออาหาร
+              </CardDescription>
+            </CardHeader>
           <CardContent>
             <Tabs defaultValue="macros" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
@@ -774,13 +983,14 @@ export default function FoodLog() {
                       <Beef className="h-5 w-5" />
                       สารอาหารหลัก (Macronutrients)
                     </h4>
-                    <div className="space-y-3">
-                      {[
-                        { key: 'protein', label: 'โปรตีน', current: totalNutrition.protein, target: nutritionTargets.protein.target, unit: 'g' },
-                        { key: 'carbs', label: 'คาร์โบไฮเดรต', current: totalNutrition.carbs, target: nutritionTargets.carbs.target, unit: 'g' },
-                        { key: 'fats', label: 'ไขมัน', current: totalNutrition.fats, target: nutritionTargets.fats.target, unit: 'g' },
-                        { key: 'fiber', label: 'ไฟเบอร์', current: totalNutrition.fiber, target: nutritionTargets.fiber.target, unit: 'g' },
-                      ].map((item) => {
+                                         <div className="space-y-3">
+                       {[
+                         { key: 'protein', label: 'โปรตีน', current: totalNutrition.protein, target: nutritionTargets.protein.target, unit: 'g' },
+                         { key: 'carbs', label: 'คาร์โบไฮเดรต', current: totalNutrition.carbs, target: nutritionTargets.carbs.target, unit: 'g' },
+                         { key: 'fats', label: 'ไขมัน', current: totalNutrition.fats, target: nutritionTargets.fats.target, unit: 'g' },
+                         { key: 'fiber', label: 'ไฟเบอร์', current: totalNutrition.fiber, target: nutritionTargets.fiber.target, unit: 'g' },
+                         { key: 'sugar', label: 'น้ำตาล', current: totalNutrition.sugar, target: 50, unit: 'g' },
+                       ].map((item) => {
                         const status = getNutritionStatus(item.current, item.target);
                         return (
                           <div key={item.key} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
@@ -807,26 +1017,33 @@ export default function FoodLog() {
                     </div>
                   </div>
 
-                  {/* Calories Summary (match height with macronutrients) */}
-                  <div className="space-y-4 flex flex-col h-full">
-                    <h4 className="font-semibold text-lg flex items-center gap-2">
-                      <Flame className="h-5 w-5" />
-                      แคลอรี่รวม
-                    </h4>
-                    <div className="text-center p-6 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg flex-1 flex flex-col justify-center">
-                      <div className="text-3xl font-bold text-orange-600">{totalNutrition.calories}</div>
-                      <div className="text-sm text-muted-foreground">แคลอรี่</div>
-                      <div className="text-xs text-muted-foreground mt-2">
-                        จากเป้าหมาย 2,000 แคลอรี่
-                      </div>
-                      <div className="w-full bg-muted rounded-full h-2 mt-3">
-                        <div
-                          className="bg-orange-500 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${Math.min((totalNutrition.calories / 2000) * 100, 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
+                                     {/* Calories Summary (match height with macronutrients) */}
+                   <div className="space-y-4 flex flex-col h-full">
+                     <h4 className="font-semibold text-xl flex items-center gap-3 text-gray-800">
+                       <div className="p-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg">
+                         <Flame className="h-5 w-5 text-white" />
+                       </div>
+                       แคลอรี่รวม
+                     </h4>
+                     <div className="text-center p-8 bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 rounded-2xl border border-orange-200 shadow-lg flex-1 flex flex-col justify-center">
+                       <div className="text-5xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-2">
+                         {totalNutrition.calories}
+                       </div>
+                       <div className="text-lg font-semibold text-gray-700 mb-3">แคลอรี่</div>
+                       <div className="text-sm text-gray-600 mb-4">
+                         จากเป้าหมาย 2,000 แคลอรี่
+                       </div>
+                       <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
+                         <div
+                           className="bg-gradient-to-r from-orange-500 to-red-500 h-3 rounded-full transition-all duration-500 shadow-sm"
+                           style={{ width: `${Math.min((totalNutrition.calories / 2000) * 100, 100)}%` }}
+                         />
+                       </div>
+                       <div className="text-xs text-gray-500">
+                         {Math.round((totalNutrition.calories / 2000) * 100)}% ของเป้าหมาย
+                       </div>
+                     </div>
+                   </div>
                 </div>
               </TabsContent>
 
@@ -873,105 +1090,154 @@ export default function FoodLog() {
           </CardContent>
         </Card>
 
-        <div className="grid gap-4">
-          <h2 className="text-xl font-semibold">ประวัติการรับประทานอาหาร</h2>
+                 <div className="grid gap-6">
+           <div className="text-center">
+             <h2 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent mb-2">
+               ประวัติการรับประทานอาหาร
+             </h2>
+             <p className="text-gray-600">ติดตามมื้ออาหารและโภชนาการของคุณ</p>
+           </div>
           
-          {isLoading ? (
-            <div className="flex items-center justify-center p-8">
-              <div className="flex items-center gap-2">
-                <RefreshCw className="h-5 w-5 animate-spin" />
-                <span>กำลังโหลดข้อมูล...</span>
-              </div>
-            </div>
-          ) : foodLogs.length === 0 ? (
-            <div className="text-center p-8 text-muted-foreground">
-              <Utensils className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>ยังไม่มีบันทึกอาหาร</p>
-              <p className="text-sm">เริ่มต้นบันทึกอาหารมื้อแรกของคุณ</p>
-            </div>
+                     {isLoading ? (
+             <div className="flex items-center justify-center p-12">
+               <div className="text-center">
+                 <div className="p-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full w-16 h-16 mx-auto mb-4 shadow-lg">
+                   <RefreshCw className="h-8 w-8 mx-auto text-white animate-spin" />
+                 </div>
+                 <h3 className="text-lg font-semibold text-gray-700 mb-2">กำลังโหลดข้อมูล...</h3>
+                 <p className="text-gray-600">กรุณารอสักครู่</p>
+               </div>
+             </div>
+                     ) : foodLogs.length === 0 ? (
+             <div className="text-center p-12 bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl border-2 border-dashed border-gray-300">
+               <div className="p-4 bg-white rounded-full w-20 h-20 mx-auto mb-6 shadow-lg">
+                 <Utensils className="h-10 w-10 mx-auto text-gray-400" />
+               </div>
+               <h3 className="text-xl font-semibold text-gray-700 mb-2">ยังไม่มีบันทึกอาหาร</h3>
+               <p className="text-gray-600 mb-6">เริ่มต้นบันทึกอาหารมื้อแรกของคุณเพื่อติดตามโภชนาการ</p>
+               <Button 
+                 onClick={() => setShowForm(true)} 
+                 className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg"
+               >
+                 <Plus className="h-4 w-4 mr-2" />
+                 เพิ่มบันทึกแรก
+               </Button>
+             </div>
           ) : (
-            foodLogs.map((log) => (
-              <Card key={log.food_log_id}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className={`p-2 rounded-lg ${getMealIcon(log.meal_time)}`}>
-                        <Utensils className="h-5 w-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold">มื้อ{log.meal_time}</h3>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Calendar className="h-4 w-4" />
-                          {new Date(log.log_date).toLocaleDateString('th-TH')}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" onClick={() => startEdit(log)}>แก้ไข</Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="destructive" size="sm">ลบ</Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
-                            <AlertDialogDescription>ต้องการลบรายการมื้อ{log.meal_time} นี้หรือไม่?</AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => deleteLog(log)}>ลบ</AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </div>
+                         foodLogs.map((log) => (
+               <Card key={log.food_log_id} className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-white to-gray-50">
+                 <CardContent className="p-6">
+                                     <div className="flex items-center justify-between">
+                     <div className="flex items-center gap-4">
+                       <div className={`p-3 rounded-xl ${getMealIcon(log.meal_time)} shadow-lg`}>
+                         <Utensils className="h-6 w-6 text-white" />
+                       </div>
+                       <div>
+                         <h3 className="text-xl font-bold text-gray-800">มื้อ{log.meal_time}</h3>
+                         <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                           <Calendar className="h-4 w-4" />
+                           {new Date(log.log_date).toLocaleDateString('th-TH')}
+                         </div>
+                       </div>
+                     </div>
+                     
+                     <div className="flex items-center gap-3">
+                                               <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => startEdit(log)}
+                          className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300"
+                          disabled={deletingId === log.food_log_id}
+                        >
+                          แก้ไข
+                        </Button>
+                       <AlertDialog>
+                         <AlertDialogTrigger asChild>
+                                                       <Button 
+                              variant="destructive" 
+                              size="sm"
+                              className="bg-red-500 hover:bg-red-600"
+                              disabled={deletingId === log.food_log_id}
+                            >
+                              {deletingId === log.food_log_id ? (
+                                <>
+                                  <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                                  ลบ...
+                                </>
+                              ) : (
+                                'ลบ'
+                              )}
+                            </Button>
+                         </AlertDialogTrigger>
+                         <AlertDialogContent>
+                           <AlertDialogHeader>
+                             <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
+                             <AlertDialogDescription>ต้องการลบรายการมื้อ{log.meal_time} นี้หรือไม่?</AlertDialogDescription>
+                           </AlertDialogHeader>
+                           <AlertDialogFooter>
+                             <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+                                                           <AlertDialogAction onClick={() => deleteLog(log)}>
+                                ลบ
+                              </AlertDialogAction>
+                           </AlertDialogFooter>
+                         </AlertDialogContent>
+                       </AlertDialog>
+                     </div>
+                   </div>
                   
                   <div className="mt-4">
-                    <h4 className="text-sm font-medium mb-2">รายการอาหาร:</h4>
-                    <div className="space-y-1">
+                    <h4 className="text-sm font-medium mb-2 text-gray-700">รายการอาหาร:</h4>
+                    <div className="space-y-2">
                       {log.food_items.map((item, index) => (
-                        <div key={index} className="flex justify-between text-sm">
-                          <span>{item.name} ({item.amount})</span>
-                          <span>{item.calories} แคล</span>
+                        <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-100">
+                          <span className="text-sm font-medium text-gray-800">{item.name} ({item.amount})</span>
+                          <span className="text-sm font-bold text-orange-600 bg-orange-50 px-3 py-1 rounded-full">{item.calories} แคล</span>
                         </div>
                       ))}
                     </div>
                   </div>
                   
-                  <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
-                    <div className="text-center p-2 bg-blue-50 rounded">
-                      <div className="font-semibold text-blue-600">{log.total_protein}g</div>
-                      <div className="text-blue-500">โปรตีน</div>
-                    </div>
-                    <div className="text-center p-2 bg-green-50 rounded">
-                      <div className="font-semibold text-green-600">{log.total_carbs}g</div>
-                      <div className="text-green-500">คาร์โบ</div>
-                    </div>
-                    <div className="text-center p-2 bg-orange-50 rounded">
-                      <div className="font-semibold text-orange-600">{log.total_fats}g</div>
-                      <div className="text-orange-500">ไขมัน</div>
+                  <div className="mt-6">
+                    <h4 className="text-sm font-medium mb-3 text-gray-700">สารอาหารหลัก:</h4>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 shadow-sm">
+                        <div className="text-lg font-bold text-blue-700">{log.total_protein}g</div>
+                        <div className="text-xs text-blue-600 font-medium">โปรตีน</div>
+                      </div>
+                      <div className="text-center p-3 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200 shadow-sm">
+                        <div className="text-lg font-bold text-green-700">{log.total_carbs}g</div>
+                        <div className="text-xs text-green-600 font-medium">คาร์โบ</div>
+                      </div>
+                      <div className="text-center p-3 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-200 shadow-sm">
+                        <div className="text-lg font-bold text-orange-700">{log.total_fats}g</div>
+                        <div className="text-xs text-orange-600 font-medium">ไขมัน</div>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                    <div className="text-center p-2 bg-purple-50 rounded">
-                      <div className="font-semibold text-purple-600">{log.total_fiber}g</div>
-                      <div className="text-purple-500">ไฟเบอร์</div>
-                    </div>
-                    <div className="text-center p-2 bg-yellow-50 rounded">
-                      <div className="font-semibold text-yellow-600">{log.total_vitaminC}mg</div>
-                      <div className="text-yellow-500">วิตามิน C</div>
-                    </div>
-                    <div className="text-center p-2 bg-indigo-50 rounded">
-                      <div className="font-semibold text-indigo-600">{log.total_calcium}mg</div>
-                      <div className="text-indigo-500">แคลเซียม</div>
-                    </div>
-                    <div className="text-center p-2 bg-red-50 rounded">
-                      <div className="font-semibold text-red-600">{log.total_iron}mg</div>
-                      <div className="text-red-500">เหล็ก</div>
-                    </div>
-                  </div>
+                                     <div className="mt-4">
+                     <h4 className="text-sm font-medium mb-3 text-gray-700">สารอาหารอื่นๆ:</h4>
+                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                       {log.total_fiber > 0 && (
+                         <div className="text-center p-2 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border border-purple-200 shadow-sm">
+                           <div className="text-sm font-bold text-purple-700">{log.total_fiber}g</div>
+                           <div className="text-xs text-purple-600 font-medium">ไฟเบอร์</div>
+                         </div>
+                       )}
+                       {log.total_sugar > 0 && (
+                         <div className="text-center p-2 bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg border border-pink-200 shadow-sm">
+                           <div className="text-sm font-bold text-pink-700">{log.total_sugar}g</div>
+                           <div className="text-xs text-pink-600 font-medium">น้ำตาล</div>
+                         </div>
+                       )}
+                       {log.total_sodium > 0 && (
+                         <div className="text-center p-2 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg border border-indigo-200 shadow-sm">
+                           <div className="text-sm font-bold text-indigo-700">{log.total_sodium}mg</div>
+                           <div className="text-xs text-indigo-600 font-medium">โซเดียม</div>
+                         </div>
+                       )}
+                     </div>
+                   </div>
                   
                   {log.notes && (
                     <div className="mt-3 p-2 bg-muted rounded-md">
@@ -1020,28 +1286,81 @@ export default function FoodLog() {
                 <Textarea id="edit_items" value={formData.food_items} onChange={(e)=>setFormData({...formData, food_items: e.target.value})} />
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit_cal">แคลอรี</Label>
-                  <Input id="edit_cal" type="number" value={formData.total_calories} onChange={(e)=>setFormData({...formData, total_calories: e.target.value})} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit_pro">โปรตีน (g)</Label>
-                  <Input id="edit_pro" type="number" value={formData.total_protein} onChange={(e)=>setFormData({...formData, total_protein: e.target.value})} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit_carbs">คาร์โบ (g)</Label>
-                  <Input id="edit_carbs" type="number" value={formData.total_carbs} onChange={(e)=>setFormData({...formData, total_carbs: e.target.value})} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit_fats">ไขมัน (g)</Label>
-                  <Input id="edit_fats" type="number" value={formData.total_fats} onChange={(e)=>setFormData({...formData, total_fats: e.target.value})} />
-                </div>
-              </div>
+                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                 <div className="space-y-2">
+                   <Label htmlFor="edit_cal">แคลอรี</Label>
+                   <Input id="edit_cal" type="number" value={formData.total_calories} onChange={(e)=>setFormData({...formData, total_calories: e.target.value})} />
+                   <p className="text-xs text-muted-foreground">
+                     แคลอรี่จะถูกคำนวณอัตโนมัติจากโปรตีน คาร์โบ และไขมัน
+                   </p>
+                 </div>
+                 <div className="space-y-2">
+                   <Label htmlFor="edit_pro">โปรตีน (g)</Label>
+                   <Input id="edit_pro" type="number" value={formData.total_protein} onChange={(e) => {
+                     const newProtein = e.target.value;
+                     const calculatedCalories = updateCaloriesFromMacros(newProtein, formData.total_carbs, formData.total_fats);
+                     setFormData({
+                       ...formData, 
+                       total_protein: newProtein,
+                       total_calories: String(calculatedCalories)
+                     });
+                   }} />
+                 </div>
+                 <div className="space-y-2">
+                   <Label htmlFor="edit_carbs">คาร์โบ (g)</Label>
+                   <Input id="edit_carbs" type="number" value={formData.total_carbs} onChange={(e) => {
+                     const newCarbs = e.target.value;
+                     const calculatedCalories = updateCaloriesFromMacros(formData.total_protein, newCarbs, formData.total_fats);
+                     setFormData({
+                       ...formData, 
+                       total_carbs: newCarbs,
+                       total_calories: String(calculatedCalories)
+                     });
+                   }} />
+                 </div>
+                 <div className="space-y-2">
+                   <Label htmlFor="edit_fats">ไขมัน (g)</Label>
+                   <Input id="edit_fats" type="number" value={formData.total_fats} onChange={(e) => {
+                     const newFats = e.target.value;
+                     const calculatedCalories = updateCaloriesFromMacros(formData.total_protein, formData.total_carbs, newFats);
+                     setFormData({
+                       ...formData, 
+                       total_fats: newFats,
+                       total_calories: String(calculatedCalories)
+                     });
+                   }} />
+                 </div>
+               </div>
+               
+               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                 <div className="space-y-2">
+                   <Label htmlFor="edit_fiber">ไฟเบอร์ (g)</Label>
+                   <Input id="edit_fiber" type="number" value={formData.total_fiber} onChange={(e)=>setFormData({...formData, total_fiber: e.target.value})} />
+                 </div>
+                 <div className="space-y-2">
+                   <Label htmlFor="edit_sugar">น้ำตาล (g)</Label>
+                   <Input id="edit_sugar" type="number" value={formData.total_sugar || ""} onChange={(e)=>setFormData({...formData, total_sugar: e.target.value})} />
+                 </div>
+                 <div className="space-y-2">
+                   <Label htmlFor="edit_sodium">โซเดียม (mg)</Label>
+                   <Input id="edit_sodium" type="number" value={formData.total_sodium} onChange={(e)=>setFormData({...formData, total_sodium: e.target.value})} />
+                 </div>
+               </div>
 
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={()=>setIsEditOpen(false)}>ยกเลิก</Button>
-                <Button type="submit">บันทึก</Button>
+                <Button type="button" variant="outline" onClick={()=>setIsEditOpen(false)} disabled={updatingId === editingId}>
+                  ยกเลิก
+                </Button>
+                <Button type="submit" disabled={updatingId === editingId}>
+                  {updatingId === editingId ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      กำลังอัปเดต...
+                    </>
+                  ) : (
+                    'บันทึก'
+                  )}
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
