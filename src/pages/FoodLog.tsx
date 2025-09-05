@@ -745,37 +745,18 @@ export default function FoodLog() {
               <p className="text-muted-foreground">ติดตามการรับประทานอาหารและโภชนาการ</p>
             </div>
             <div className="flex gap-2">
-                             <Button 
-                 onClick={testFoodLogAPI} 
-                 variant="outline" 
-                 className="flex items-center gap-2"
-                 title="ทดสอบการเรียก API Food Log"
-               >
-                 <TestTube className="h-4 w-4" />
-                 ทดสอบ API
-               </Button>
-               <Button 
-                 onClick={testMealTimeConversion} 
-                 variant="outline" 
-                 className="flex items-center gap-2"
-                 title="ทดสอบการแปลงมื้ออาหาร"
-               >
-                 <TestTube className="h-4 w-4" />
-                 ทดสอบมื้ออาหาร
-               </Button>
               <Button 
                 onClick={fetchFoodLogs} 
-                variant="outline" 
-                className="flex items-center gap-2"
                 disabled={isLoading}
-                title="โหลดข้อมูลใหม่จากเซิร์ฟเวอร์"
+                variant="outline"
+                className="gap-2 rounded-full border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all duration-200"
               >
                 <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                รีเฟรช
+                {isLoading ? 'กำลังโหลด...' : 'รีเฟรช'}
               </Button>
               <Button 
                 onClick={() => setShowForm(!showForm)} 
-                className="gap-2"
+                className="gap-2 rounded-full bg-gradient-to-r from-primary to-secondary hover:from-primary-hover hover:to-secondary-hover text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
               >
                 <Plus className="h-4 w-4" />
                 เพิ่มบันทึกอาหาร

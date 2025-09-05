@@ -699,12 +699,12 @@ export default function ExerciseLog() {
             </div>
             <p className="text-muted-foreground ml-12">ติดตามและบันทึกกิจกรรมการออกกำลังกายของคุณเพื่อสุขภาพที่ดี</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <Button 
-              variant="outline" 
               onClick={loadExerciseLogsFromBackend}
               disabled={isLoadingFromBackend}
-              className="gap-2 h-10 border-primary/20 hover:border-primary/40"
+              variant="outline"
+              className="gap-2 rounded-full border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all duration-200"
             >
               <svg className={`h-4 w-4 ${isLoadingFromBackend ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -714,7 +714,7 @@ export default function ExerciseLog() {
                          
             <Button 
               onClick={() => setShowForm(!showForm)} 
-              className="gap-2 h-10 bg-primary hover:bg-primary/90 shadow-sm"
+              className="gap-2 rounded-full bg-gradient-to-r from-primary to-secondary hover:from-primary-hover hover:to-secondary-hover text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
             >
               <Plus className="h-4 w-4" />
               เพิ่มการออกกำลังกาย
@@ -1169,9 +1169,9 @@ export default function ExerciseLog() {
                 </p>
                 <Button 
                   onClick={() => setShowForm(true)} 
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg"
+                  className="gap-2 rounded-full bg-gradient-to-r from-primary to-secondary hover:from-primary-hover hover:to-secondary-hover text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4" />
                   เพิ่มการออกกำลังกาย
                 </Button>
               </div>
@@ -1207,7 +1207,7 @@ export default function ExerciseLog() {
                   </div>
                   <Button 
                     onClick={() => setShowForm(true)} 
-                    className="gap-2 h-11 px-6 bg-primary hover:bg-primary/90 shadow-sm"
+                    className="gap-2 rounded-full bg-gradient-to-r from-primary to-secondary hover:from-primary-hover hover:to-secondary-hover text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
                   >
                     <Plus className="h-4 w-4" />
                     เพิ่มการออกกำลังกายแรก
