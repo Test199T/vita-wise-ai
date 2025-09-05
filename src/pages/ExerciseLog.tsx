@@ -1216,10 +1216,10 @@ export default function ExerciseLog() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4">
+            <div className="grid gap-6">
               {sessions.map((session) => (
-                <Card key={session.session_id} className="hover:shadow-md transition-shadow duration-200 border-primary/10">
-                  <CardContent className="p-5">
+                <Card key={session.session_id} className="hover:shadow-lg transition-all duration-300 border-2 border-primary/20 hover:border-primary/40 bg-white shadow-md hover:shadow-xl transform hover:-translate-y-1">
+                  <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
                         <div className="p-3 bg-primary/10 rounded-xl">
@@ -1300,45 +1300,45 @@ export default function ExerciseLog() {
                      </div>
                   </div>
                   
-                                     <div className="mt-5 grid grid-cols-2 md:grid-cols-3 gap-4">
-                     <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                       <div className="p-1.5 bg-blue-100 rounded-md">
-                         <Clock className="h-4 w-4 text-blue-600" />
+                                     <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-4">
+                     <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl border border-blue-200 shadow-sm">
+                       <div className="p-2 bg-blue-500 rounded-lg shadow-md">
+                         <Clock className="h-4 w-4 text-white" />
                        </div>
                        <div>
-                         <p className="text-sm font-medium text-foreground">{session.duration_minutes} นาที</p>
-                         <p className="text-xs text-muted-foreground">ระยะเวลา</p>
+                         <p className="text-sm font-semibold text-blue-900">{session.duration_minutes} นาที</p>
+                         <p className="text-xs text-blue-700">ระยะเวลา</p>
                        </div>
                      </div>
-                     <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                       <div className="p-1.5 bg-orange-100 rounded-md">
-                         <Flame className="h-4 w-4 text-orange-600" />
+                     <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-orange-50 to-orange-100 rounded-xl border border-orange-200 shadow-sm">
+                       <div className="p-2 bg-orange-500 rounded-lg shadow-md">
+                         <Flame className="h-4 w-4 text-white" />
                        </div>
                        <div>
-                         <p className="text-sm font-medium text-foreground">{session.calories_burned} แคล</p>
-                         <p className="text-xs text-muted-foreground">เผาผลาญ</p>
+                         <p className="text-sm font-semibold text-orange-900">{session.calories_burned} แคล</p>
+                         <p className="text-xs text-orange-700">เผาผลาญ</p>
                        </div>
                      </div>
                      
                      {/* แสดงข้อมูลยกน้ำหนักถ้ามี */}
                      {session.exercise_type === "ยกน้ำหนัก" && session.sets && session.reps && session.weight_kg && (
                        <>
-                         <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                           <div className="p-1.5 bg-purple-100 rounded-md">
-                             <Dumbbell className="h-4 w-4 text-purple-600" />
+                         <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl border border-purple-200 shadow-sm">
+                           <div className="p-2 bg-purple-500 rounded-lg shadow-md">
+                             <Dumbbell className="h-4 w-4 text-white" />
                            </div>
                            <div>
-                             <p className="text-sm font-medium text-foreground">{session.sets} เซ็ต x {session.reps} ครั้ง</p>
-                             <p className="text-xs text-muted-foreground">การฝึก</p>
+                             <p className="text-sm font-semibold text-purple-900">{session.sets} เซ็ต x {session.reps} ครั้ง</p>
+                             <p className="text-xs text-purple-700">การฝึก</p>
                            </div>
                          </div>
-                         <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                           <div className="p-1.5 bg-green-100 rounded-md">
-                             <Target className="h-4 w-4 text-green-600" />
+                         <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-xl border border-green-200 shadow-sm">
+                           <div className="p-2 bg-green-500 rounded-lg shadow-md">
+                             <Target className="h-4 w-4 text-white" />
                            </div>
                            <div>
-                             <p className="text-sm font-medium text-foreground">{session.weight_kg} กก.</p>
-                             <p className="text-xs text-muted-foreground">น้ำหนัก</p>
+                             <p className="text-sm font-semibold text-green-900">{session.weight_kg} กก.</p>
+                             <p className="text-xs text-green-700">น้ำหนัก</p>
                            </div>
                          </div>
                        </>
@@ -1346,10 +1346,12 @@ export default function ExerciseLog() {
                    </div>
                   
                   {session.notes && (
-                    <div className="mt-4 p-3 bg-primary/5 border border-primary/10 rounded-lg">
-                      <div className="flex items-start gap-2">
-                        <Activity className="h-4 w-4 text-primary/60 mt-0.5 flex-shrink-0" />
-                        <p className="text-sm text-foreground leading-relaxed">{session.notes}</p>
+                    <div className="mt-6 p-4 bg-gradient-to-r from-primary/5 to-primary/10 border-2 border-primary/20 rounded-xl shadow-sm">
+                      <div className="flex items-start gap-3">
+                        <div className="p-1.5 bg-primary/20 rounded-lg mt-0.5 flex-shrink-0">
+                          <Activity className="h-4 w-4 text-primary" />
+                        </div>
+                        <p className="text-sm text-foreground leading-relaxed font-medium">{session.notes}</p>
                       </div>
                     </div>
                   )}
