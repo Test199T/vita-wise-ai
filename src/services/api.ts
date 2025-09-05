@@ -1824,6 +1824,217 @@ class APIService {
       throw error;
     }
   }
+
+  // Create health goal
+  async createHealthGoal(healthGoalData: HealthGoals): Promise<HealthGoals> {
+    console.log('🎯 Creating health goal...', healthGoalData);
+
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      throw new Error('No valid authentication token found');
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}/health-goals`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(healthGoalData),
+        signal: AbortSignal.timeout(10000) // 10 second timeout
+      });
+
+      console.log('Health goal API response:', {
+        status: response.status,
+        statusText: response.statusText
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const result = await this.handleResponse<{ data?: HealthGoals }>(response);
+      
+      if (result.data) {
+        console.log('✅ Health goal created successfully');
+        return result.data;
+      } else {
+        throw new Error('No health goal data received from server');
+      }
+    } catch (error) {
+      console.error('❌ Error creating health goal:', error);
+      throw error;
+    }
+  }
+
+  // Get all health goals for current user
+  async getHealthGoals(): Promise<HealthGoals[]> {
+    console.log('📋 Fetching health goals...');
+
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      throw new Error('No valid authentication token found');
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}/health-goals`, {
+        method: 'GET',
+        headers: this.getHeaders(),
+        signal: AbortSignal.timeout(10000)
+      });
+
+      console.log('Get health goals API response:', {
+        status: response.status,
+        statusText: response.statusText
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      // ใช้ handleResponse แบบ generic เพื่อให้ได้ raw response
+      const result = await this.handleResponse<any>(response);
+      
+      console.log('🔍 Raw API result:', result);
+      console.log('🔍 Result type:', typeof result);
+      console.log('🔍 Is result array?', Array.isArray(result));
+      
+      // ตรวจสอบและแปลงข้อมูลให้เป็น array
+      let goals: HealthGoals[] = [];
+      
+      if (Array.isArray(result)) {
+        // ถ้า result เป็น array อยู่แล้ว
+        goals = result;
+      } else if (result && typeof result === 'object') {
+        // ถ้า result เป็น object ให้ตรวจสอบ properties ต่างๆ
+        if (result.data && result.data.goals && Array.isArray(result.data.goals)) {
+          goals = result.data.goals;
+          console.log('✅ Found goals in result.data.goals:', goals.length);
+        } else if (result.data && Array.isArray(result.data)) {
+          goals = result.data;
+          console.log('✅ Found goals in result.data:', goals.length);
+        } else if (result.goals && Array.isArray(result.goals)) {
+          goals = result.goals;
+          console.log('✅ Found goals in result.goals:', goals.length);
+        } else if (result.items && Array.isArray(result.items)) {
+          goals = result.items;
+          console.log('✅ Found goals in result.items:', goals.length);
+        } else if (result.health_goals && Array.isArray(result.health_goals)) {
+          goals = result.health_goals;
+          console.log('✅ Found goals in result.health_goals:', goals.length);
+        } else {
+          // ถ้าเป็น object เดียว ให้แปลงเป็น array
+          goals = [result];
+          console.log('⚠️ Single object converted to array - this might be wrong!');
+        }
+      }
+      
+      console.log('✅ Health goals processed successfully:', goals);
+      console.log('📊 Goals count:', goals.length);
+      
+      return goals;
+    } catch (error) {
+      console.error('❌ Error fetching health goals:', error);
+      throw error;
+    }
+  }
+
+  // Update health goal
+  async updateHealthGoal(goalId: string | number, updateData: Partial<HealthGoals>): Promise<HealthGoals> {
+    console.log('✏️ Updating health goal...', { goalId, updateData });
+
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      throw new Error('No valid authentication token found');
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}/health-goals/${goalId}`, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify(updateData),
+        signal: AbortSignal.timeout(10000)
+      });
+
+      console.log('Update health goal API response:', {
+        status: response.status,
+        statusText: response.statusText
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const result = await this.handleResponse<any>(response);
+      
+      console.log('🔍 Update API result:', result);
+      console.log('🔍 Result type:', typeof result);
+      
+      // ตรวจสอบ response structure หลายแบบ
+      let updatedGoal: HealthGoals | null = null;
+      
+      if (result.data) {
+        updatedGoal = result.data;
+        console.log('✅ Found updated goal in result.data');
+      } else if (result.goal) {
+        updatedGoal = result.goal;
+        console.log('✅ Found updated goal in result.goal');
+      } else if (result.health_goal) {
+        updatedGoal = result.health_goal;
+        console.log('✅ Found updated goal in result.health_goal');
+      } else if (result && typeof result === 'object' && result.id) {
+        // ถ้า result เป็น goal object โดยตรง
+        updatedGoal = result;
+        console.log('✅ Found updated goal as direct result');
+      }
+      
+      if (updatedGoal) {
+        console.log('✅ Health goal updated successfully:', updatedGoal);
+        return updatedGoal;
+      } else {
+        console.log('⚠️ No updated goal data found, but API call was successful');
+        // ถ้า API call สำเร็จแต่ไม่มีข้อมูลกลับมา ให้ return ข้อมูลที่ส่งไป
+        return updateData as HealthGoals;
+      }
+    } catch (error) {
+      console.error('❌ Error updating health goal:', error);
+      throw error;
+    }
+  }
+
+  // Delete health goal
+  async deleteHealthGoal(goalId: string | number): Promise<void> {
+    console.log('🗑️ Deleting health goal...', goalId);
+
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      throw new Error('No valid authentication token found');
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}/health-goals/${goalId}`, {
+        method: 'DELETE',
+        headers: this.getHeaders(),
+        signal: AbortSignal.timeout(10000)
+      });
+
+      console.log('Delete health goal API response:', {
+        status: response.status,
+        statusText: response.statusText
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      console.log('✅ Health goal deleted successfully');
+    } catch (error) {
+      console.error('❌ Error deleting health goal:', error);
+      throw error;
+    }
+  }
 }
 
 // Export a singleton instance
