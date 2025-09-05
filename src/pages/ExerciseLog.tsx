@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,52 @@ import { useToast } from "@/hooks/use-toast";
 import { apiService } from "@/services/api";
 import type { ExerciseLog } from "@/services/api";
 import { tokenUtils } from "@/lib/utils";
+
+// ฟังก์ชันสำหรับจัดการวันที่โดยไม่ให้เลื่อนไป 1 วัน
+const getLocalDateString = (date?: Date | string) => {
+  const targetDate = date ? new Date(date) : new Date();
+  const year = targetDate.getFullYear();
+  const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+  const day = String(targetDate.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// ฟังก์ชันสำหรับคำนวณช่วงวันที่ตามช่วงเวลาที่เลือก
+const getDateRange = (period: 'today' | 'week' | 'month') => {
+  const today = new Date();
+  const todayString = getLocalDateString(today);
+  
+  switch (period) {
+    case 'today':
+      return { start: todayString, end: todayString };
+    
+    case 'week':
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - today.getDay()); // เริ่มจากวันอาทิตย์
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6); // จบที่วันเสาร์
+      return {
+        start: getLocalDateString(startOfWeek),
+        end: getLocalDateString(endOfWeek)
+      };
+    
+    case 'month':
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      return {
+        start: getLocalDateString(startOfMonth),
+        end: getLocalDateString(endOfMonth)
+      };
+    
+    default:
+      return { start: todayString, end: todayString };
+  }
+};
+
+// ฟังก์ชันสำหรับตรวจสอบว่าวันที่อยู่ในช่วงที่กำหนดหรือไม่
+const isDateInRange = (dateString: string, startDate: string, endDate: string) => {
+  return dateString >= startDate && dateString <= endDate;
+};
 
 interface ExerciseSession {
   session_id: string;
@@ -37,6 +83,52 @@ export default function ExerciseLog() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isLoadingFromBackend, setIsLoadingFromBackend] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month'>('today'); // เพิ่ม state สำหรับเลือกช่วงเวลา
+
+  // ฟังก์ชันคำนวณสถิติการออกกำลังกายตามช่วงเวลาที่เลือก
+  const calculateExerciseStats = (period: 'today' | 'week' | 'month') => {
+    const dateRange = getDateRange(period);
+    const stats = {
+      totalSessions: 0,
+      totalDuration: 0,
+      totalCalories: 0,
+      averageDuration: 0,
+      averageCalories: 0,
+      exerciseTypes: {} as { [key: string]: number },
+      intensityDistribution: {} as { [key: string]: number }
+    };
+
+    // กรองและคำนวณเฉพาะการออกกำลังกายในช่วงเวลาที่เลือก
+    const filteredSessions = sessions.filter(session => {
+      const sessionDate = getLocalDateString(session.session_date);
+      return isDateInRange(sessionDate, dateRange.start, dateRange.end);
+    });
+
+    filteredSessions.forEach(session => {
+      stats.totalSessions++;
+      stats.totalDuration += session.duration_minutes;
+      stats.totalCalories += session.calories_burned;
+      
+      // นับประเภทการออกกำลังกาย
+      stats.exerciseTypes[session.exercise_type] = (stats.exerciseTypes[session.exercise_type] || 0) + 1;
+      
+      // นับระดับความหนัก
+      stats.intensityDistribution[session.intensity_level] = (stats.intensityDistribution[session.intensity_level] || 0) + 1;
+    });
+
+    // คำนวณค่าเฉลี่ย
+    if (stats.totalSessions > 0) {
+      stats.averageDuration = Math.round(stats.totalDuration / stats.totalSessions);
+      stats.averageCalories = Math.round(stats.totalCalories / stats.totalSessions);
+    }
+
+    return stats;
+  };
+
+  // คำนวณสถิติสำหรับช่วงเวลาที่เลือก
+  const currentExerciseStats = useMemo(() => {
+    return calculateExerciseStats(selectedPeriod);
+  }, [sessions, selectedPeriod]);
 
   useEffect(() => {
     const raw = localStorage.getItem('exercise_logs');
@@ -935,6 +1027,157 @@ export default function ExerciseLog() {
             </CardContent>
           </Card>
         )}
+
+        {/* สรุปการเผาผลาญแคลอรี่ */}
+        <Card className="health-stat-card">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Flame className="h-5 w-5" />
+                  สรุปการเผาผลาญแคลอรี่
+                </CardTitle>
+                <CardDescription>
+                  ข้อมูลการออกกำลังกายและแคลอรี่ที่เผาผลาญ
+                  {selectedPeriod === 'today' && ' วันนี้'}
+                  {selectedPeriod === 'week' && ' สัปดาห์นี้'}
+                  {selectedPeriod === 'month' && ' เดือนนี้'}
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="period-select" className="text-sm font-medium">ช่วงเวลา:</Label>
+                <Select value={selectedPeriod} onValueChange={(value: 'today' | 'week' | 'month') => setSelectedPeriod(value)}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="today">วันนี้</SelectItem>
+                    <SelectItem value="week">สัปดาห์นี้</SelectItem>
+                    <SelectItem value="month">เดือนนี้</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* แคลอรี่รวม */}
+              <div className="text-center p-6 bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 rounded-2xl border border-orange-200 shadow-lg">
+                <div className="p-3 bg-gradient-to-r from-orange-500 to-red-500 rounded-full w-16 h-16 mx-auto mb-4 shadow-lg">
+                  <Flame className="h-8 w-8 mx-auto text-white" />
+                </div>
+                <div className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-2">
+                  {currentExerciseStats.totalCalories}
+                </div>
+                <div className="text-lg font-semibold text-gray-700 mb-1">แคลอรี่</div>
+                <div className="text-sm text-gray-600">เผาผลาญรวม</div>
+              </div>
+
+              {/* จำนวนครั้ง */}
+              <div className="text-center p-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-2xl border border-blue-200 shadow-lg">
+                <div className="p-3 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full w-16 h-16 mx-auto mb-4 shadow-lg">
+                  <Activity className="h-8 w-8 mx-auto text-white" />
+                </div>
+                <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+                  {currentExerciseStats.totalSessions}
+                </div>
+                <div className="text-lg font-semibold text-gray-700 mb-1">ครั้ง</div>
+                <div className="text-sm text-gray-600">การออกกำลังกาย</div>
+              </div>
+
+              {/* ระยะเวลารวม */}
+              <div className="text-center p-6 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 rounded-2xl border border-green-200 shadow-lg">
+                <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full w-16 h-16 mx-auto mb-4 shadow-lg">
+                  <Clock className="h-8 w-8 mx-auto text-white" />
+                </div>
+                <div className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">
+                  {currentExerciseStats.totalDuration}
+                </div>
+                <div className="text-lg font-semibold text-gray-700 mb-1">นาที</div>
+                <div className="text-sm text-gray-600">ระยะเวลารวม</div>
+              </div>
+
+              {/* ค่าเฉลี่ยต่อครั้ง */}
+              <div className="text-center p-6 bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 rounded-2xl border border-purple-200 shadow-lg">
+                <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full w-16 h-16 mx-auto mb-4 shadow-lg">
+                  <Target className="h-8 w-8 mx-auto text-white" />
+                </div>
+                <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+                  {currentExerciseStats.averageCalories}
+                </div>
+                <div className="text-lg font-semibold text-gray-700 mb-1">แคลอรี่</div>
+                <div className="text-sm text-gray-600">เฉลี่ยต่อครั้ง</div>
+              </div>
+            </div>
+
+            {/* สถิติเพิ่มเติม */}
+            {currentExerciseStats.totalSessions > 0 && (
+              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* ประเภทการออกกำลังกาย */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-lg flex items-center gap-2">
+                    <Dumbbell className="h-5 w-5" />
+                    ประเภทการออกกำลังกาย
+                  </h4>
+                  <div className="space-y-2">
+                    {Object.entries(currentExerciseStats.exerciseTypes).map(([type, count]) => (
+                      <div key={type} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                        <div className="font-medium">{type}</div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                            {count} ครั้ง
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* ระดับความหนัก */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-lg flex items-center gap-2">
+                    <Zap className="h-5 w-5" />
+                    ระดับความหนัก
+                  </h4>
+                  <div className="space-y-2">
+                    {Object.entries(currentExerciseStats.intensityDistribution).map(([intensity, count]) => (
+                      <div key={intensity} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                        <div className="font-medium">{intensity}</div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="bg-green-100 text-green-800">
+                            {count} ครั้ง
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ข้อความเมื่อไม่มีข้อมูล */}
+            {currentExerciseStats.totalSessions === 0 && (
+              <div className="text-center p-8 bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl border-2 border-dashed border-gray-300">
+                <div className="p-4 bg-white rounded-full w-20 h-20 mx-auto mb-6 shadow-lg">
+                  <Activity className="h-10 w-10 mx-auto text-gray-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-700 mb-2">ยังไม่มีข้อมูลการออกกำลังกาย</h3>
+                <p className="text-gray-600 mb-6">
+                  {selectedPeriod === 'today' && 'เริ่มต้นออกกำลังกายวันนี้เพื่อติดตามแคลอรี่ที่เผาผลาญ'}
+                  {selectedPeriod === 'week' && 'ยังไม่มีข้อมูลการออกกำลังกายในสัปดาห์นี้'}
+                  {selectedPeriod === 'month' && 'ยังไม่มีข้อมูลการออกกำลังกายในเดือนนี้'}
+                </p>
+                <Button 
+                  onClick={() => setShowForm(true)} 
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  เพิ่มการออกกำลังกาย
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <div className="space-y-4">
           <div className="flex items-center gap-3">

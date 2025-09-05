@@ -63,6 +63,43 @@ const getLocalISOString = (dateString: string) => {
   return localDate.toISOString();
 };
 
+// ฟังก์ชันสำหรับคำนวณช่วงวันที่ตามช่วงเวลาที่เลือก
+const getDateRange = (period: 'today' | 'week' | 'month') => {
+  const today = new Date();
+  const todayString = getLocalDateString(today);
+  
+  switch (period) {
+    case 'today':
+      return { start: todayString, end: todayString };
+    
+    case 'week':
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - today.getDay()); // เริ่มจากวันอาทิตย์
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6); // จบที่วันเสาร์
+      return {
+        start: getLocalDateString(startOfWeek),
+        end: getLocalDateString(endOfWeek)
+      };
+    
+    case 'month':
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      return {
+        start: getLocalDateString(startOfMonth),
+        end: getLocalDateString(endOfMonth)
+      };
+    
+    default:
+      return { start: todayString, end: todayString };
+  }
+};
+
+// ฟังก์ชันสำหรับตรวจสอบว่าวันที่อยู่ในช่วงที่กำหนดหรือไม่
+const isDateInRange = (dateString: string, startDate: string, endDate: string) => {
+  return dateString >= startDate && dateString <= endDate;
+};
+
 interface FoodItem {
   name: string;
   amount: string;
@@ -144,6 +181,7 @@ export default function FoodLog() {
   const [isLoading, setIsLoading] = useState(false); // Added isLoading state
   const [deletingId, setDeletingId] = useState<string | null>(null); // Added deletingId state for delete loading
   const [updatingId, setUpdatingId] = useState<string | null>(null); // Added updatingId state for update loading
+  const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month'>('today'); // เพิ่ม state สำหรับเลือกช่วงเวลา
 
   const [formData, setFormData] = useState({
     log_date: getLocalDateString(),
@@ -483,8 +521,9 @@ export default function FoodLog() {
      });
    };
 
-  // คำนวณยอดรวมโภชนาการ
+  // คำนวณยอดรวมโภชนาการตามช่วงเวลาที่เลือก
      const calculateTotalNutrition = () => {
+     const dateRange = getDateRange(selectedPeriod);
      const totals = {
        calories: 0,
        protein: 0,
@@ -500,7 +539,12 @@ export default function FoodLog() {
        sodium: 0,
      };
 
-     foodLogs.forEach(log => {
+     // คำนวณเฉพาะบันทึกอาหารในช่วงเวลาที่เลือก
+     const filteredLogs = foodLogs.filter(log => {
+       return isDateInRange(log.log_date, dateRange.start, dateRange.end);
+     });
+     
+     filteredLogs.forEach(log => {
        totals.calories += log.total_calories;
        totals.protein += log.total_protein;
        totals.carbs += log.total_carbs;
@@ -517,6 +561,23 @@ export default function FoodLog() {
 
      return totals;
    };
+
+  // ฟังก์ชันคำนวณเป้าหมายโภชนาการตามช่วงเวลา
+  const getNutritionTargetsForPeriod = (period: 'today' | 'week' | 'month') => {
+    const multiplier = period === 'week' ? 7 : period === 'month' ? 30 : 1;
+    return {
+      protein: nutritionTargets.protein.target * multiplier,
+      carbs: nutritionTargets.carbs.target * multiplier,
+      fats: nutritionTargets.fats.target * multiplier,
+      fiber: nutritionTargets.fiber.target * multiplier,
+      vitaminC: nutritionTargets.vitaminC.target * multiplier,
+      vitaminD: nutritionTargets.vitaminD.target * multiplier,
+      calcium: nutritionTargets.calcium.target * multiplier,
+      iron: nutritionTargets.iron.target * multiplier,
+      potassium: nutritionTargets.potassium.target * multiplier,
+      sodium: nutritionTargets.sodium.target * multiplier,
+    };
+  };
 
   const totalNutrition = calculateTotalNutrition();
 
@@ -991,13 +1052,33 @@ export default function FoodLog() {
                                    {/* Nutrition Summary */}
           <Card className="health-stat-card">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                สรุปโภชนาการวันนี้
-              </CardTitle>
-              <CardDescription>
-                ข้อมูลโภชนาการรวมจากทุกมื้ออาหาร
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    สรุปโภชนาการ
+                  </CardTitle>
+                  <CardDescription>
+                    ข้อมูลโภชนาการรวมจากทุกมื้ออาหาร
+                    {selectedPeriod === 'today' && ` ในวันนี้ (${getThaiDateString()})`}
+                    {selectedPeriod === 'week' && ` ในสัปดาห์นี้`}
+                    {selectedPeriod === 'month' && ` ในเดือนนี้`}
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="period-select" className="text-sm font-medium">ช่วงเวลา:</Label>
+                  <Select value={selectedPeriod} onValueChange={(value: 'today' | 'week' | 'month') => setSelectedPeriod(value)}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="today">วันนี้</SelectItem>
+                      <SelectItem value="week">สัปดาห์นี้</SelectItem>
+                      <SelectItem value="month">เดือนนี้</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </CardHeader>
           <CardContent>
             <Tabs defaultValue="macros" className="w-full">
@@ -1015,13 +1096,16 @@ export default function FoodLog() {
                       สารอาหารหลัก (Macronutrients)
                     </h4>
                                          <div className="space-y-3">
-                       {[
-                         { key: 'protein', label: 'โปรตีน', current: totalNutrition.protein, target: nutritionTargets.protein.target, unit: 'g' },
-                         { key: 'carbs', label: 'คาร์โบไฮเดรต', current: totalNutrition.carbs, target: nutritionTargets.carbs.target, unit: 'g' },
-                         { key: 'fats', label: 'ไขมัน', current: totalNutrition.fats, target: nutritionTargets.fats.target, unit: 'g' },
-                         { key: 'fiber', label: 'ไฟเบอร์', current: totalNutrition.fiber, target: nutritionTargets.fiber.target, unit: 'g' },
-                         { key: 'sugar', label: 'น้ำตาล', current: totalNutrition.sugar, target: 50, unit: 'g' },
-                       ].map((item) => {
+                       {(() => {
+                         const periodTargets = getNutritionTargetsForPeriod(selectedPeriod);
+                         return [
+                           { key: 'protein', label: 'โปรตีน', current: totalNutrition.protein, target: periodTargets.protein, unit: 'g' },
+                           { key: 'carbs', label: 'คาร์โบไฮเดรต', current: totalNutrition.carbs, target: periodTargets.carbs, unit: 'g' },
+                           { key: 'fats', label: 'ไขมัน', current: totalNutrition.fats, target: periodTargets.fats, unit: 'g' },
+                           { key: 'fiber', label: 'ไฟเบอร์', current: totalNutrition.fiber, target: periodTargets.fiber, unit: 'g' },
+                           { key: 'sugar', label: 'น้ำตาล', current: totalNutrition.sugar, target: 50 * (selectedPeriod === 'week' ? 7 : selectedPeriod === 'month' ? 30 : 1), unit: 'g' },
+                         ];
+                       })().map((item) => {
                         const status = getNutritionStatus(item.current, item.target);
                         return (
                           <div key={item.key} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
@@ -1084,14 +1168,17 @@ export default function FoodLog() {
                   วิตามินและแร่ธาตุ (Micronutrients)
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {[
-                    { key: 'vitaminC', label: 'วิตามิน C', current: totalNutrition.vitaminC, target: nutritionTargets.vitaminC.target, unit: 'mg' },
-                    { key: 'vitaminD', label: 'วิตามิน D', current: totalNutrition.vitaminD, target: nutritionTargets.vitaminD.target, unit: 'mcg' },
-                    { key: 'calcium', label: 'แคลเซียม', current: totalNutrition.calcium, target: nutritionTargets.calcium.target, unit: 'mg' },
-                    { key: 'iron', label: 'เหล็ก', current: totalNutrition.iron, target: nutritionTargets.iron.target, unit: 'mg' },
-                    { key: 'potassium', label: 'โพแทสเซียม', current: totalNutrition.potassium, target: nutritionTargets.potassium.target, unit: 'mg' },
-                    { key: 'sodium', label: 'โซเดียม', current: totalNutrition.sodium, target: nutritionTargets.sodium.target, unit: 'mg' },
-                  ].map((item) => {
+                  {(() => {
+                    const periodTargets = getNutritionTargetsForPeriod(selectedPeriod);
+                    return [
+                      { key: 'vitaminC', label: 'วิตามิน C', current: totalNutrition.vitaminC, target: periodTargets.vitaminC, unit: 'mg' },
+                      { key: 'vitaminD', label: 'วิตามิน D', current: totalNutrition.vitaminD, target: periodTargets.vitaminD, unit: 'mcg' },
+                      { key: 'calcium', label: 'แคลเซียม', current: totalNutrition.calcium, target: periodTargets.calcium, unit: 'mg' },
+                      { key: 'iron', label: 'เหล็ก', current: totalNutrition.iron, target: periodTargets.iron, unit: 'mg' },
+                      { key: 'potassium', label: 'โพแทสเซียม', current: totalNutrition.potassium, target: periodTargets.potassium, unit: 'mg' },
+                      { key: 'sodium', label: 'โซเดียม', current: totalNutrition.sodium, target: periodTargets.sodium, unit: 'mg' },
+                    ];
+                  })().map((item) => {
                     const status = getNutritionStatus(item.current, item.target);
                     return (
                       <div key={item.key} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
