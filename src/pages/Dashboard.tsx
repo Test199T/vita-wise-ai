@@ -915,56 +915,6 @@ export default function Dashboard() {
             </p>
           </div>
           
-          {/* ปุ่มรีเฟรชข้อมูล */}
-          <div className="flex gap-2 flex-wrap">
-            <Button 
-              variant="outline" 
-              onClick={loadExerciseData}
-              disabled={isLoadingExerciseData}
-              className="gap-2"
-            >
-              <svg className={`h-4 w-4 ${isLoadingExerciseData ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.001 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              {isLoadingExerciseData ? 'กำลังโหลด...' : 'รีเฟรชข้อมูลการออกกำลังกาย'}
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              onClick={loadFoodData}
-              disabled={isLoadingFoodData}
-              className="gap-2"
-            >
-              <svg className={`h-4 w-4 ${isLoadingFoodData ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.001 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              {isLoadingFoodData ? 'กำลังโหลด...' : 'รีเฟรชข้อมูลอาหาร'}
-            </Button>
-
-            <Button 
-              variant="outline" 
-              onClick={loadSleepData}
-              disabled={isLoadingSleepData}
-              className="gap-2"
-            >
-              <svg className={`h-4 w-4 ${isLoadingSleepData ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.001 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              {isLoadingSleepData ? 'กำลังโหลด...' : 'รีเฟรชข้อมูลการนอน'}
-            </Button>
-
-            <Button 
-              variant="outline" 
-              onClick={loadWaterData}
-              disabled={isLoadingWaterData}
-              className="gap-2"
-            >
-              <svg className={`h-4 w-4 ${isLoadingWaterData ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.001 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              {isLoadingWaterData ? 'กำลังโหลด...' : 'รีเฟรชข้อมูลน้ำดื่ม'}
-            </Button>
-          </div>
           <div className="flex gap-2 items-center">
             <Button asChild variant="outline">
               <Link to="/health-goals">
