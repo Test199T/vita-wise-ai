@@ -140,9 +140,28 @@ export interface FoodLogItem {
   updated_at?: string;
 }
 
+// Water Log Interface
+export interface WaterLogItem {
+  id?: string | number; // Database ID
+  user_id?: number; // User ID for filtering
+  amount_ml: number; // Amount in milliliters
+  drink_type: string; // Type of drink (water, tea, coffee, etc.)
+  notes?: string; // Optional notes
+  consumed_at: string; // ISO datetime string
+  created_at?: string;
+  updated_at?: string;
+}
+
 // Food Log API Response
 interface FoodLogResponse {
   data?: FoodLogItem;
+  message?: string;
+  errors?: Record<string, string[]>;
+}
+
+// Water Log API Response
+interface WaterLogResponse {
+  data?: WaterLogItem;
   message?: string;
   errors?: Record<string, string[]>;
 }
@@ -2032,6 +2051,275 @@ class APIService {
       console.log('✅ Health goal deleted successfully');
     } catch (error) {
       console.error('❌ Error deleting health goal:', error);
+      throw error;
+    }
+  }
+
+  // ===== WATER LOG API FUNCTIONS =====
+
+  // Create water log entry
+  async createWaterLog(waterLogData: WaterLogItem): Promise<WaterLogResponse> {
+    console.log('💧 Creating water log...', waterLogData);
+    console.log('🌐 API URL:', `${this.baseURL}/water-logs`);
+
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      throw new Error('No valid authentication token found');
+    }
+
+    console.log('🔑 Token found:', token.substring(0, 20) + '...');
+
+    try {
+      const response = await fetch(`${this.baseURL}/water-logs`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(waterLogData),
+        signal: AbortSignal.timeout(10000) // 10 second timeout
+      });
+
+      console.log('📡 Create water log API response:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.log('Could not parse error response:', parseError);
+        }
+        
+        // แยกประเภท error ตาม HTTP status code
+        switch (response.status) {
+          case 400:
+            throw new Error('Bad Request: ข้อมูลที่ส่งไปไม่ถูกต้อง');
+          case 401:
+            throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
+          case 403:
+            throw new Error('Forbidden: ไม่มีสิทธิ์ในการสร้างข้อมูลนี้');
+          case 500:
+            throw new Error('Internal Server Error: เกิดข้อผิดพลาดที่เซิร์ฟเวอร์');
+          default:
+            throw new Error(errorMessage);
+        }
+      }
+
+      const result = await this.handleResponse<WaterLogResponse>(response);
+      
+      if (result.data) {
+        console.log('✅ Water log created successfully from backend');
+        console.log('📄 Created data:', result.data);
+        return result;
+      } else {
+        throw new Error('No water log data received from server');
+      }
+    } catch (error) {
+      console.error('❌ Error creating water log:', error);
+      
+      // ถ้าเป็น network error หรือ timeout
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
+      }
+      
+      // ถ้าเป็น timeout error
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('การสร้างข้อมูลใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง');
+      }
+      
+      throw error;
+    }
+  }
+
+  // Get water logs for current user
+  async getWaterLogs(): Promise<WaterLogItem[]> {
+    console.log('💧 Fetching water logs...');
+    console.log('🌐 API URL:', `${this.baseURL}/water-logs`);
+
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      throw new Error('No valid authentication token found');
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}/water-logs`, {
+        method: 'GET',
+        headers: this.getHeaders(),
+        signal: AbortSignal.timeout(10000)
+      });
+
+      console.log('📡 Get water logs API response:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.log('Could not parse error response:', parseError);
+        }
+        
+        switch (response.status) {
+          case 401:
+            throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
+          case 500:
+            throw new Error('Internal Server Error: เกิดข้อผิดพลาดที่เซิร์ฟเวอร์');
+          default:
+            throw new Error(errorMessage);
+        }
+      }
+
+      const result = await this.handleResponse<{ data: WaterLogItem[] }>(response);
+      console.log('✅ Water logs fetched successfully:', result.data);
+      console.log('🔍 Raw API response structure:', JSON.stringify(result, null, 2));
+      return result.data || [];
+    } catch (error) {
+      console.error('❌ Error fetching water logs:', error);
+      throw error;
+    }
+  }
+
+  // Update water log entry
+  async updateWaterLog(waterLogId: string | number, updateData: Partial<WaterLogItem>): Promise<WaterLogResponse> {
+    console.log('✏️ Updating water log...', { waterLogId, updateData });
+    console.log('🌐 API URL:', `${this.baseURL}/water-logs/${waterLogId}`);
+
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      throw new Error('No valid authentication token found');
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}/water-logs/${waterLogId}`, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify(updateData),
+        signal: AbortSignal.timeout(10000)
+      });
+
+      console.log('📡 Update water log API response:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.log('Could not parse error response:', parseError);
+        }
+        
+        switch (response.status) {
+          case 400:
+            throw new Error('Bad Request: ข้อมูลที่ส่งไปไม่ถูกต้อง');
+          case 401:
+            throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
+          case 403:
+            throw new Error('Forbidden: ไม่มีสิทธิ์ในการอัปเดตข้อมูลนี้');
+          case 404:
+            throw new Error('Not Found: ไม่พบข้อมูลที่ต้องการอัปเดต');
+          case 500:
+            throw new Error('Internal Server Error: เกิดข้อผิดพลาดที่เซิร์ฟเวอร์');
+          default:
+            throw new Error(errorMessage);
+        }
+      }
+
+      const result = await this.handleResponse<WaterLogResponse>(response);
+      
+      if (result.data) {
+        console.log('✅ Water log updated successfully from backend');
+        console.log('📄 Updated data:', result.data);
+        return result;
+      } else {
+        throw new Error('No updated water log data received from server');
+      }
+    } catch (error) {
+      console.error('❌ Error updating water log:', error);
+      
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
+      }
+      
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('การอัปเดตข้อมูลใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง');
+      }
+      
+      throw error;
+    }
+  }
+
+  // Delete water log entry
+  async deleteWaterLog(waterLogId: string | number): Promise<void> {
+    console.log('🗑️ Deleting water log...', waterLogId);
+    console.log('🌐 API URL:', `${this.baseURL}/water-logs/${waterLogId}`);
+
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      throw new Error('No valid authentication token found');
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}/water-logs/${waterLogId}`, {
+        method: 'DELETE',
+        headers: this.getHeaders(),
+        signal: AbortSignal.timeout(10000)
+      });
+
+      console.log('📡 Delete water log API response:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.log('Could not parse error response:', parseError);
+        }
+        
+        switch (response.status) {
+          case 401:
+            throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
+          case 403:
+            throw new Error('Forbidden: ไม่มีสิทธิ์ในการลบข้อมูลนี้');
+          case 404:
+            throw new Error('Not Found: ไม่พบข้อมูลที่ต้องการลบ');
+          case 500:
+            throw new Error('Internal Server Error: เกิดข้อผิดพลาดที่เซิร์ฟเวอร์');
+          default:
+            throw new Error(errorMessage);
+        }
+      }
+
+      console.log('✅ Water log deleted successfully from backend');
+    } catch (error) {
+      console.error('❌ Error deleting water log:', error);
+      
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
+      }
+      
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('การลบข้อมูลใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง');
+      }
+      
       throw error;
     }
   }
