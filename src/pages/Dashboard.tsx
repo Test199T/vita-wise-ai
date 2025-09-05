@@ -6,6 +6,7 @@ import { HealthChart } from "@/components/health/HealthChart";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 // lucide-react kept for inlined status icons/badges; main tiles use Iconify via HealthCard
@@ -16,6 +17,52 @@ import { useOnboarding } from "@/contexts/OnboardingContext";
 import { tokenUtils } from "@/lib/utils";
 import { apiService } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
+
+// ฟังก์ชันสำหรับจัดการวันที่โดยไม่ให้เลื่อนไป 1 วัน
+const getLocalDateString = (date?: Date | string) => {
+  const targetDate = date ? new Date(date) : new Date();
+  const year = targetDate.getFullYear();
+  const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+  const day = String(targetDate.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// ฟังก์ชันสำหรับคำนวณช่วงวันที่ตามช่วงเวลาที่เลือก
+const getDateRange = (period: 'today' | 'week' | 'month') => {
+  const today = new Date();
+  const todayString = getLocalDateString(today);
+  
+  switch (period) {
+    case 'today':
+      return { start: todayString, end: todayString };
+    
+    case 'week':
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - today.getDay()); // เริ่มจากวันอาทิตย์
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6); // จบที่วันเสาร์
+      return {
+        start: getLocalDateString(startOfWeek),
+        end: getLocalDateString(endOfWeek)
+      };
+    
+    case 'month':
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      return {
+        start: getLocalDateString(startOfMonth),
+        end: getLocalDateString(endOfMonth)
+      };
+    
+    default:
+      return { start: todayString, end: todayString };
+  }
+};
+
+// ฟังก์ชันสำหรับตรวจสอบว่าวันที่อยู่ในช่วงที่กำหนดหรือไม่
+const isDateInRange = (dateString: string, startDate: string, endDate: string) => {
+  return dateString >= startDate && dateString <= endDate;
+};
 
 // จำลองข้อมูลสุขภาพ (ส่วนที่ไม่เกี่ยวกับอาหาร)
 const mockHealthData = {
@@ -76,8 +123,29 @@ const generateCaloriesData = (weeklyTrends?: any[]) => {
     return days.map(day => ({ name: day, value: 0 }));
   }
   
+  // ตรวจสอบรูปแบบข้อมูลจาก API
+  // จาก console log: API ส่งข้อมูลมาในรูปแบบ [เสาร์, อาทิตย์, จันทร์, อังคาร, พุธ, พฤหัส, ศุกร์]
+  // เราต้องจัดเรียงใหม่เป็น [จันทร์, อังคาร, พุธ, พฤหัส, ศุกร์, เสาร์, อาทิตย์]
+  let reorderedTrends = [];
+  
+  if (weeklyTrends.length === 7) {
+    // API ส่งข้อมูลครบ 7 วัน - จัดเรียงใหม่จาก [เสาร์, อาทิตย์, จันทร์, ...] เป็น [จันทร์, อังคาร, ...]
+    reorderedTrends = [
+      weeklyTrends[2], // จันทร์ (index 2) - 2025-09-01
+      weeklyTrends[3], // อังคาร (index 3) - 2025-09-02
+      weeklyTrends[4], // พุธ (index 4) - 2025-09-03
+      weeklyTrends[5], // พฤหัส (index 5) - 2025-09-04
+      weeklyTrends[6], // ศุกร์ (index 6) - 2025-09-05
+      weeklyTrends[0], // เสาร์ (index 0) - 2025-08-30
+      weeklyTrends[1]  // อาทิตย์ (index 1) - 2025-08-31
+    ];
+  } else {
+    // ข้อมูลไม่ครบ 7 วัน - ใช้ข้อมูลตามที่ API ส่งมา
+    reorderedTrends = [...weeklyTrends];
+  }
+  
   return days.map((day, index) => {
-    const trendData = weeklyTrends[index];
+    const trendData = reorderedTrends[index];
     return {
       name: day,
       value: trendData?.calories || 0
@@ -152,6 +220,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { onboardingData } = useOnboarding();
   const [selectedPeriod, setSelectedPeriod] = useState("week");
+  const [selectedNutritionPeriod, setSelectedNutritionPeriod] = useState<'today' | 'week' | 'month'>('today'); // เพิ่ม state สำหรับเลือกช่วงเวลาโภชนาการ
   
   // เพิ่ม state สำหรับข้อมูลการออกกำลังกาย
   const [exerciseStats, setExerciseStats] = useState<any>(null);
@@ -165,8 +234,61 @@ export default function Dashboard() {
   const [foodLogSummary, setFoodLogSummary] = useState<any>(null);
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [isLoadingFoodData, setIsLoadingFoodData] = useState(false);
+  const [foodLogs, setFoodLogs] = useState<any[]>([]); // เพิ่ม state สำหรับเก็บ food logs
   
   const { toast } = useToast();
+
+  // ฟังก์ชันคำนวณโภชนาการตามช่วงเวลาที่เลือก
+  const calculateNutritionForPeriod = (period: 'today' | 'week' | 'month') => {
+    const dateRange = getDateRange(period);
+    const totals = {
+      total_calories: 0,
+      total_protein: 0,
+      total_carbs: 0,
+      total_fat: 0,
+      total_fiber: 0,
+      total_sodium: 0,
+    };
+
+    // กรองและคำนวณเฉพาะบันทึกอาหารในช่วงเวลาที่เลือก
+    foodLogs
+      .filter(log => {
+        const logDate = getLocalDateString(log.consumed_at);
+        return isDateInRange(logDate, dateRange.start, dateRange.end);
+      })
+      .forEach(log => {
+        totals.total_calories += Number(log.calories_per_serving || 0);
+        totals.total_protein += Number(log.protein_g || 0);
+        totals.total_carbs += Number(log.carbs_g || 0);
+        totals.total_fat += Number(log.fat_g || 0);
+        totals.total_fiber += Number(log.fiber_g || 0);
+        totals.total_sodium += Number(log.sodium_mg || 0);
+      });
+
+    return totals;
+  };
+
+  // ฟังก์ชันคำนวณเป้าหมายโภชนาการตามช่วงเวลา
+  const getNutritionTargetsForPeriod = (period: 'today' | 'week' | 'month') => {
+    const multiplier = period === 'week' ? 7 : period === 'month' ? 30 : 1;
+    return {
+      protein: nutritionTargets.protein * multiplier,
+      carbs: nutritionTargets.carbs * multiplier,
+      fats: nutritionTargets.fats * multiplier,
+      fiber: nutritionTargets.fiber * multiplier,
+      vitaminC: nutritionTargets.vitaminC * multiplier,
+      vitaminD: nutritionTargets.vitaminD * multiplier,
+      calcium: nutritionTargets.calcium * multiplier,
+      iron: nutritionTargets.iron * multiplier,
+      potassium: nutritionTargets.potassium * multiplier,
+      sodium: nutritionTargets.sodium * multiplier,
+    };
+  };
+
+  // คำนวณโภชนาการสำหรับช่วงเวลาที่เลือก
+  const currentNutritionData = useMemo(() => {
+    return calculateNutritionForPeriod(selectedNutritionPeriod);
+  }, [foodLogs, selectedNutritionPeriod]);
 
   // ตรวจสอบว่าผู้ใช้ล็อกอินแล้วหรือไม่
   useEffect(() => {
@@ -209,6 +331,13 @@ export default function Dashboard() {
       if (summaryResponse?.data) {
         setFoodLogSummary(summaryResponse.data);
         console.log('✅ โหลดสรุปอาหารประจำวันสำเร็จ:', summaryResponse.data);
+      }
+      
+      // 3. โหลด food logs ทั้งหมดสำหรับคำนวณตามช่วงเวลา
+      const foodLogsResponse = await apiService.getUserFoodLogs();
+      if (foodLogsResponse) {
+        setFoodLogs(foodLogsResponse);
+        console.log('✅ โหลด food logs สำเร็จ:', foodLogsResponse.length, 'รายการ');
       }
       
       // 3. โหลดข้อมูล Dashboard
@@ -372,7 +501,9 @@ export default function Dashboard() {
       recentExercises.forEach(exercise => {
         if (exercise.exercise_date) {
           const exerciseDate = new Date(exercise.exercise_date);
-          const dayIndex = exerciseDate.getDay() === 0 ? 6 : exerciseDate.getDay() - 1; // แปลง Sunday=0 ให้เป็น index 6
+          // แปลง JavaScript getDay() (0=อาทิตย์, 1=จันทร์, ..., 6=เสาร์) 
+          // ให้เป็น index ของ array ไทย (0=จันทร์, 1=อังคาร, ..., 6=อาทิตย์)
+          const dayIndex = exerciseDate.getDay() === 0 ? 6 : exerciseDate.getDay() - 1;
           chartData[dayIndex].value += exercise.duration_minutes || 0;
         }
       });
@@ -391,7 +522,9 @@ export default function Dashboard() {
       recentExercises.forEach(exercise => {
         if (exercise.exercise_date && exercise.calories_burned) {
           const exerciseDate = new Date(exercise.exercise_date);
-          const dayIndex = exerciseDate.getDay() === 0 ? 6 : exerciseDate.getDay() - 1; // แปลง Sunday=0 ให้เป็น index 6
+          // แปลง JavaScript getDay() (0=อาทิตย์, 1=จันทร์, ..., 6=เสาร์) 
+          // ให้เป็น index ของ array ไทย (0=จันทร์, 1=อังคาร, ..., 6=อาทิตย์)
+          const dayIndex = exerciseDate.getDay() === 0 ? 6 : exerciseDate.getDay() - 1;
           chartData[dayIndex].value += exercise.calories_burned || 0;
         }
       });
@@ -468,10 +601,62 @@ export default function Dashboard() {
 
   const dailyAverage = calculateDailyAverage();
 
+  // สร้างข้อมูลกราฟโปรตีนจากข้อมูลจริง
+  const generateProteinChartData = () => {
+    const days = ["จันทร์", "อังคาร", "พุธ", "พฤหัส", "ศุกร์", "เสาร์", "อาทิตย์"];
+    const chartData = days.map(day => ({ name: day, value: 0 }));
+    
+    // ถ้ามีข้อมูล food logs ให้แจกจ่ายโปรตีนไปยังวันต่างๆ
+    if (foodLogs && foodLogs.length > 0) {
+      foodLogs.forEach(foodLog => {
+        if (foodLog.consumed_at && foodLog.protein_g) {
+          const foodDate = new Date(foodLog.consumed_at);
+          // แปลง JavaScript getDay() (0=อาทิตย์, 1=จันทร์, ..., 6=เสาร์) 
+          // ให้เป็น index ของ array ไทย (0=จันทร์, 1=อังคาร, ..., 6=อาทิตย์)
+          const dayIndex = foodDate.getDay() === 0 ? 6 : foodDate.getDay() - 1;
+          chartData[dayIndex].value += Number(foodLog.protein_g) || 0;
+        }
+      });
+    }
+    
+    return chartData;
+  };
+
+  // สร้างข้อมูลกราฟโปรตีนรายสัปดาห์ใน 1 เดือน
+  const generateMonthlyProteinData = () => {
+    const weeks = ["สัปดาห์ 1", "สัปดาห์ 2", "สัปดาห์ 3", "สัปดาห์ 4"];
+    const chartData = weeks.map(week => ({ name: week, value: 0 }));
+    
+    // ถ้ามีข้อมูล food logs ให้แจกจ่ายโปรตีนไปยังสัปดาห์ต่างๆ
+    if (foodLogs && foodLogs.length > 0) {
+      foodLogs.forEach(foodLog => {
+        if (foodLog.consumed_at && foodLog.protein_g) {
+          const foodDate = new Date(foodLog.consumed_at);
+          const today = new Date();
+          const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+          const foodTime = foodDate.getTime();
+          const startTime = startOfMonth.getTime();
+          
+          const daysDiff = Math.floor((foodTime - startTime) / (1000 * 60 * 60 * 24));
+          const weekIndex = Math.floor(daysDiff / 7);
+          
+          // ตรวจสอบว่าเป็นสัปดาห์ที่ 1-4 ของเดือนนี้
+          if (weekIndex >= 0 && weekIndex < 4) {
+            chartData[weekIndex].value += Number(foodLog.protein_g) || 0;
+          }
+        }
+      });
+    }
+    
+    return chartData;
+  };
+
   const realExerciseData = generateExerciseChartData();
   const caloriesBurnedData = generateCaloriesBurnedChartData();
   const monthlyCaloriesBurnedData = generateMonthlyCaloriesBurnedData();
   const monthlyExerciseData = generateMonthlyExerciseData();
+  const realProteinData = generateProteinChartData();
+  const monthlyProteinData = generateMonthlyProteinData();
 
   return (
     <MainLayout>
@@ -550,7 +735,7 @@ export default function Dashboard() {
             <div>
               <div className="text-sm text-muted-foreground">โภชนาการ</div>
               <div className="font-semibold">
-                แคลอรี่วันนี้ {dashboardData?.today?.nutrition?.calories || 0} แคล
+                แคลอรี่{selectedNutritionPeriod === 'today' ? 'วันนี้' : selectedNutritionPeriod === 'week' ? 'สัปดาห์นี้' : 'เดือนนี้'} {currentNutritionData?.total_calories || 0} แคล
                 {nutritionAnalysis?.nutrition_score && (
                   <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
                     คะแนน: {nutritionAnalysis.nutrition_score}/100
@@ -802,8 +987,8 @@ export default function Dashboard() {
                       />
                       <HealthChart
                         title="แนวโน้มโปรตีนรายวัน"
-                        description="ปริมาณโปรตีนที่บริโภคในสัปดาห์ที่ผ่านมา"
-                        data={proteinData}
+                        description="ปริมาณโปรตีนที่บริโภคในสัปดาห์ที่ผ่านมา (กรัม)"
+                        data={realProteinData}
                         type="line"
                         color="hsl(142, 69%, 58%)"
                       />
@@ -896,11 +1081,18 @@ export default function Dashboard() {
                   <TabsContent value="nutrition" className="space-y-6 mt-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       <HealthChart
-                        title="แนวโน้มโปรตีน"
-                        description="ปริมาณโปรตีนที่บริโภคในแต่ละวัน"
-                        data={proteinData}
-                        type="bar"
+                        title="แนวโน้มโปรตีนรายสัปดาห์"
+                        description="ปริมาณโปรตีนที่บริโภคในแต่ละสัปดาห์ของเดือนนี้ (กรัม)"
+                        data={monthlyProteinData}
+                        type="line"
                         color="hsl(142, 69%, 58%)"
+                      />
+                      <HealthChart
+                        title="แนวโน้มแคลอรี่รายสัปดาห์"
+                        description="แคลอรี่ที่บริโภคในแต่ละสัปดาห์ของเดือนนี้"
+                        data={generateCaloriesData(dashboardData?.weekly_trends)}
+                        type="line"
+                        color="hsl(45, 100%, 50%)"
                       />
                     </div>
                   </TabsContent>
@@ -947,6 +1139,32 @@ export default function Dashboard() {
 
               {/* Nutrition Analysis Tab */}
               <TabsContent value="nutrition" className="space-y-6">
+                {/* เพิ่ม dropdown เลือกช่วงเวลา */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold">สรุปโภชนาการ</h3>
+                    <p className="text-sm text-muted-foreground">
+                      ข้อมูลโภชนาการ
+                      {selectedNutritionPeriod === 'today' && ' วันนี้'}
+                      {selectedNutritionPeriod === 'week' && ' สัปดาห์นี้'}
+                      {selectedNutritionPeriod === 'month' && ' เดือนนี้'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium">ช่วงเวลา:</label>
+                    <Select value={selectedNutritionPeriod} onValueChange={(value: 'today' | 'week' | 'month') => setSelectedNutritionPeriod(value)}>
+                      <SelectTrigger className="w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="today">วันนี้</SelectItem>
+                        <SelectItem value="week">สัปดาห์นี้</SelectItem>
+                        <SelectItem value="month">เดือนนี้</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Macronutrients */}
                   <div className="space-y-4">
@@ -955,12 +1173,15 @@ export default function Dashboard() {
                       สารอาหารหลัก (Macronutrients)
                     </h4>
                     <div className="space-y-3">
-                      {[
-                        { key: 'protein', label: 'โปรตีน', current: nutritionAnalysis?.total_protein || 0, target: nutritionTargets.protein, unit: 'g' },
-                        { key: 'carbs', label: 'คาร์โบไฮเดรต', current: nutritionAnalysis?.total_carbs || 0, target: nutritionTargets.carbs, unit: 'g' },
-                        { key: 'fats', label: 'ไขมัน', current: nutritionAnalysis?.total_fat || 0, target: nutritionTargets.fats, unit: 'g' },
-                        { key: 'fiber', label: 'ไฟเบอร์', current: nutritionAnalysis?.total_fiber || 0, target: nutritionTargets.fiber, unit: 'g' }
-                      ].map(({ key, label, current, target, unit }) => {
+                      {(() => {
+                        const periodTargets = getNutritionTargetsForPeriod(selectedNutritionPeriod);
+                        return [
+                          { key: 'protein', label: 'โปรตีน', current: currentNutritionData?.total_protein || 0, target: periodTargets.protein, unit: 'g' },
+                          { key: 'carbs', label: 'คาร์โบไฮเดรต', current: currentNutritionData?.total_carbs || 0, target: periodTargets.carbs, unit: 'g' },
+                          { key: 'fats', label: 'ไขมัน', current: currentNutritionData?.total_fat || 0, target: periodTargets.fats, unit: 'g' },
+                          { key: 'fiber', label: 'ไฟเบอร์', current: currentNutritionData?.total_fiber || 0, target: periodTargets.fiber, unit: 'g' }
+                        ];
+                      })().map(({ key, label, current, target, unit }) => {
                         const status = getNutritionStatus(current, target);
                         return (
                           <div key={key} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
@@ -994,14 +1215,17 @@ export default function Dashboard() {
                       วิตามินและแร่ธาตุ (Micronutrients)
                     </h4>
                     <div className="space-y-3">
-                      {[
-                        { key: 'vitaminC', label: 'วิตามิน C', current: 0, target: nutritionTargets.vitaminC, unit: 'mg' },
-                        { key: 'vitaminD', label: 'วิตามิน D', current: 0, target: nutritionTargets.vitaminD, unit: 'mcg' },
-                        { key: 'calcium', label: 'แคลเซียม', current: 0, target: nutritionTargets.calcium, unit: 'mg' },
-                        { key: 'iron', label: 'เหล็ก', current: 0, target: nutritionTargets.iron, unit: 'mg' },
-                        { key: 'potassium', label: 'โพแทสเซียม', current: 0, target: nutritionTargets.potassium, unit: 'mg' },
-                        { key: 'sodium', label: 'โซเดียม', current: nutritionAnalysis?.total_sodium || 0, target: nutritionTargets.sodium, unit: 'mg' }
-                      ].map(({ key, label, current, target, unit }) => {
+                      {(() => {
+                        const periodTargets = getNutritionTargetsForPeriod(selectedNutritionPeriod);
+                        return [
+                          { key: 'vitaminC', label: 'วิตามิน C', current: 0, target: periodTargets.vitaminC, unit: 'mg' },
+                          { key: 'vitaminD', label: 'วิตามิน D', current: 0, target: periodTargets.vitaminD, unit: 'mcg' },
+                          { key: 'calcium', label: 'แคลเซียม', current: 0, target: periodTargets.calcium, unit: 'mg' },
+                          { key: 'iron', label: 'เหล็ก', current: 0, target: periodTargets.iron, unit: 'mg' },
+                          { key: 'potassium', label: 'โพแทสเซียม', current: 0, target: periodTargets.potassium, unit: 'mg' },
+                          { key: 'sodium', label: 'โซเดียม', current: currentNutritionData?.total_sodium || 0, target: periodTargets.sodium, unit: 'mg' }
+                        ];
+                      })().map(({ key, label, current, target, unit }) => {
                         const status = getNutritionStatus(current, target);
                         return (
                           <div key={key} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
@@ -1155,25 +1379,27 @@ export default function Dashboard() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-orange-600">
-                    {dashboardData?.today?.nutrition?.calories || nutritionAnalysis?.total_calories || 0}
+                    {currentNutritionData?.total_calories || 0}
                   </div>
-                  <div className="text-sm text-muted-foreground">แคลอรี่วันนี้</div>
+                  <div className="text-sm text-muted-foreground">
+                    แคลอรี่{selectedNutritionPeriod === 'today' ? 'วันนี้' : selectedNutritionPeriod === 'week' ? 'สัปดาห์นี้' : 'เดือนนี้'}
+                  </div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-600">
-                    {dashboardData?.today?.nutrition?.protein || nutritionAnalysis?.total_protein || 0}
+                    {currentNutritionData?.total_protein || 0}
                   </div>
                   <div className="text-sm text-muted-foreground">โปรตีน (g)</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-600">
-                    {dashboardData?.today?.nutrition?.carbs || nutritionAnalysis?.total_carbs || 0}
+                    {currentNutritionData?.total_carbs || 0}
                   </div>
                   <div className="text-sm text-muted-foreground">คาร์โบไฮเดรต (g)</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-yellow-600">
-                    {dashboardData?.today?.nutrition?.fat || nutritionAnalysis?.total_fat || 0}
+                    {currentNutritionData?.total_fat || 0}
                   </div>
                   <div className="text-sm text-muted-foreground">ไขมัน (g)</div>
                 </div>
@@ -1309,17 +1535,17 @@ export default function Dashboard() {
                     <li>• ดื่มน้ำเพิ่มอีก {mockHealthData.water.target - mockHealthData.water.liters} ลิตร</li>
                     <li>• นอนให้ครบ {mockHealthData.sleep.target} ชั่วโมง</li>
                     <li>• ออกกำลังกายเพิ่มอีก {mockHealthData.exercise.target - (exerciseStats?.total_duration || 0)} นาที</li>
-                    {nutritionAnalysis?.total_protein !== undefined && (
-                      <li>• เพิ่มโปรตีนอีก {Math.max(0, 80 - nutritionAnalysis.total_protein)} กรัม</li>
+                    {currentNutritionData?.total_protein !== undefined && (
+                      <li>• เพิ่มโปรตีนอีก {Math.max(0, 80 - currentNutritionData.total_protein)} กรัม</li>
                     )}
-                    {nutritionAnalysis?.total_carbs !== undefined && (
-                      <li>• เพิ่มคาร์โบไฮเดรตอีก {Math.max(0, 250 - nutritionAnalysis.total_carbs)} กรัม</li>
+                    {currentNutritionData?.total_carbs !== undefined && (
+                      <li>• เพิ่มคาร์โบไฮเดรตอีก {Math.max(0, 250 - currentNutritionData.total_carbs)} กรัม</li>
                     )}
-                    {nutritionAnalysis?.total_fat !== undefined && (
-                      <li>• เพิ่มไขมันอีก {Math.max(0, 65 - nutritionAnalysis.total_fat)} กรัม</li>
+                    {currentNutritionData?.total_fat !== undefined && (
+                      <li>• เพิ่มไขมันอีก {Math.max(0, 65 - currentNutritionData.total_fat)} กรัม</li>
                     )}
-                    {nutritionAnalysis?.total_fiber !== undefined && (
-                      <li>• เพิ่มไฟเบอร์อีก {Math.max(0, 25 - nutritionAnalysis.total_fiber)} กรัม</li>
+                    {currentNutritionData?.total_fiber !== undefined && (
+                      <li>• เพิ่มไฟเบอร์อีก {Math.max(0, 25 - currentNutritionData.total_fiber)} กรัม</li>
                     )}
                     {!nutritionAnalysis && (
                       <li>• รอข้อมูลโภชนาการเพื่อคำแนะนำที่แม่นยำ</li>
