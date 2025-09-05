@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { HealthCard } from "@/components/health/HealthCard";
 import { HealthChart } from "@/components/health/HealthChart";
+import { EnhancedHealthChart } from "@/components/health/EnhancedHealthChart";
+import { SleepChart } from "@/components/health/SleepChart";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -236,6 +238,15 @@ export default function Dashboard() {
   const [isLoadingFoodData, setIsLoadingFoodData] = useState(false);
   const [foodLogs, setFoodLogs] = useState<any[]>([]); // เพิ่ม state สำหรับเก็บ food logs
   
+  // เพิ่ม state สำหรับข้อมูลการนอนและน้ำดื่ม
+  const [sleepStats, setSleepStats] = useState<any>(null);
+  const [sleepLogs, setSleepLogs] = useState<any[]>([]);
+  const [sleepWeeklyData, setSleepWeeklyData] = useState<any[]>([]);
+  const [waterStats, setWaterStats] = useState<any>(null);
+  const [waterLogs, setWaterLogs] = useState<any[]>([]);
+  const [isLoadingSleepData, setIsLoadingSleepData] = useState(false);
+  const [isLoadingWaterData, setIsLoadingWaterData] = useState(false);
+  
   const { toast } = useToast();
 
   // ฟังก์ชันคำนวณโภชนาการตามช่วงเวลาที่เลือก
@@ -442,6 +453,134 @@ export default function Dashboard() {
     }
   };
 
+  // ฟังก์ชันโหลดข้อมูลการนอนจาก Backend
+  const loadSleepData = async () => {
+    if (isLoadingSleepData) return;
+    
+    setIsLoadingSleepData(true);
+    
+    try {
+      console.log('😴 โหลดข้อมูลการนอนจาก Backend...');
+      
+      // ใช้ API endpoint ใหม่: /sleep-log/stats/overview?date=YYYY-MM-DD
+      const today = getLocalDateString();
+      console.log('📅 วันที่ปัจจุบัน:', today);
+      
+      try {
+        const overviewResponse = await apiService.getSleepOverviewStats(today);
+        console.log('🔍 Sleep overview response:', overviewResponse);
+        
+        if (overviewResponse?.data) {
+          setSleepStats(overviewResponse.data);
+          console.log('✅ โหลดข้อมูลการนอนสำเร็จ:', overviewResponse.data);
+          console.log('📊 average_sleep_duration_hours:', overviewResponse.data.average_sleep_duration_hours);
+        } else {
+          console.log('⚠️ ไม่มีข้อมูลการนอนจาก API');
+          setSleepStats(null);
+        }
+      } catch (overviewError) {
+        console.log('⚠️ ไม่สามารถโหลดข้อมูลการนอนได้:', overviewError);
+        setSleepStats(null);
+      }
+      
+      // โหลดข้อมูลการนอนรายสัปดาห์
+      try {
+        const weeklyResponse = await apiService.getSleepWeeklyData();
+        console.log('🔍 Sleep weekly response:', weeklyResponse);
+        
+        if (weeklyResponse && weeklyResponse.length > 0) {
+          setSleepWeeklyData(weeklyResponse);
+          console.log('✅ โหลดข้อมูลการนอนรายสัปดาห์สำเร็จ:', weeklyResponse.length, 'วัน');
+        } else {
+          console.log('⚠️ ไม่มีข้อมูลการนอนรายสัปดาห์');
+          setSleepWeeklyData([]);
+        }
+      } catch (weeklyError) {
+        console.log('⚠️ ไม่สามารถโหลดข้อมูลการนอนรายสัปดาห์ได้:', weeklyError);
+        setSleepWeeklyData([]);
+      }
+      
+      toast({ 
+        title: 'โหลดข้อมูลสำเร็จ', 
+        description: 'โหลดข้อมูลการนอนเรียบร้อยแล้ว' 
+      });
+      
+    } catch (error) {
+      console.error('❌ Error loading sleep data:', error);
+      
+      let errorMessage = 'ไม่สามารถโหลดข้อมูลการนอนได้';
+      if (error instanceof Error) {
+        if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+          errorMessage = 'ไม่มีสิทธิ์ในการเข้าถึงข้อมูล กรุณาเข้าสู่ระบบใหม่';
+        } else if (error.message.includes('500') || error.message.includes('Internal Server Error')) {
+          errorMessage = 'เกิดข้อผิดพลาดที่เซิร์ฟเวอร์ กรุณาลองใหม่อีกครั้ง';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast({ 
+        title: 'เกิดข้อผิดพลาด', 
+        description: errorMessage,
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoadingSleepData(false);
+    }
+  };
+
+  // ฟังก์ชันโหลดข้อมูลน้ำดื่มจาก Backend
+  const loadWaterData = async () => {
+    if (isLoadingWaterData) return;
+    
+    setIsLoadingWaterData(true);
+    
+    try {
+      console.log('💧 โหลดข้อมูลน้ำดื่มจาก Backend...');
+      
+      // 1. โหลดสถิติน้ำดื่ม
+      const statsResponse = await apiService.getWaterStats('week');
+      if (statsResponse?.data) {
+        setWaterStats(statsResponse.data);
+        console.log('✅ โหลดสถิติน้ำดื่มสำเร็จ:', statsResponse.data);
+      }
+      
+      // 2. โหลดรายการน้ำดื่ม
+      const logsResponse = await apiService.getWaterLogs();
+      if (logsResponse && logsResponse.length > 0) {
+        setWaterLogs(logsResponse);
+        console.log('✅ โหลดรายการน้ำดื่มสำเร็จ:', logsResponse.length, 'รายการ');
+      }
+      
+      toast({ 
+        title: 'โหลดข้อมูลสำเร็จ', 
+        description: 'โหลดข้อมูลน้ำดื่มเรียบร้อยแล้ว' 
+      });
+      
+    } catch (error) {
+      console.error('❌ Error loading water data:', error);
+      
+      let errorMessage = 'ไม่สามารถโหลดข้อมูลน้ำดื่มได้';
+      if (error instanceof Error) {
+        if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+          errorMessage = 'ไม่มีสิทธิ์ในการเข้าถึงข้อมูล กรุณาเข้าสู่ระบบใหม่';
+        } else if (error.message.includes('500') || error.message.includes('Internal Server Error')) {
+          errorMessage = 'เกิดข้อผิดพลาดที่เซิร์ฟเวอร์ กรุณาลองใหม่อีกครั้ง';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast({ 
+        title: 'เกิดข้อผิดพลาด', 
+        description: errorMessage,
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoadingWaterData(false);
+    }
+  };
+
   // โหลดข้อมูลการออกกำลังกายเมื่อเปิดหน้า
   useEffect(() => {
     loadExerciseData();
@@ -450,6 +589,16 @@ export default function Dashboard() {
   // โหลดข้อมูลอาหารและโภชนาการเมื่อเปิดหน้า
   useEffect(() => {
     loadFoodData();
+  }, []);
+
+  // โหลดข้อมูลการนอนเมื่อเปิดหน้า
+  useEffect(() => {
+    loadSleepData();
+  }, []);
+
+  // โหลดข้อมูลน้ำดื่มเมื่อเปิดหน้า
+  useEffect(() => {
+    loadWaterData();
   }, []);
 
   const { bmr, tdee } = useMemo(() => {
@@ -651,12 +800,105 @@ export default function Dashboard() {
     return chartData;
   };
 
+  // สร้างข้อมูลกราฟการนอนจากข้อมูลจริง
+  const generateSleepChartData = () => {
+    const days = ["จันทร์", "อังคาร", "พุธ", "พฤหัส", "ศุกร์", "เสาร์", "อาทิตย์"];
+    const chartData = days.map(day => ({ name: day, value: 0 }));
+    
+    // ถ้ามีข้อมูลการนอน ให้แจกจ่ายชั่วโมงการนอนไปยังวันต่างๆ
+    if (sleepLogs && sleepLogs.length > 0) {
+      sleepLogs.forEach(sleepLog => {
+        if (sleepLog.sleep_date || sleepLog.date) {
+          const sleepDate = new Date(sleepLog.sleep_date || sleepLog.date);
+          // แปลง JavaScript getDay() (0=อาทิตย์, 1=จันทร์, ..., 6=เสาร์) 
+          // ให้เป็น index ของ array ไทย (0=จันทร์, 1=อังคาร, ..., 6=อาทิตย์)
+          const dayIndex = sleepDate.getDay() === 0 ? 6 : sleepDate.getDay() - 1;
+          
+          // คำนวณชั่วโมงการนอน
+          let sleepHours = 0;
+          if (sleepLog.sleep_duration_hours) {
+            sleepHours = sleepLog.sleep_duration_hours;
+          } else if (sleepLog.bedtime && sleepLog.wake_time) {
+            // คำนวณจากเวลาเข้านอนและตื่นนอน
+            const [bedHour, bedMin] = sleepLog.bedtime.split(':').map(Number);
+            const [wakeHour, wakeMin] = sleepLog.wake_time.split(':').map(Number);
+            const bedTime = bedHour * 60 + bedMin;
+            const wakeTime = wakeHour * 60 + wakeMin;
+            const duration = wakeTime >= bedTime ? wakeTime - bedTime : (24 * 60 - bedTime) + wakeTime;
+            sleepHours = Math.round((duration / 60) * 10) / 10;
+          }
+          
+          chartData[dayIndex].value = sleepHours;
+        }
+      });
+    }
+    
+    return chartData;
+  };
+
+  // สร้างข้อมูลกราฟน้ำดื่มจากข้อมูลจริง
+  const generateWaterChartData = () => {
+    const days = ["จันทร์", "อังคาร", "พุธ", "พฤหัส", "ศุกร์", "เสาร์", "อาทิตย์"];
+    const chartData = days.map(day => ({ name: day, value: 0 }));
+    
+    // ถ้ามีข้อมูลน้ำดื่ม ให้แจกจ่ายลิตรน้ำไปยังวันต่างๆ
+    if (waterLogs && waterLogs.length > 0) {
+      waterLogs.forEach(waterLog => {
+        if (waterLog.consumed_at) {
+          const waterDate = new Date(waterLog.consumed_at);
+          // แปลง JavaScript getDay() (0=อาทิตย์, 1=จันทร์, ..., 6=เสาร์) 
+          // ให้เป็น index ของ array ไทย (0=จันทร์, 1=อังคาร, ..., 6=อาทิตย์)
+          const dayIndex = waterDate.getDay() === 0 ? 6 : waterDate.getDay() - 1;
+          
+          // แปลงจาก ml เป็นลิตร
+          const liters = (waterLog.amount_ml || 0) / 1000;
+          chartData[dayIndex].value += liters;
+        }
+      });
+    }
+    
+    return chartData;
+  };
+
+  // คำนวณชั่วโมงการนอนของวันนี้จากข้อมูลจริง (ใช้ average_sleep_duration_hours จาก API)
+  const getTodaySleepHours = () => {
+    if (!sleepStats || !sleepStats.average_sleep_duration_hours) {
+      return 0;
+    }
+    
+    return sleepStats.average_sleep_duration_hours;
+  };
+
+  // คำนวณลิตรน้ำดื่มของวันนี้จากข้อมูลจริง
+  const getTodayWaterLiters = () => {
+    if (!waterLogs || waterLogs.length === 0) return 0;
+    
+    const today = getLocalDateString();
+    let totalWaterMl = 0;
+    
+    waterLogs.forEach(waterLog => {
+      const waterDate = getLocalDateString(waterLog.consumed_at);
+      if (waterDate === today) {
+        totalWaterMl += waterLog.amount_ml || 0;
+      }
+    });
+    
+    // แปลงจาก ml เป็นลิตร
+    return totalWaterMl / 1000;
+  };
+
   const realExerciseData = generateExerciseChartData();
   const caloriesBurnedData = generateCaloriesBurnedChartData();
   const monthlyCaloriesBurnedData = generateMonthlyCaloriesBurnedData();
   const monthlyExerciseData = generateMonthlyExerciseData();
   const realProteinData = generateProteinChartData();
   const monthlyProteinData = generateMonthlyProteinData();
+  const realSleepData = generateSleepChartData();
+  const realWaterData = generateWaterChartData();
+  
+  // คำนวณข้อมูลของวันนี้จากฐานข้อมูลจริง
+  const todaySleepHours = getTodaySleepHours();
+  const todayWaterLiters = getTodayWaterLiters();
 
   return (
     <MainLayout>
@@ -674,7 +916,7 @@ export default function Dashboard() {
           </div>
           
           {/* ปุ่มรีเฟรชข้อมูล */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button 
               variant="outline" 
               onClick={loadExerciseData}
@@ -682,7 +924,7 @@ export default function Dashboard() {
               className="gap-2"
             >
               <svg className={`h-4 w-4 ${isLoadingExerciseData ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.001 0 01-15.357-2m15.357 2H15" />
               </svg>
               {isLoadingExerciseData ? 'กำลังโหลด...' : 'รีเฟรชข้อมูลการออกกำลังกาย'}
             </Button>
@@ -697,6 +939,30 @@ export default function Dashboard() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.001 0 01-15.357-2m15.357 2H15" />
               </svg>
               {isLoadingFoodData ? 'กำลังโหลด...' : 'รีเฟรชข้อมูลอาหาร'}
+            </Button>
+
+            <Button 
+              variant="outline" 
+              onClick={loadSleepData}
+              disabled={isLoadingSleepData}
+              className="gap-2"
+            >
+              <svg className={`h-4 w-4 ${isLoadingSleepData ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.001 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {isLoadingSleepData ? 'กำลังโหลด...' : 'รีเฟรชข้อมูลการนอน'}
+            </Button>
+
+            <Button 
+              variant="outline" 
+              onClick={loadWaterData}
+              disabled={isLoadingWaterData}
+              className="gap-2"
+            >
+              <svg className={`h-4 w-4 ${isLoadingWaterData ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.001 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {isLoadingWaterData ? 'กำลังโหลด...' : 'รีเฟรชข้อมูลน้ำดื่ม'}
             </Button>
           </div>
           <div className="flex gap-2 items-center">
@@ -730,7 +996,16 @@ export default function Dashboard() {
           <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <div className="text-sm text-muted-foreground">การนอน</div>
-              <div className="font-semibold">{mockHealthData.sleep.hours} ชม. • เป้าหมาย {mockHealthData.sleep.target}</div>
+              <div className="font-semibold">
+                {todaySleepHours.toFixed(1)} / 8 ชม.
+                <span className={`ml-2 text-xs px-2 py-1 rounded ${
+                  todaySleepHours >= 7 ? 'bg-green-100 text-green-800' : 
+                  todaySleepHours >= 6 ? 'bg-yellow-100 text-yellow-800' : 
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {todaySleepHours >= 7 ? 'ดี' : todaySleepHours >= 6 ? 'ปานกลาง' : 'ต้องปรับปรุง'}
+                </span>
+              </div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground">โภชนาการ</div>
@@ -749,7 +1024,16 @@ export default function Dashboard() {
             </div>
             <div>
               <div className="text-sm text-muted-foreground">น้ำดื่ม</div>
-              <div className="font-semibold">{mockHealthData.water.liters} ลิตร/วัน</div>
+              <div className="font-semibold">
+                {todayWaterLiters.toFixed(1)} ลิตร/วัน • เป้าหมาย 2.5 ลิตร
+                <span className={`ml-2 text-xs px-2 py-1 rounded ${
+                  todayWaterLiters >= 2 ? 'bg-green-100 text-green-800' : 
+                  todayWaterLiters >= 1.5 ? 'bg-yellow-100 text-yellow-800' : 
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {todayWaterLiters >= 2 ? 'ดี' : todayWaterLiters >= 1.5 ? 'ปานกลาง' : 'ต้องปรับปรุง'}
+                </span>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -835,19 +1119,19 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <HealthCard
             title="การนอนหลับ"
-            value={`${mockHealthData.sleep.hours} ชั่วโมง`}
-            description={`เป้าหมาย ${mockHealthData.sleep.target} ชั่วโมง`}
+            value={`${todaySleepHours.toFixed(1)} / 8 ชั่วโมง`}
+            description={`เป้าหมาย 8 ชั่วโมง ${sleepStats ? '(ข้อมูลจริง)' : '(รอข้อมูล)'}`}
             icon="lucide:moon"
-            trend={mockHealthData.sleep.trend as "up" | "down" | "stable"}
+            trend={todaySleepHours >= 7 ? "up" : todaySleepHours >= 6 ? "stable" : "down"}
             color="primary"
           />
 
           <HealthCard
             title="น้ำดื่ม"
-            value={`${mockHealthData.water.liters} ลิตร`}
-            description={`เป้าหมาย ${mockHealthData.water.target} ลิตร`}
+            value={`${todayWaterLiters.toFixed(1)} ลิตร`}
+            description={`เป้าหมาย 2.5 ลิตร`}
             icon="lucide:droplets"
-            trend={mockHealthData.water.trend as "up" | "down" | "stable"}
+            trend={todayWaterLiters >= 2 ? "up" : todayWaterLiters >= 1.5 ? "stable" : "down"}
             color="secondary"
           />
           <HealthCard
@@ -958,19 +1242,23 @@ export default function Dashboard() {
                   {/* แท็บออกกำลังกาย */}
                   <TabsContent value="exercise" className="space-y-6 mt-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <HealthChart
+                      <EnhancedHealthChart
                         title="แนวโน้มการออกกำลังกาย"
                         description="นาทีการออกกำลังกายในสัปดาห์ที่ผ่านมา"
                         data={realExerciseData}
                         type="line"
                         color="hsl(200, 70%, 60%)"
+                        unit="นาที"
+                        showDataStatus={true}
                       />
-                      <HealthChart
+                      <EnhancedHealthChart
                         title="แนวโน้มแคลอรี่ที่เผาผลาญ"
                         description="แคลอรี่ที่เผาผลาญจากการออกกำลังกายในสัปดาห์ที่ผ่านมา"
                         data={caloriesBurnedData}
                         type="line"
                         color="hsl(0, 70%, 50%)"
+                        unit="แคล"
+                        showDataStatus={true}
                       />
                     </div>
                   </TabsContent>
@@ -978,23 +1266,27 @@ export default function Dashboard() {
                   {/* แท็บโภชนาการ */}
                   <TabsContent value="nutrition" className="space-y-6 mt-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <HealthChart
+                      <EnhancedHealthChart
                         title="แนวโน้มแคลอรี่ที่บริโภค"
                         description="แคลอรี่ที่บริโภคในสัปดาห์ที่ผ่านมา"
                         data={generateCaloriesData(dashboardData?.weekly_trends)}
                         type="line"
                         color="hsl(45, 100%, 50%)"
+                        unit="แคล"
+                        showDataStatus={true}
                       />
-                      <HealthChart
+                      <EnhancedHealthChart
                         title="แนวโน้มโปรตีนรายวัน"
                         description="ปริมาณโปรตีนที่บริโภคในสัปดาห์ที่ผ่านมา (กรัม)"
                         data={realProteinData}
                         type="line"
                         color="hsl(142, 69%, 58%)"
+                        unit="กรัม"
+                        showDataStatus={true}
                       />
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <HealthChart
+                      <EnhancedHealthChart
                         title="สรุปแคลอรี่รายสัปดาห์"
                         description="เปรียบเทียบแคลอรี่ที่บริโภค vs เผาผลาญในสัปดาห์นี้"
                         data={[
@@ -1003,6 +1295,8 @@ export default function Dashboard() {
                         ]}
                         type="line"
                         color="hsl(120, 70%, 50%)"
+                        unit="แคล"
+                        showDataStatus={true}
                       />
                     </div>
                   </TabsContent>
@@ -1010,12 +1304,14 @@ export default function Dashboard() {
                   {/* แท็บดื่มน้ำ */}
                   <TabsContent value="water" className="space-y-6 mt-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <HealthChart
+                      <EnhancedHealthChart
                         title="แนวโน้มการดื่มน้ำ"
                         description="ลิตรน้ำที่ดื่มในสัปดาห์ที่ผ่านมา"
-                        data={waterData}
+                        data={realWaterData}
                         type="line"
                         color="hsl(210, 100%, 50%)"
+                        unit="ลิตร"
+                        showDataStatus={true}
                       />
                     </div>
                   </TabsContent>
@@ -1023,12 +1319,11 @@ export default function Dashboard() {
                   {/* แท็บน้ำหนัก */}
                   <TabsContent value="weight" className="space-y-6 mt-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <HealthChart
+                      <SleepChart
                         title="แนวโน้มการนอนหลับ"
                         description="ชั่วโมงการนอนหลับในสัปดาห์ที่ผ่านมา"
-                        data={sleepData}
-                        type="line"
-                        color="hsl(197, 76%, 64%)"
+                        data={sleepWeeklyData}
+                        isLoading={isLoadingSleepData}
                       />
                     </div>
                   </TabsContent>
@@ -1060,19 +1355,23 @@ export default function Dashboard() {
                   {/* แท็บออกกำลังกาย */}
                   <TabsContent value="exercise" className="space-y-6 mt-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <HealthChart
+                      <EnhancedHealthChart
                         title="แนวโน้มการออกกำลังกายรายเดือน"
                         description="นาทีการออกกำลังกายเฉลี่ยในแต่ละสัปดาห์ของเดือนนี้"
                         data={monthlyExerciseData}
                         type="bar"
                         color="hsl(200, 70%, 60%)"
+                        unit="นาที"
+                        showDataStatus={true}
                       />
-                      <HealthChart
+                      <EnhancedHealthChart
                         title="แนวโน้มแคลอรี่ที่เผาผลาญรายเดือน"
                         description="แคลอรี่ที่เผาผลาญจากการออกกำลังกายในแต่ละสัปดาห์ของเดือนนี้"
                         data={monthlyCaloriesBurnedData}
                         type="bar"
                         color="hsl(0, 70%, 50%)"
+                        unit="แคล"
+                        showDataStatus={true}
                       />
                     </div>
                   </TabsContent>
@@ -1080,19 +1379,23 @@ export default function Dashboard() {
                   {/* แท็บโภชนาการ */}
                   <TabsContent value="nutrition" className="space-y-6 mt-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <HealthChart
+                      <EnhancedHealthChart
                         title="แนวโน้มโปรตีนรายสัปดาห์"
                         description="ปริมาณโปรตีนที่บริโภคในแต่ละสัปดาห์ของเดือนนี้ (กรัม)"
                         data={monthlyProteinData}
                         type="line"
                         color="hsl(142, 69%, 58%)"
+                        unit="กรัม"
+                        showDataStatus={true}
                       />
-                      <HealthChart
+                      <EnhancedHealthChart
                         title="แนวโน้มแคลอรี่รายสัปดาห์"
                         description="แคลอรี่ที่บริโภคในแต่ละสัปดาห์ของเดือนนี้"
                         data={generateCaloriesData(dashboardData?.weekly_trends)}
                         type="line"
                         color="hsl(45, 100%, 50%)"
+                        unit="แคล"
+                        showDataStatus={true}
                       />
                     </div>
                   </TabsContent>
@@ -1100,19 +1403,20 @@ export default function Dashboard() {
                   {/* แท็บไลฟ์สไตล์ */}
                   <TabsContent value="lifestyle" className="space-y-6 mt-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <HealthChart
+                      <SleepChart
                         title="แนวโน้มการนอนหลับรายสัปดาห์"
                         description="ชั่วโมงการนอนหลับเฉลี่ยในแต่ละสัปดาห์"
                         data={sleepWeeklyData}
-                        type="line"
-                        color="hsl(197, 76%, 64%)"
+                        isLoading={isLoadingSleepData}
                       />
-                      <HealthChart
+                      <EnhancedHealthChart
                         title="ระดับอารมณ์"
                         description="ระดับอารมณ์เฉลี่ยในแต่ละวัน (1-5)"
                         data={moodWeeklyData}
                         type="line"
                         color="hsl(43, 89%, 62%)"
+                        unit="คะแนน"
+                        showDataStatus={true}
                       />
                     </div>
                   </TabsContent>
@@ -1120,17 +1424,19 @@ export default function Dashboard() {
                   {/* แท็บภาพรวม */}
                   <TabsContent value="overview" className="space-y-6 mt-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <HealthChart
+                      <EnhancedHealthChart
                         title="สรุปกิจกรรมรายสัปดาห์"
                         description="ภาพรวมกิจกรรมสุขภาพในสัปดาห์ที่ผ่านมา"
                         data={[
-                          { name: "ออกกำลังกาย", value: 35 },
-                          { name: "นอนหลับ", value: 56 },
-                          { name: "ดื่มน้ำ", value: 14 },
-                          { name: "บริโภคอาหาร", value: 21 }
+                          { name: "ออกกำลังกาย", value: 35, unit: "นาที" },
+                          { name: "นอนหลับ", value: 56, unit: "ชั่วโมง" },
+                          { name: "ดื่มน้ำ", value: 14, unit: "แก้ว" },
+                          { name: "บริโภคอาหาร", value: 21, unit: "มื้อ" }
                         ]}
                         type="bar"
                         color="hsl(120, 70%, 50%)"
+                        unit=""
+                        showDataStatus={true}
                       />
                     </div>
                   </TabsContent>
@@ -1258,21 +1564,35 @@ export default function Dashboard() {
               <TabsContent value="insights" className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   <div className="space-y-4">
-                                         <div className="flex items-center gap-2">
-                       <Badge className="bg-accent/10 text-accent">รอข้อมูล</Badge>
-                       <span className="text-sm font-medium">รอ API ข้อมูลการนอนหลับ</span>
-                     </div>
-                     <p className="text-sm text-muted-foreground">
-                       รอ API ข้อมูลการนอนหลับเพื่อแสดงสถิติและแนวโน้ม
-                     </p>
+                    <div className="flex items-center gap-2">
+                      <Badge className={sleepStats ? "bg-green-100 text-green-800" : "bg-accent/10 text-accent"}>
+                        {sleepStats ? "ข้อมูลจริง" : "รอข้อมูล"}
+                      </Badge>
+                      <span className="text-sm font-medium">
+                        {sleepStats ? "ข้อมูลการนอนหลับจาก API" : "รอ API ข้อมูลการนอนหลับ"}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {sleepStats 
+                        ? `วันนี้: ${todaySleepHours.toFixed(1)} / 8 ชั่วโมง (average_sleep_duration_hours: ${sleepStats.average_sleep_duration_hours || 0})`
+                        : "รอ API ข้อมูลการนอนหลับเพื่อแสดงสถิติและแนวโน้ม"
+                      }
+                    </p>
 
-                                         <div className="flex items-center gap-2">
-                       <Badge className="bg-warning/10 text-warning">รอข้อมูล</Badge>
-                       <span className="text-sm font-medium">รอ API ข้อมูลการดื่มน้ำ</span>
-                     </div>
-                     <p className="text-sm text-muted-foreground">
-                       รอ API ข้อมูลการดื่มน้ำเพื่อแสดงสถิติและแนวโน้ม
-                     </p>
+                    <div className="flex items-center gap-2">
+                      <Badge className={waterStats ? "bg-green-100 text-green-800" : "bg-warning/10 text-warning"}>
+                        {waterStats ? "ข้อมูลจริง" : "รอข้อมูล"}
+                      </Badge>
+                      <span className="text-sm font-medium">
+                        {waterStats ? "ข้อมูลการดื่มน้ำจาก API" : "รอ API ข้อมูลการดื่มน้ำ"}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {waterStats 
+                        ? `เฉลี่ย ${waterStats.average_liters?.toFixed(1) || 0} ลิตร/วัน จาก ${waterLogs.length} รายการ`
+                        : "รอ API ข้อมูลการดื่มน้ำเพื่อแสดงสถิติและแนวโน้ม"
+                      }
+                    </p>
                   </div>
 
                   <div className="space-y-4">
@@ -1478,26 +1798,26 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">ความคืบหน้าการนอน</span>
                   <span className="text-sm text-muted-foreground">
-                    {Math.round((mockHealthData.sleep.hours / mockHealthData.sleep.target) * 100)}%
+                    {Math.round((todaySleepHours / 8) * 100)}%
                   </span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2">
                   <div
                     className="bg-gradient-primary h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${Math.min((mockHealthData.sleep.hours / mockHealthData.sleep.target) * 100, 100)}%` }}
+                    style={{ width: `${Math.min((todaySleepHours / 8) * 100, 100)}%` }}
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">ความคืบหน้าการดื่มน้ำ</span>
                   <span className="text-sm text-muted-foreground">
-                    {Math.round((mockHealthData.water.liters / mockHealthData.water.target) * 100)}%
+                    {Math.round((todayWaterLiters / 2.5) * 100)}%
                   </span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2">
                   <div
                     className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${Math.min((mockHealthData.water.liters / mockHealthData.water.target) * 100, 100)}%` }}
+                    style={{ width: `${Math.min((todayWaterLiters / 2.5) * 100, 100)}%` }}
                   />
                 </div>
 
@@ -1532,9 +1852,9 @@ export default function Dashboard() {
                 <div className="bg-muted rounded-lg p-4">
                   <h4 className="font-semibold text-sm mb-2">คำแนะนำสำหรับวันนี้</h4>
                   <ul className="space-y-1 text-sm text-muted-foreground">
-                    <li>• ดื่มน้ำเพิ่มอีก {mockHealthData.water.target - mockHealthData.water.liters} ลิตร</li>
-                    <li>• นอนให้ครบ {mockHealthData.sleep.target} ชั่วโมง</li>
-                    <li>• ออกกำลังกายเพิ่มอีก {mockHealthData.exercise.target - (exerciseStats?.total_duration || 0)} นาที</li>
+                    <li>• ดื่มน้ำเพิ่มอีก {Math.max(0, 2.5 - todayWaterLiters).toFixed(1)} ลิตร</li>
+                    <li>• นอนให้ครบ {Math.max(0, 8 - todaySleepHours).toFixed(1)} ชั่วโมง (ปัจจุบัน {todaySleepHours.toFixed(1)}/8 ชม.)</li>
+                    <li>• ออกกำลังกายเพิ่มอีก {Math.max(0, 45 - (exerciseStats?.total_duration || 0))} นาที</li>
                     {currentNutritionData?.total_protein !== undefined && (
                       <li>• เพิ่มโปรตีนอีก {Math.max(0, 80 - currentNutritionData.total_protein)} กรัม</li>
                     )}
