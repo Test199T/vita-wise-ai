@@ -162,19 +162,6 @@ export default function SleepLog() {
             title: 'ดึงข้อมูลสำเร็จ', 
             description: 'ไม่พบข้อมูลการนอนในฐานข้อมูล',
           });
-          
-          // เพิ่มข้อมูลทดสอบเพื่อให้แน่ใจว่าระบบทำงานได้
-          console.log('No data found, adding test data for debugging...');
-          const testData = [{
-            id: 'test-1',
-            date: new Date().toISOString().split('T')[0],
-            sleep_time: '22:30',
-            wake_time: '06:30',
-            sleep_quality: 'good',
-            notes: 'ข้อมูลทดสอบ'
-          }];
-          setLogs(testData);
-          console.log('Test data added:', testData);
         }
       } else {
         console.error('Failed to fetch sleep logs:', response.status);
