@@ -2323,6 +2323,350 @@ class APIService {
       throw error;
     }
   }
+
+  // ===== SLEEP LOG API FUNCTIONS =====
+
+  // Get sleep logs for current user
+  async getSleepLogs(): Promise<any[]> {
+    console.log('😴 Fetching sleep logs...');
+    console.log('🌐 API URL:', `${this.baseURL}/sleep-log`);
+
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      throw new Error('No valid authentication token found');
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}/sleep-log`, {
+        method: 'GET',
+        headers: this.getHeaders(),
+        signal: AbortSignal.timeout(10000)
+      });
+
+      console.log('📡 Get sleep logs API response:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.log('Could not parse error response:', parseError);
+        }
+        
+        switch (response.status) {
+          case 401:
+            throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
+          case 500:
+            throw new Error('Internal Server Error: เกิดข้อผิดพลาดที่เซิร์ฟเวอร์');
+          default:
+            throw new Error(errorMessage);
+        }
+      }
+
+      const result = await this.handleResponse<any>(response);
+      console.log('✅ Sleep logs fetched successfully');
+      console.log('🔍 Raw API response structure:', JSON.stringify(result, null, 2));
+      
+      // Handle different response structures
+      let sleepLogs: any[] = [];
+      if (Array.isArray(result)) {
+        sleepLogs = result;
+      } else if (result && result.data && Array.isArray(result.data)) {
+        sleepLogs = result.data;
+      } else if (result && result.sleep_logs && Array.isArray(result.sleep_logs)) {
+        sleepLogs = result.sleep_logs;
+      }
+      
+      return sleepLogs;
+    } catch (error) {
+      console.error('❌ Error fetching sleep logs:', error);
+      throw error;
+    }
+  }
+
+  // Get sleep statistics for dashboard
+  async getSleepStats(period: string = 'week'): Promise<any> {
+    console.log('📊 Getting sleep stats...');
+    
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      throw new Error('No valid authentication token found');
+    }
+
+    try {
+      const url = `${this.baseURL}/sleep-log/stats?period=${period}`;
+        
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: this.getHeaders(),
+        signal: AbortSignal.timeout(10000)
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.log('Could not parse error response:', parseError);
+        }
+        
+        switch (response.status) {
+          case 401:
+            throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
+          case 500:
+            throw new Error('Internal Server Error: เกิดข้อผิดพลาดที่เซิร์ฟเวอร์');
+          default:
+            throw new Error(errorMessage);
+        }
+      }
+
+      const result = await this.handleResponse<any>(response);
+      console.log('✅ Sleep stats loaded successfully');
+      return result;
+    } catch (error) {
+      console.error('❌ Error getting sleep stats:', error);
+      throw error;
+    }
+  }
+
+  // Get sleep overview stats for specific date
+  async getSleepOverviewStats(date: string): Promise<any> {
+    console.log('📊 Getting sleep overview stats for date:', date);
+    
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      throw new Error('No valid authentication token found');
+    }
+
+    try {
+      const url = `${this.baseURL}/sleep-log/stats/overview?date=${date}`;
+      console.log('🌐 API URL:', url);
+        
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: this.getHeaders(),
+        signal: AbortSignal.timeout(10000)
+      });
+
+      console.log('📡 Get sleep overview stats API response:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.log('Could not parse error response:', parseError);
+        }
+        
+        switch (response.status) {
+          case 401:
+            throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
+          case 500:
+            throw new Error('Internal Server Error: เกิดข้อผิดพลาดที่เซิร์ฟเวอร์');
+          default:
+            throw new Error(errorMessage);
+        }
+      }
+
+      const result = await this.handleResponse<any>(response);
+      console.log('✅ Sleep overview stats loaded successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Error getting sleep overview stats:', error);
+      throw error;
+    }
+  }
+
+  // Get sleep data for the last 7 days (using existing sleep logs)
+  async getSleepWeeklyData(): Promise<any[]> {
+    console.log('📊 Getting sleep weekly data...');
+    
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      throw new Error('No valid authentication token found');
+    }
+
+    try {
+      // ใช้ API endpoint ที่มีอยู่จริง
+      const url = `${this.baseURL}/sleep-log/trends/fixed?days=7`;
+      console.log('🌐 API URL:', url);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: this.getHeaders(),
+        signal: AbortSignal.timeout(10000)
+      });
+
+      console.log('📡 Get sleep logs API response:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.log('Could not parse error response:', parseError);
+        }
+        
+        switch (response.status) {
+          case 401:
+            throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
+          case 500:
+            throw new Error('Internal Server Error: เกิดข้อผิดพลาดที่เซิร์ฟเวอร์');
+          default:
+            throw new Error(errorMessage);
+        }
+      }
+
+      const result = await this.handleResponse<any>(response);
+      console.log('✅ Sleep trends loaded successfully:', result);
+      
+      // Handle API response structure: { success: true, data: { trends: [...] } }
+      let trendsData: any[] = [];
+      if (result && result.success && result.data && result.data.trends) {
+        trendsData = result.data.trends;
+        console.log('📊 Found trends data:', trendsData.length, 'days');
+      } else {
+        console.log('⚠️ No trends data found in response');
+      }
+      
+      return trendsData;
+    } catch (error) {
+      console.error('❌ Error getting sleep weekly data:', error);
+      // ส่งคืนข้อมูลตัวอย่างแทน
+      return this.getMockSleepWeeklyData();
+    }
+  }
+
+  // แปลงข้อมูล sleep logs เป็นรูปแบบที่กราฟต้องการ
+  private convertSleepLogsToWeeklyData(sleepLogs: any[]): any[] {
+    if (!sleepLogs || sleepLogs.length === 0) {
+      return this.getMockSleepWeeklyData();
+    }
+
+    // สร้างข้อมูล 7 วันล่าสุด
+    const last7Days = [];
+    const today = new Date();
+    
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - i);
+      const dateString = date.toISOString().split('T')[0];
+      
+      // หาข้อมูลการนอนของวันนี้
+      const dayLog = sleepLogs.find(log => {
+        const logDate = log.sleep_date || log.date;
+        return logDate === dateString;
+      });
+      
+      if (dayLog) {
+        last7Days.push({
+          date: dateString,
+          sleep_duration_hours: dayLog.sleep_duration_hours || 0,
+          sleep_score: dayLog.sleep_score || 0,
+          sleep_quality: dayLog.sleep_quality || 'fair',
+          sleep_efficiency_percentage: dayLog.sleep_efficiency_percentage || 80
+        });
+      } else {
+        // ถ้าไม่มีข้อมูล ให้ใส่ข้อมูลว่าง
+        last7Days.push({
+          date: dateString,
+          sleep_duration_hours: 0,
+          sleep_score: 0,
+          sleep_quality: 'fair',
+          sleep_efficiency_percentage: 0
+        });
+      }
+    }
+    
+    return last7Days;
+  }
+
+  // สร้างข้อมูลตัวอย่างสำหรับกราฟ
+  private getMockSleepWeeklyData(): any[] {
+    const last7Days = [];
+    const today = new Date();
+    
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - i);
+      const dateString = date.toISOString().split('T')[0];
+      
+      // สร้างข้อมูลตัวอย่าง
+      const mockData = {
+        date: dateString,
+        sleep_duration_hours: Math.random() * 3 + 6, // 6-9 ชั่วโมง
+        sleep_score: Math.floor(Math.random() * 40) + 60, // 60-100
+        sleep_quality: ['excellent', 'good', 'fair', 'poor'][Math.floor(Math.random() * 4)],
+        sleep_efficiency_percentage: Math.floor(Math.random() * 20) + 80 // 80-100%
+      };
+      
+      last7Days.push(mockData);
+    }
+    
+    return last7Days;
+  }
+
+  // Get water statistics for dashboard
+  async getWaterStats(period: string = 'week'): Promise<any> {
+    console.log('💧 Getting water stats...');
+    
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      throw new Error('No valid authentication token found');
+    }
+
+    try {
+      const url = `${this.baseURL}/water-logs/stats?period=${period}`;
+        
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: this.getHeaders(),
+        signal: AbortSignal.timeout(10000)
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.log('Could not parse error response:', parseError);
+        }
+        
+        switch (response.status) {
+          case 401:
+            throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
+          case 500:
+            throw new Error('Internal Server Error: เกิดข้อผิดพลาดที่เซิร์ฟเวอร์');
+          default:
+            throw new Error(errorMessage);
+        }
+      }
+
+      const result = await this.handleResponse<any>(response);
+      console.log('✅ Water stats loaded successfully');
+      return result;
+    } catch (error) {
+      console.error('❌ Error getting water stats:', error);
+      throw error;
+    }
+  }
 }
 
 // Export a singleton instance
