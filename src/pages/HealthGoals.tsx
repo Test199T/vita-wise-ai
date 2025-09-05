@@ -44,6 +44,12 @@ interface HealthGoal {
     technique?: string;
     minutes_per_day?: number;
     reminder_time?: string;
+    // new reminder system
+    reminder_frequency?: 'daily' | 'weekly' | 'monthly' | 'custom';
+    reminder_times?: string[]; // เวลาแจ้งเตือน เช่น ['09:00', '18:00']
+    reminder_days?: number[]; // วันในสัปดาห์ 0=อาทิตย์, 1=จันทร์, ...
+    reminder_type?: 'push' | 'email' | 'sms';
+    reminder_enabled?: boolean;
   };
 }
 
@@ -96,12 +102,84 @@ export default function HealthGoals() {
     // stress
     details_technique: "",
     details_minutes_per_day: "",
-    details_reminder_time: ""
+    details_reminder_time: "",
+    // new reminder system
+    reminder_frequency: "daily",
+    reminder_times: ["09:00", "18:00"],
+    reminder_days: [1, 2, 3, 4, 5], // จันทร์-ศุกร์
+    reminder_type: "push",
+    reminder_enabled: true
   });
 
   const goalTypes = [
     "ลดน้ำหนัก", "เพิ่มน้ำหนัก", "วิ่งระยะทาง", "ดื่มน้ำ", 
     "ออกกำลังกาย", "นอนหลับ", "ลดความเครียด", "เพิ่มกล้ามเนื้อ"
+  ];
+
+  // Goal Templates สำเร็จรูป
+  const goalTemplates = [
+    {
+      id: "weight_loss_5kg_3months",
+      title: "ลดน้ำหนัก 5 กก. ใน 3 เดือน",
+      goal_type: "ลดน้ำหนัก",
+      target_value: 5,
+      duration_days: 90,
+      description: "เป้าหมายลดน้ำหนักที่สมเหตุสมผลและปลอดภัย",
+      milestones: [
+        { title: "ลด 1 กก.", target_value: 1, deadline_days: 18 },
+        { title: "ลด 3 กก.", target_value: 3, deadline_days: 54 },
+        { title: "ลด 5 กก.", target_value: 5, deadline_days: 90 }
+      ]
+    },
+    {
+      id: "run_5k_2months",
+      title: "วิ่ง 5K ใน 2 เดือน",
+      goal_type: "วิ่งระยะทาง",
+      target_value: 5,
+      duration_days: 60,
+      description: "เป้าหมายวิ่งระยะทางสำหรับผู้เริ่มต้น",
+      milestones: [
+        { title: "วิ่ง 1K", target_value: 1, deadline_days: 15 },
+        { title: "วิ่ง 3K", target_value: 3, deadline_days: 30 },
+        { title: "วิ่ง 5K", target_value: 5, deadline_days: 60 }
+      ]
+    },
+    {
+      id: "drink_water_2l_daily",
+      title: "ดื่มน้ำ 2 ลิตร/วัน",
+      goal_type: "ดื่มน้ำ",
+      target_value: 2,
+      duration_days: 30,
+      description: "เป้าหมายการดื่มน้ำเพื่อสุขภาพที่ดี",
+      milestones: [
+        { title: "ดื่มน้ำ 1.5L/วัน", target_value: 1.5, deadline_days: 7 },
+        { title: "ดื่มน้ำ 2L/วัน", target_value: 2, deadline_days: 30 }
+      ]
+    },
+    {
+      id: "exercise_30min_daily",
+      title: "ออกกำลังกาย 30 นาที/วัน",
+      goal_type: "ออกกำลังกาย",
+      target_value: 30,
+      duration_days: 30,
+      description: "เป้าหมายการออกกำลังกายประจำวัน",
+      milestones: [
+        { title: "ออกกำลังกาย 15 นาที/วัน", target_value: 15, deadline_days: 7 },
+        { title: "ออกกำลังกาย 30 นาที/วัน", target_value: 30, deadline_days: 30 }
+      ]
+    },
+    {
+      id: "sleep_8hours_daily",
+      title: "นอนหลับ 8 ชั่วโมง/วัน",
+      goal_type: "นอนหลับ",
+      target_value: 8,
+      duration_days: 30,
+      description: "เป้าหมายการนอนหลับที่เพียงพอ",
+      milestones: [
+        { title: "นอนหลับ 7 ชั่วโมง/วัน", target_value: 7, deadline_days: 7 },
+        { title: "นอนหลับ 8 ชั่วโมง/วัน", target_value: 8, deadline_days: 30 }
+      ]
+    }
   ];
 
   // ดึงข้อมูล health goals จาก API
@@ -288,6 +366,50 @@ export default function HealthGoals() {
   useEffect(() => {
     loadHealthGoals();
   }, []);
+
+  // ฟังก์ชันสำหรับใช้ Template
+  const useTemplate = (template: any) => {
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setDate(startDate.getDate() + template.duration_days);
+
+    setFormData({
+      goal_type: template.goal_type,
+      target_value: String(template.target_value),
+      current_value: "0",
+      start_date: startDate.toISOString().split('T')[0],
+      end_date: endDate.toISOString().split('T')[0],
+      details_focus_area: "",
+      details_training_days: "",
+      details_main_exercises: "",
+      details_target_pace: "",
+      details_frequency_per_week: "",
+      details_notes: template.description,
+      details_container_ml: "",
+      details_reminders_per_day: "",
+      details_start_time: "",
+      details_end_time: "",
+      details_main_activity: "",
+      details_sessions_per_week: "",
+      details_session_duration_min: "",
+      details_intensity_level: "",
+      details_technique: "",
+      details_minutes_per_day: "",
+      details_reminder_time: "",
+      reminder_frequency: "daily",
+      reminder_times: ["09:00", "18:00"],
+      reminder_days: [1, 2, 3, 4, 5],
+      reminder_type: "push",
+      reminder_enabled: true
+    });
+
+    setShowForm(true);
+    toast({
+      title: 'ใช้ Template สำเร็จ',
+      description: `โหลด Template "${template.title}" แล้ว`,
+      variant: 'default'
+    });
+  };
 
   // ฟังก์ชันสำหรับการเรียก API เพื่อสร้าง health goal
   const createHealthGoalViaAPI = async (goalData?: Partial<HealthGoalsType>) => {
@@ -535,6 +657,11 @@ export default function HealthGoals() {
       details_technique: "",
       details_minutes_per_day: "",
       details_reminder_time: "",
+      reminder_frequency: "daily",
+      reminder_times: ["09:00", "18:00"],
+      reminder_days: [1, 2, 3, 4, 5],
+      reminder_type: "push",
+      reminder_enabled: true
     });
   };
 
@@ -619,6 +746,44 @@ export default function HealthGoals() {
     return Math.min(Math.max(percentage, 0), 100); // จำกัดระหว่าง 0-100%
   };
 
+  // ฟังก์ชันคำนวณความคืบหน้าแบบ Advanced
+  const calculateAdvancedProgress = (goal: HealthGoal) => {
+    const baseProgress = getProgressPercentage(goal.current_value, goal.target_value, goal.goal_type);
+    
+    // คำนวณ Time Factor (ความคืบหน้าตามเวลา)
+    const startDate = new Date(goal.start_date);
+    const endDate = new Date(goal.end_date);
+    const currentDate = new Date();
+    
+    const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const elapsedDays = Math.ceil((currentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const timeProgress = Math.min((elapsedDays / totalDays) * 100, 100);
+    
+    // คำนวณ Consistency Factor (ความสม่ำเสมอ)
+    const consistencyFactor = calculateConsistencyFactor(goal);
+    
+    // คำนวณ Overall Progress
+    const overallProgress = (baseProgress * 0.7) + (timeProgress * 0.2) + (consistencyFactor * 0.1);
+    
+    return {
+      baseProgress,
+      timeProgress,
+      consistencyFactor,
+      overallProgress: Math.min(Math.max(overallProgress, 0), 100)
+    };
+  };
+
+  // ฟังก์ชันคำนวณ Consistency Factor
+  const calculateConsistencyFactor = (goal: HealthGoal) => {
+    // ตัวอย่างการคำนวณความสม่ำเสมอ
+    // ในอนาคตสามารถเชื่อมต่อกับข้อมูลการอัปเดตจริงได้
+    const daysSinceStart = Math.ceil((new Date().getTime() - new Date(goal.start_date).getTime()) / (1000 * 60 * 60 * 24));
+    const expectedUpdates = Math.min(daysSinceStart, 30); // คาดหวังให้อัปเดตทุกวัน แต่ไม่เกิน 30 วัน
+    const actualUpdates = Math.min(goal.current_value > 0 ? 1 : 0, expectedUpdates); // ตัวอย่างง่ายๆ
+    
+    return (actualUpdates / expectedUpdates) * 100;
+  };
+
   const startEdit = (g: HealthGoal) => {
     setEditingGoalId(g.goal_id);
     setFormData({
@@ -644,6 +809,11 @@ export default function HealthGoals() {
       details_technique: g.details?.technique || "",
       details_minutes_per_day: g.details?.minutes_per_day ? String(g.details.minutes_per_day) : "",
       details_reminder_time: g.details?.reminder_time || "",
+      reminder_frequency: g.details?.reminder_frequency || "daily",
+      reminder_times: g.details?.reminder_times || ["09:00", "18:00"],
+      reminder_days: g.details?.reminder_days || [1, 2, 3, 4, 5],
+      reminder_type: g.details?.reminder_type || "push",
+      reminder_enabled: g.details?.reminder_enabled ?? true,
     });
     setShowForm(true);
   };
@@ -935,6 +1105,7 @@ export default function HealthGoals() {
 
   return (
     <MainLayout>
+
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="space-y-2">
@@ -942,12 +1113,12 @@ export default function HealthGoals() {
               <div className="p-3 bg-gradient-to-r from-primary to-secondary rounded-xl shadow-lg">
                 <Target className="h-6 w-6 text-primary-foreground" />
               </div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                เป้าหมายสุขภาพ
-              </h1>
+              <h2 className="text-2xl font-bold text-gray-800">
+                เป้าหมายของคุณ
+              </h2>
             </div>
-            <p className="text-lg text-muted-foreground ml-16">
-              ตั้งและติดตามเป้าหมายสุขภาพของคุณด้วยระบบที่เข้าใจและเป็นมิตร
+            <p className="text-muted-foreground ml-16">
+              ติดตามความคืบหน้าและบรรลุเป้าหมายสุขภาพ
             </p>
           </div>
           <div className="flex gap-2">
@@ -970,33 +1141,73 @@ export default function HealthGoals() {
           </div>
         </div>
 
+        {/* Compact Goal Templates */}
+        {!showForm && (
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Target className="h-4 w-4" />
+                เป้าหมายสำเร็จรูป
+              </CardTitle>
+              <CardDescription>
+                เลือกเป้าหมายที่เหมาะสมกับคุณ
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {goalTemplates.map((template, index) => (
+                  <Card 
+                    key={template.id} 
+                    className="cursor-pointer hover:shadow-md transition-shadow" 
+                    onClick={() => useTemplate(template)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                            <span className="text-primary-foreground text-xs font-bold">{index + 1}</span>
+                          </div>
+                          <h3 className="font-semibold text-sm">{template.title}</h3>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{template.description}</p>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-primary font-medium">{template.duration_days} วัน</span>
+                          <span className="text-muted-foreground">{template.milestones.length} Milestones</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {showForm && (
-          <Card className="border-0 rounded-2xl shadow-xl bg-gradient-to-br from-card via-primary-light/20 to-secondary-light/20 backdrop-blur-sm">
-            <CardHeader className="pb-6">
-              <CardTitle className="flex items-center gap-3 text-2xl">
-                <div className="p-2 bg-gradient-to-r from-primary to-secondary rounded-lg">
-                  <Target className="h-5 w-5 text-primary-foreground" />
-                </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5" />
                 {editingGoalId ? 'แก้ไขเป้าหมาย' : 'สร้างเป้าหมายใหม่'}
               </CardTitle>
-              <CardDescription className="text-base mt-2">
+              <CardDescription>
                 {editingGoalId ? 'แก้ไขข้อมูลเป้าหมายของคุณ' : 'สร้างเป้าหมายสุขภาพใหม่เพื่อติดตามความคืบหน้า'}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-0">
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <Label htmlFor="goal_type" className="text-base font-semibold text-foreground">
-                      ประเภทเป้าหมาย
-                    </Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="goal_type">ประเภทเป้าหมาย</Label>
                     <Select value={formData.goal_type} onValueChange={(value) => setFormData({...formData, goal_type: value})}>
-                      <SelectTrigger className="h-12 border-2 border-primary/20 focus:border-primary rounded-xl transition-colors">
-                        <SelectValue placeholder="เลือกประเภท" />
+                      <SelectTrigger>
+                        <SelectValue placeholder="เลือกประเภทเป้าหมาย" />
                       </SelectTrigger>
-                      <SelectContent className="rounded-xl border-2 border-primary/20">
+                      <SelectContent>
                         {goalTypes.map((type) => (
-                          <SelectItem key={type} value={type} className="rounded-lg">{type}</SelectItem>
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -1016,14 +1227,15 @@ export default function HealthGoals() {
                     <Input
                       id="target_value"
                       type="number"
+                      step="0.1"
                       placeholder={
-                        formData.goal_type === "ลดน้ำหนัก" ? "เช่น 65 (น้ำหนักที่ต้องการ)" :
-                        formData.goal_type === "เพิ่มน้ำหนัก" ? "เช่น 70 (น้ำหนักที่ต้องการ)" :
-                        formData.goal_type === "วิ่งระยะทาง" ? "เช่น 5 (กิโลเมตร)" :
-                        formData.goal_type === "ดื่มน้ำ" ? "เช่น 2 (ลิตร)" :
-                        formData.goal_type === "ออกกำลังกาย" ? "เช่น 30 (นาที)" :
-                        formData.goal_type === "นอนหลับ" ? "เช่น 8 (ชั่วโมง)" :
-                        formData.goal_type === "ลดความเครียด" ? "เช่น 15 (นาที)" :
+                        formData.goal_type === "ลดน้ำหนัก" ? "เช่น 65" :
+                        formData.goal_type === "เพิ่มน้ำหนัก" ? "เช่น 70" :
+                        formData.goal_type === "วิ่งระยะทาง" ? "เช่น 5" :
+                        formData.goal_type === "ดื่มน้ำ" ? "เช่น 2" :
+                        formData.goal_type === "ออกกำลังกาย" ? "เช่น 30" :
+                        formData.goal_type === "นอนหลับ" ? "เช่น 8" :
+                        formData.goal_type === "ลดความเครียด" ? "เช่น 15" :
                         "เช่น 100"
                       }
                       value={formData.target_value}
@@ -1233,8 +1445,55 @@ export default function HealthGoals() {
                   </div>
                 )}
 
+                {/* Compact Reminder Settings */}
+                <div className="space-y-4 p-4 bg-muted rounded-lg">
+                  <h3 className="font-semibold">การตั้งค่าการแจ้งเตือน</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="reminder_frequency">ความถี่</Label>
+                      <Select value={formData.reminder_frequency} onValueChange={(value) => setFormData({ ...formData, reminder_frequency: value })}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="daily">รายวัน</SelectItem>
+                          <SelectItem value="weekly">รายสัปดาห์</SelectItem>
+                          <SelectItem value="monthly">รายเดือน</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="reminder_type">ประเภท</Label>
+                      <Select value={formData.reminder_type} onValueChange={(value) => setFormData({ ...formData, reminder_type: value })}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="push">Push</SelectItem>
+                          <SelectItem value="email">อีเมล</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="reminder_enabled"
+                      checked={formData.reminder_enabled}
+                      onChange={(e) => setFormData({ ...formData, reminder_enabled: e.target.checked })}
+                    />
+                    <Label htmlFor="reminder_enabled" className="text-sm">
+                      เปิดใช้งานการแจ้งเตือน
+                    </Label>
+                  </div>
+                </div>
+
                 <div className="flex gap-2">
-                  <Button type="submit">สร้างเป้าหมาย</Button>
+                  <Button type="submit">
+                    {editingGoalId ? 'อัปเดตเป้าหมาย' : 'สร้างเป้าหมาย'}
+                  </Button>
                   <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
                     ยกเลิก
                   </Button>
@@ -1289,17 +1548,17 @@ export default function HealthGoals() {
                   console.log('🔍 Rendering individual goal:', goal);
                   return (
             <Card key={goal.goal_id} className={`border-0 rounded-3xl ${getGoalCardStyle(goal.goal_type)} shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] backdrop-blur-sm`}>
-              <CardContent className="p-10">
-                <div className="flex items-center justify-between mb-8">
-                  <div className="flex items-center gap-6">
-                    <div className={`p-5 rounded-3xl shadow-xl ${getGoalIcon(goal.goal_type)}`}>
-                      <Target className="h-8 w-8 text-white" />
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-4">
+                    <div className={`p-3 rounded-lg ${getGoalIcon(goal.goal_type)}`}>
+                      <Target className="h-6 w-6 text-white" />
                     </div>
-                    <div className="space-y-3">
-                      <h3 className="text-2xl font-bold text-gray-800 leading-tight">{getGoalDisplayTitle(goal)}</h3>
-                      <div className="flex items-center gap-3 text-sm text-gray-600 bg-blue-50 px-4 py-2 rounded-full border border-blue-100">
-                        <Calendar className="h-4 w-4 text-blue-500" />
-                        <span className="font-medium">{new Date(goal.start_date).toLocaleDateString('th-TH')} - {new Date(goal.end_date).toLocaleDateString('th-TH')}</span>
+                    <div className="space-y-2">
+                      <h3 className="text-lg font-bold text-foreground">{getGoalDisplayTitle(goal)}</h3>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Calendar className="h-4 w-4" />
+                        <span>{new Date(goal.start_date).toLocaleDateString('th-TH')} - {new Date(goal.end_date).toLocaleDateString('th-TH')}</span>
                       </div>
                     </div>
                   </div>
@@ -1358,6 +1617,7 @@ export default function HealthGoals() {
                     <span className="text-xl font-bold text-blue-600">{goal.current_value} / {goal.target_value}</span>
                   </div>
                   
+                  {/* Basic Progress */}
                   <div className="relative">
                     <Progress 
                       value={getProgressPercentage(goal.current_value, goal.target_value, goal.goal_type)} 
@@ -1366,15 +1626,50 @@ export default function HealthGoals() {
                     <div className={`absolute inset-0 bg-gradient-to-r ${getGoalProgressStyle(goal.goal_type)} rounded-full opacity-20`}></div>
                   </div>
                   
+                  {/* Compact Progress Analysis */}
+                  {(() => {
+                    const advancedProgress = calculateAdvancedProgress(goal);
+                    return (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div className="text-center p-2 bg-muted rounded-lg">
+                            <div className="font-semibold text-foreground">ความคืบหน้า</div>
+                            <div className="text-primary">{advancedProgress.baseProgress.toFixed(1)}%</div>
+                          </div>
+                          <div className="text-center p-2 bg-muted rounded-lg">
+                            <div className="font-semibold text-foreground">เวลา</div>
+                            <div className="text-orange-600">{advancedProgress.timeProgress.toFixed(1)}%</div>
+                          </div>
+                          <div className="text-center p-2 bg-muted rounded-lg">
+                            <div className="font-semibold text-foreground">ความสม่ำเสมอ</div>
+                            <div className="text-green-600">{advancedProgress.consistencyFactor.toFixed(1)}%</div>
+                          </div>
+                        </div>
+                        
+                        {/* Overall Progress */}
+                        <div className="relative">
+                          <div className="text-sm font-medium text-foreground mb-1">ความคืบหน้ารวม</div>
+                          <Progress 
+                            value={advancedProgress.overallProgress} 
+                            className="h-2 rounded-full"
+                          />
+                          <div className="text-xs text-muted-foreground mt-1 text-center">
+                            {advancedProgress.overallProgress.toFixed(1)}%
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 bg-green-50 px-4 py-2 rounded-full border border-green-200">
-                      <TrendingUp className="h-5 w-5 text-green-600" />
-                      <span className="text-green-700 font-semibold">{getProgressPercentage(goal.current_value, goal.target_value, goal.goal_type).toFixed(1)}% สำเร็จ</span>
+                    <div className="flex items-center gap-2 bg-green-50 px-3 py-2 rounded-lg border border-green-200">
+                      <TrendingUp className="h-4 w-4 text-green-600" />
+                      <span className="text-green-700 font-semibold text-sm">{getProgressPercentage(goal.current_value, goal.target_value, goal.goal_type).toFixed(1)}% สำเร็จ</span>
                     </div>
                     
-                    <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-full border border-blue-200">
-                      <Clock className="h-5 w-5 text-blue-600" />
-                      <span className="text-blue-700 font-medium">{goal.status === 'active' ? 'กำลังดำเนินการ' : goal.status === 'completed' ? 'สำเร็จแล้ว' : 'รอดำเนินการ'}</span>
+                    <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
+                      <Clock className="h-4 w-4 text-blue-600" />
+                      <span className="text-blue-700 font-medium text-sm">{goal.status === 'active' ? 'กำลังดำเนินการ' : goal.status === 'completed' ? 'สำเร็จแล้ว' : 'รอดำเนินการ'}</span>
                     </div>
                   </div>
                   
