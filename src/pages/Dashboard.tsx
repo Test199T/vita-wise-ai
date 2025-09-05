@@ -85,14 +85,15 @@ const generateCaloriesData = (weeklyTrends?: any[]) => {
   });
 };
 
+// Mock Data สำหรับโปรตีน (รอ API จริง)
 const proteinData = [
-  { name: "จันทร์", value: 0 },
-  { name: "อังคาร", value: 0 },
-  { name: "พุธ", value: 0 },
-  { name: "พฤหัส", value: 0 },
-  { name: "ศุกร์", value: 0 },
-  { name: "เสาร์", value: 0 },
-  { name: "อาทิตย์", value: 0 },
+  { name: "จันทร์", value: 25 },
+  { name: "อังคาร", value: 32 },
+  { name: "พุธ", value: 18 },
+  { name: "พฤหัส", value: 28 },
+  { name: "ศุกร์", value: 35 },
+  { name: "เสาร์", value: 22 },
+  { name: "อาทิตย์", value: 30 },
 ];
 
 // ข้อมูลสถิติเพิ่มเติม
@@ -380,6 +381,81 @@ export default function Dashboard() {
     return chartData;
   };
 
+  // สร้างข้อมูลกราฟแคลอรี่ที่เผาผลาญต่อวันใน 1 สัปดาห์
+  const generateCaloriesBurnedChartData = () => {
+    const days = ["จันทร์", "อังคาร", "พุธ", "พฤหัส", "ศุกร์", "เสาร์", "อาทิตย์"];
+    const chartData = days.map(day => ({ name: day, value: 0 }));
+    
+    // ถ้ามีข้อมูลการออกกำลังกาย ให้แจกจ่ายแคลอรี่ที่เผาผลาญไปยังวันต่างๆ
+    if (recentExercises && recentExercises.length > 0) {
+      recentExercises.forEach(exercise => {
+        if (exercise.exercise_date && exercise.calories_burned) {
+          const exerciseDate = new Date(exercise.exercise_date);
+          const dayIndex = exerciseDate.getDay() === 0 ? 6 : exerciseDate.getDay() - 1; // แปลง Sunday=0 ให้เป็น index 6
+          chartData[dayIndex].value += exercise.calories_burned || 0;
+        }
+      });
+    }
+    
+    return chartData;
+  };
+
+  // สร้างข้อมูลกราฟแคลอรี่ที่เผาผลาญรายสัปดาห์ใน 1 เดือน
+  const generateMonthlyCaloriesBurnedData = () => {
+    const weeks = ["สัปดาห์ 1", "สัปดาห์ 2", "สัปดาห์ 3", "สัปดาห์ 4"];
+    const chartData = weeks.map(week => ({ name: week, value: 0 }));
+    
+    // ถ้ามีข้อมูลการออกกำลังกาย ให้แจกจ่ายแคลอรี่ที่เผาผลาญไปยังสัปดาห์ต่างๆ
+    if (recentExercises && recentExercises.length > 0) {
+      recentExercises.forEach(exercise => {
+        if (exercise.exercise_date && exercise.calories_burned) {
+          const exerciseDate = new Date(exercise.exercise_date);
+          const today = new Date();
+          const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+          const exerciseTime = exerciseDate.getTime();
+          const startTime = startOfMonth.getTime();
+          const daysDiff = Math.floor((exerciseTime - startTime) / (1000 * 60 * 60 * 24));
+          const weekIndex = Math.floor(daysDiff / 7);
+          
+          // ตรวจสอบว่าเป็นสัปดาห์ที่ 1-4 ของเดือนนี้
+          if (weekIndex >= 0 && weekIndex < 4) {
+            chartData[weekIndex].value += exercise.calories_burned || 0;
+          }
+        }
+      });
+    }
+    
+    return chartData;
+  };
+
+  // สร้างข้อมูลกราฟการออกกำลังกายรายสัปดาห์ใน 1 เดือน (นาที)
+  const generateMonthlyExerciseData = () => {
+    const weeks = ["สัปดาห์ 1", "สัปดาห์ 2", "สัปดาห์ 3", "สัปดาห์ 4"];
+    const chartData = weeks.map(week => ({ name: week, value: 0 }));
+    
+    // ถ้ามีข้อมูลการออกกำลังกาย ให้แจกจ่ายนาทีการออกกำลังกายไปยังสัปดาห์ต่างๆ
+    if (recentExercises && recentExercises.length > 0) {
+      recentExercises.forEach(exercise => {
+        if (exercise.exercise_date && exercise.duration_minutes) {
+          const exerciseDate = new Date(exercise.exercise_date);
+          const today = new Date();
+          const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+          const exerciseTime = exerciseDate.getTime();
+          const startTime = startOfMonth.getTime();
+          const daysDiff = Math.floor((exerciseTime - startTime) / (1000 * 60 * 60 * 24));
+          const weekIndex = Math.floor(daysDiff / 7);
+          
+          // ตรวจสอบว่าเป็นสัปดาห์ที่ 1-4 ของเดือนนี้
+          if (weekIndex >= 0 && weekIndex < 4) {
+            chartData[weekIndex].value += exercise.duration_minutes || 0;
+          }
+        }
+      });
+    }
+    
+    return chartData;
+  };
+
   // คำนวณค่าเฉลี่ยต่อวัน (Daily Average) ที่ถูกต้อง
   const calculateDailyAverage = () => {
     if (!exerciseStats?.total_duration || !exerciseStats?.total_exercises) {
@@ -393,6 +469,9 @@ export default function Dashboard() {
   const dailyAverage = calculateDailyAverage();
 
   const realExerciseData = generateExerciseChartData();
+  const caloriesBurnedData = generateCaloriesBurnedChartData();
+  const monthlyCaloriesBurnedData = generateMonthlyCaloriesBurnedData();
+  const monthlyExerciseData = generateMonthlyExerciseData();
 
   return (
     <MainLayout>
@@ -491,7 +570,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <Card className="min-h-[140px] flex flex-col justify-between">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">คะแนนโภชนาการ</CardTitle>
@@ -545,6 +624,21 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-accent">{dailyAverage} นาที</div>
+              <p className="text-xs text-muted-foreground">
+                เฉลี่ยต่อวัน
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="min-h-[140px] flex flex-col justify-between">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">แคลอรี่ที่เผาผลาญเฉลี่ย</CardTitle>
+              <Flame className="h-4 w-4 text-orange-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-500">
+                {exerciseStats?.total_calories_burned ? Math.round(exerciseStats.total_calories_burned / 7) : 0} แคล
+              </div>
               <p className="text-xs text-muted-foreground">
                 เฉลี่ยต่อวัน
               </p>
@@ -656,70 +750,199 @@ export default function Dashboard() {
 
               {/* Daily Trends Tab */}
               <TabsContent value="daily" className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <HealthChart
-                    title="แนวโน้มการนอนหลับ"
-                    description="ชั่วโมงการนอนหลับในสัปดาห์ที่ผ่านมา"
-                    data={sleepData}
-                    type="line"
-                    color="hsl(197, 76%, 64%)"
-                  />
-                                     <HealthChart
-                     title="แนวโน้มการออกกำลังกาย"
-                     description="นาทีการออกกำลังกายในสัปดาห์ที่ผ่านมา"
-                     data={realExerciseData}
-                     type="line"
-                     color="hsl(200, 70%, 60%)"
-                   />
-                  <HealthChart
-                    title="แนวโน้มการดื่มน้ำ"
-                    description="ลิตรน้ำที่ดื่มในสัปดาห์ที่ผ่านมา"
-                    data={waterData}
-                    type="line"
-                    color="hsl(210, 100%, 50%)"
-                  />
-                  <HealthChart
-                    title="แนวโน้มแคลอรี่"
-                    description="แคลอรี่ที่บริโภคในสัปดาห์ที่ผ่านมา"
-                    data={generateCaloriesData(dashboardData?.weekly_trends)}
-                    type="line"
-                    color="hsl(45, 100%, 50%)"
-                  />
-                </div>
+                <Tabs defaultValue="exercise" className="w-full">
+                  <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="exercise" className="flex items-center gap-2">
+                      <Dumbbell className="h-4 w-4" />
+                      ออกกำลังกาย
+                    </TabsTrigger>
+                    <TabsTrigger value="nutrition" className="flex items-center gap-2">
+                      <Pill className="h-4 w-4" />
+                      โภชนาการ
+                    </TabsTrigger>
+                    <TabsTrigger value="water" className="flex items-center gap-2">
+                      <Target className="h-4 w-4" />
+                      ดื่มน้ำ
+                    </TabsTrigger>
+                    <TabsTrigger value="weight" className="flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4" />
+                      น้ำหนัก
+                    </TabsTrigger>
+                  </TabsList>
+
+                  {/* แท็บออกกำลังกาย */}
+                  <TabsContent value="exercise" className="space-y-6 mt-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <HealthChart
+                        title="แนวโน้มการออกกำลังกาย"
+                        description="นาทีการออกกำลังกายในสัปดาห์ที่ผ่านมา"
+                        data={realExerciseData}
+                        type="line"
+                        color="hsl(200, 70%, 60%)"
+                      />
+                      <HealthChart
+                        title="แนวโน้มแคลอรี่ที่เผาผลาญ"
+                        description="แคลอรี่ที่เผาผลาญจากการออกกำลังกายในสัปดาห์ที่ผ่านมา"
+                        data={caloriesBurnedData}
+                        type="line"
+                        color="hsl(0, 70%, 50%)"
+                      />
+                    </div>
+                  </TabsContent>
+
+                  {/* แท็บโภชนาการ */}
+                  <TabsContent value="nutrition" className="space-y-6 mt-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <HealthChart
+                        title="แนวโน้มแคลอรี่ที่บริโภค"
+                        description="แคลอรี่ที่บริโภคในสัปดาห์ที่ผ่านมา"
+                        data={generateCaloriesData(dashboardData?.weekly_trends)}
+                        type="line"
+                        color="hsl(45, 100%, 50%)"
+                      />
+                      <HealthChart
+                        title="แนวโน้มโปรตีนรายวัน"
+                        description="ปริมาณโปรตีนที่บริโภคในสัปดาห์ที่ผ่านมา"
+                        data={proteinData}
+                        type="line"
+                        color="hsl(142, 69%, 58%)"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <HealthChart
+                        title="สรุปแคลอรี่รายสัปดาห์"
+                        description="เปรียบเทียบแคลอรี่ที่บริโภค vs เผาผลาญในสัปดาห์นี้"
+                        data={[
+                          ...generateCaloriesData(dashboardData?.weekly_trends).map(item => ({ ...item, type: 'บริโภค' })),
+                          ...caloriesBurnedData.map(item => ({ ...item, type: 'เผาผลาญ' }))
+                        ]}
+                        type="line"
+                        color="hsl(120, 70%, 50%)"
+                      />
+                    </div>
+                  </TabsContent>
+
+                  {/* แท็บดื่มน้ำ */}
+                  <TabsContent value="water" className="space-y-6 mt-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <HealthChart
+                        title="แนวโน้มการดื่มน้ำ"
+                        description="ลิตรน้ำที่ดื่มในสัปดาห์ที่ผ่านมา"
+                        data={waterData}
+                        type="line"
+                        color="hsl(210, 100%, 50%)"
+                      />
+                    </div>
+                  </TabsContent>
+
+                  {/* แท็บน้ำหนัก */}
+                  <TabsContent value="weight" className="space-y-6 mt-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <HealthChart
+                        title="แนวโน้มการนอนหลับ"
+                        description="ชั่วโมงการนอนหลับในสัปดาห์ที่ผ่านมา"
+                        data={sleepData}
+                        type="line"
+                        color="hsl(197, 76%, 64%)"
+                      />
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </TabsContent>
 
               {/* Weekly Trends Tab */}
               <TabsContent value="weekly" className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <HealthChart
-                    title="แนวโน้มการนอนหลับรายสัปดาห์"
-                    description="ชั่วโมงการนอนหลับเฉลี่ยในแต่ละสัปดาห์"
-                    data={sleepWeeklyData}
-                    type="line"
-                    color="hsl(197, 76%, 64%)"
-                  />
-                  <HealthChart
-                    title="ระดับอารมณ์"
-                    description="ระดับอารมณ์เฉลี่ยในแต่ละวัน (1-5)"
-                    data={moodWeeklyData}
-                    type="line"
-                    color="hsl(43, 89%, 62%)"
-                  />
-                  <HealthChart
-                    title="แนวโน้มโปรตีน"
-                    description="ปริมาณโปรตีนที่บริโภคในแต่ละวัน"
-                    data={proteinData}
-                    type="bar"
-                    color="hsl(142, 69%, 58%)"
-                  />
-                                     <HealthChart
-                     title="แนวโน้มการออกกำลังกายรายสัปดาห์"
-                     description="นาทีการออกกำลังกายเฉลี่ยในแต่ละสัปดาห์"
-                     data={realExerciseData}
-                     type="bar"
-                     color="hsl(200, 70%, 60%)"
-                   />
-                </div>
+                <Tabs defaultValue="exercise" className="w-full">
+                  <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="exercise" className="flex items-center gap-2">
+                      <Dumbbell className="h-4 w-4" />
+                      ออกกำลังกาย
+                    </TabsTrigger>
+                    <TabsTrigger value="nutrition" className="flex items-center gap-2">
+                      <Pill className="h-4 w-4" />
+                      โภชนาการ
+                    </TabsTrigger>
+                    <TabsTrigger value="lifestyle" className="flex items-center gap-2">
+                      <Target className="h-4 w-4" />
+                      ไลฟ์สไตล์
+                    </TabsTrigger>
+                    <TabsTrigger value="overview" className="flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4" />
+                      ภาพรวม
+                    </TabsTrigger>
+                  </TabsList>
+
+                  {/* แท็บออกกำลังกาย */}
+                  <TabsContent value="exercise" className="space-y-6 mt-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <HealthChart
+                        title="แนวโน้มการออกกำลังกายรายเดือน"
+                        description="นาทีการออกกำลังกายเฉลี่ยในแต่ละสัปดาห์ของเดือนนี้"
+                        data={monthlyExerciseData}
+                        type="bar"
+                        color="hsl(200, 70%, 60%)"
+                      />
+                      <HealthChart
+                        title="แนวโน้มแคลอรี่ที่เผาผลาญรายเดือน"
+                        description="แคลอรี่ที่เผาผลาญจากการออกกำลังกายในแต่ละสัปดาห์ของเดือนนี้"
+                        data={monthlyCaloriesBurnedData}
+                        type="bar"
+                        color="hsl(0, 70%, 50%)"
+                      />
+                    </div>
+                  </TabsContent>
+
+                  {/* แท็บโภชนาการ */}
+                  <TabsContent value="nutrition" className="space-y-6 mt-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <HealthChart
+                        title="แนวโน้มโปรตีน"
+                        description="ปริมาณโปรตีนที่บริโภคในแต่ละวัน"
+                        data={proteinData}
+                        type="bar"
+                        color="hsl(142, 69%, 58%)"
+                      />
+                    </div>
+                  </TabsContent>
+
+                  {/* แท็บไลฟ์สไตล์ */}
+                  <TabsContent value="lifestyle" className="space-y-6 mt-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <HealthChart
+                        title="แนวโน้มการนอนหลับรายสัปดาห์"
+                        description="ชั่วโมงการนอนหลับเฉลี่ยในแต่ละสัปดาห์"
+                        data={sleepWeeklyData}
+                        type="line"
+                        color="hsl(197, 76%, 64%)"
+                      />
+                      <HealthChart
+                        title="ระดับอารมณ์"
+                        description="ระดับอารมณ์เฉลี่ยในแต่ละวัน (1-5)"
+                        data={moodWeeklyData}
+                        type="line"
+                        color="hsl(43, 89%, 62%)"
+                      />
+                    </div>
+                  </TabsContent>
+
+                  {/* แท็บภาพรวม */}
+                  <TabsContent value="overview" className="space-y-6 mt-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <HealthChart
+                        title="สรุปกิจกรรมรายสัปดาห์"
+                        description="ภาพรวมกิจกรรมสุขภาพในสัปดาห์ที่ผ่านมา"
+                        data={[
+                          { name: "ออกกำลังกาย", value: 35 },
+                          { name: "นอนหลับ", value: 56 },
+                          { name: "ดื่มน้ำ", value: 14 },
+                          { name: "บริโภคอาหาร", value: 21 }
+                        ]}
+                        type="bar"
+                        color="hsl(120, 70%, 50%)"
+                      />
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </TabsContent>
 
               {/* Nutrition Analysis Tab */}
@@ -911,6 +1134,7 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
+
             </CardContent>
           </Card>
         )}

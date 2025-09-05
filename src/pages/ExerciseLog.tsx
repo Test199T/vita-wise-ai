@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Dumbbell, Clock, Flame, Plus, Calendar } from "lucide-react";
+import { Dumbbell, Clock, Flame, Plus, Calendar, Activity, Target, Zap, MapPin, Timer } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiService } from "@/services/api";
@@ -166,6 +166,9 @@ export default function ExerciseLog() {
   const removeWeightExercise = (index: number) => setWeightExercises(prev => prev.filter((_, i) => i !== index));
 
   const cardioTypes = ["วิ่ง", "เดิน", "ขี่จักรยาน", "ว่ายน้ำ", "มวยไทย", "เต้นรำ"];
+  
+  // กีฬาที่ต้องใช้ระยะทางในการคำนวณ
+  const distanceBasedExercises = ["วิ่ง", "เดิน", "ขี่จักรยาน", "ว่ายน้ำ"];
 
   const exerciseTypes = [
     { label: "วิ่ง", value: "cardio" },
@@ -181,11 +184,75 @@ export default function ExerciseLog() {
   ];
 
   const intensityLevels = [
-    { label: "ต่ำ", value: "low", color: "bg-green-500" },
-    { label: "ปานกลาง", value: "moderate", color: "bg-yellow-500" },
-    { label: "สูง", value: "high", color: "bg-red-500" },
-    { label: "สูงมาก", value: "very_high", color: "bg-red-700" }
+    { label: "ต่ำ", value: "low", color: "bg-green-500", multiplier: 1.0 },
+    { label: "ปานกลาง", value: "moderate", color: "bg-yellow-500", multiplier: 1.3 },
+    { label: "สูง", value: "high", color: "bg-red-500", multiplier: 1.6 },
+    { label: "สูงมาก", value: "very_high", color: "bg-red-700", multiplier: 2.0 }
   ];
+
+  // ฟังก์ชันคำนวณแคลอรี่สำหรับแต่ละประเภทกีฬา (แคลอรี่ต่อนาที)
+  const getCaloriesPerMinute = (exerciseType: string, intensity: string): number => {
+    const intensityData = intensityLevels.find(level => level.label === intensity);
+    const intensityMultiplier = intensityData?.multiplier || 1.3;
+
+    // ค่าแคลอรี่พื้นฐานต่อนาทีสำหรับแต่ละประเภทกีฬา (สำหรับคนน้ำหนัก 70 กก.)
+    const baseCaloriesPerMinute: { [key: string]: number } = {
+      "วิ่ง": 10,
+      "เดิน": 4,
+      "ขี่จักรยาน": 8,
+      "ว่ายน้ำ": 12,
+      "ยกน้ำหนัก": 6,
+      "โยคะ": 3,
+      "พิลาทิส": 4,
+      "เต้นรำ": 6,
+      "มวยไทย": 15,
+      "อื่นๆ": 5
+    };
+
+    const baseCalories = baseCaloriesPerMinute[exerciseType] || 5;
+    return Math.round(baseCalories * intensityMultiplier);
+  };
+
+  // ฟังก์ชันคำนวณแคลอรี่ทั้งหมด
+  const calculateTotalCalories = (exerciseType: string, duration: number, intensity: string, distance?: number): number => {
+    if (!exerciseType || !duration || !intensity) return 0;
+    
+    // สำหรับกีฬาที่ใช้ระยะทาง ให้คำนวณจากระยะทางด้วย
+    if (distanceBasedExercises.includes(exerciseType) && distance && distance > 0) {
+      const caloriesPerKm: { [key: string]: number } = {
+        "วิ่ง": 60,      // 60 แคล/กม.
+        "เดิน": 30,      // 30 แคล/กม.
+        "ขี่จักรยาน": 25, // 25 แคล/กม.
+        "ว่ายน้ำ": 80    // 80 แคล/กม.
+      };
+      
+      const intensityData = intensityLevels.find(level => level.label === intensity);
+      const intensityMultiplier = intensityData?.multiplier || 1.3;
+      
+      const baseCaloriesPerKm = caloriesPerKm[exerciseType] || 30;
+      return Math.round(baseCaloriesPerKm * distance * intensityMultiplier);
+    }
+    
+    // สำหรับกีฬาที่ไม่ใช้ระยะทาง หรือไม่มีระยะทาง
+    const caloriesPerMinute = getCaloriesPerMinute(exerciseType, intensity);
+    return caloriesPerMinute * duration;
+  };
+
+  // ฟังก์ชันอัปเดตแคลอรี่อัตโนมัติ
+  const updateCaloriesAutomatically = (exerciseType: string, duration: string, intensity: string, distance?: string) => {
+    if (exerciseType && duration && intensity) {
+      const calculatedCalories = calculateTotalCalories(
+        exerciseType, 
+        Number(duration), 
+        intensity, 
+        distance ? Number(distance) : undefined
+      );
+      setFormData(prev => ({
+        ...prev,
+        calories_burned: calculatedCalories.toString()
+      }));
+    }
+  };
 
   // ฟังก์ชันแปลงค่าจากภาษาไทยเป็นภาษาอังกฤษ
   const mapExerciseTypeToEnglish = (thaiType: string): string => {
@@ -531,16 +598,21 @@ export default function ExerciseLog() {
     <MainLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-primary">บันทึกการออกกำลังกาย</h1>
-            <p className="text-muted-foreground">ติดตามและบันทึกกิจกรรมการออกกำลังกายของคุณ</p>
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Dumbbell className="h-6 w-6 text-primary" />
+              </div>
+              <h1 className="text-3xl font-bold text-primary">บันทึกการออกกำลังกาย</h1>
+            </div>
+            <p className="text-muted-foreground ml-12">ติดตามและบันทึกกิจกรรมการออกกำลังกายของคุณเพื่อสุขภาพที่ดี</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <Button 
               variant="outline" 
               onClick={loadExerciseLogsFromBackend}
               disabled={isLoadingFromBackend}
-              className="gap-2"
+              className="gap-2 h-10 border-primary/20 hover:border-primary/40"
             >
               <svg className={`h-4 w-4 ${isLoadingFromBackend ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -548,7 +620,10 @@ export default function ExerciseLog() {
               {isLoadingFromBackend ? 'กำลังโหลด...' : 'รีเฟรช'}
             </Button>
                          
-            <Button onClick={() => setShowForm(!showForm)} className="gap-2">
+            <Button 
+              onClick={() => setShowForm(!showForm)} 
+              className="gap-2 h-10 bg-primary hover:bg-primary/90 shadow-sm"
+            >
               <Plus className="h-4 w-4" />
               เพิ่มการออกกำลังกาย
             </Button>
@@ -556,17 +631,24 @@ export default function ExerciseLog() {
         </div>
 
                  {showForm && (
-           <Card>
-             <CardHeader>
-               <CardTitle>
+           <Card className="border-l-4 border-l-primary/20 shadow-sm">
+             <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
+               <CardTitle className="flex items-center gap-2 text-primary">
+                 <Activity className="h-5 w-5" />
                  {editingId ? 'แก้ไขข้อมูลการออกกำลังกาย' : 'บันทึกการออกกำลังกายใหม่'}
                </CardTitle>
+               <CardDescription className="text-muted-foreground">
+                 {editingId ? 'ปรับปรุงข้อมูลการออกกำลังกายของคุณ' : 'กรอกข้อมูลการออกกำลังกายเพื่อติดตามความคืบหน้า'}
+               </CardDescription>
              </CardHeader>
-             <CardContent>
-               <form onSubmit={editingId ? handleUpdate : handleSubmit} className="space-y-4">
-                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   <div className="space-y-2">
-                     <Label htmlFor="date">วันที่</Label>
+             <CardContent className="pt-6">
+               <form onSubmit={editingId ? handleUpdate : handleSubmit} className="space-y-6">
+                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   <div className="space-y-3">
+                     <Label htmlFor="date" className="flex items-center gap-2 text-sm font-medium">
+                       <Calendar className="h-4 w-4 text-primary" />
+                       วันที่ออกกำลังกาย
+                     </Label>
                      <Input
                        id="date"
                        type="date"
@@ -575,32 +657,46 @@ export default function ExerciseLog() {
                          console.log('📅 เปลี่ยนวันที่:', e.target.value);
                          setFormData({...formData, exercise_date: e.target.value});
                        }}
+                       className="h-11 border-primary/20 focus:border-primary/40"
                        required
                      />
                    </div>
 
-                                     <div className="space-y-2">
-                     <Label htmlFor="exercise_type">ประเภทการออกกำลังกาย</Label>
+                                     <div className="space-y-3">
+                     <Label htmlFor="exercise_type" className="flex items-center gap-2 text-sm font-medium">
+                       <Target className="h-4 w-4 text-primary" />
+                       ประเภทการออกกำลังกาย
+                     </Label>
                      <Select 
                        value={formData.exercise_type} 
                        onValueChange={(value) => {
                          console.log('🏃‍♂️ เปลี่ยนประเภทการออกกำลังกาย:', value);
                          setFormData({...formData, exercise_type: value});
+                         // คำนวณแคลอรี่อัตโนมัติ
+                         updateCaloriesAutomatically(value, formData.duration_minutes, formData.intensity, formData.distance_km);
                        }}
                      >
-                       <SelectTrigger>
-                         <SelectValue placeholder="เลือกประเภท" />
+                       <SelectTrigger className="h-11 border-primary/20 focus:border-primary/40">
+                         <SelectValue placeholder="เลือกประเภทการออกกำลังกาย" />
                        </SelectTrigger>
                        <SelectContent>
                          {exerciseTypes.map((type) => (
-                           <SelectItem key={type.label} value={type.label}>{type.label}</SelectItem>
+                           <SelectItem key={type.label} value={type.label} className="py-2">
+                             <div className="flex items-center gap-2">
+                               <Dumbbell className="h-4 w-4 text-primary/60" />
+                               {type.label}
+                             </div>
+                           </SelectItem>
                          ))}
                        </SelectContent>
                      </Select>
                    </div>
 
-                                     <div className="space-y-2">
-                     <Label htmlFor="duration">ระยะเวลา (นาที)</Label>
+                                     <div className="space-y-3">
+                     <Label htmlFor="duration" className="flex items-center gap-2 text-sm font-medium">
+                       <Timer className="h-4 w-4 text-primary" />
+                       ระยะเวลา (นาที)
+                     </Label>
                      <Input
                        id="duration"
                        type="number"
@@ -609,43 +705,98 @@ export default function ExerciseLog() {
                        onChange={(e) => {
                          console.log('⏱️ เปลี่ยนระยะเวลา:', e.target.value);
                          setFormData({...formData, duration_minutes: e.target.value});
+                         // คำนวณแคลอรี่อัตโนมัติ
+                         updateCaloriesAutomatically(formData.exercise_type, e.target.value, formData.intensity, formData.distance_km);
                        }}
+                       className="h-11 border-primary/20 focus:border-primary/40"
                        required
                      />
                    </div>
 
-                                     <div className="space-y-2">
-                     <Label htmlFor="intensity">ระดับความหนัก</Label>
+                                     <div className="space-y-3">
+                     <Label htmlFor="intensity" className="flex items-center gap-2 text-sm font-medium">
+                       <Zap className="h-4 w-4 text-primary" />
+                       ระดับความหนัก
+                     </Label>
                      <Select 
                        value={formData.intensity} 
                        onValueChange={(value) => {
                          console.log('💪 เปลี่ยนระดับความหนัก:', value);
                          setFormData({...formData, intensity: value});
+                         // คำนวณแคลอรี่อัตโนมัติ
+                         updateCaloriesAutomatically(formData.exercise_type, formData.duration_minutes, value, formData.distance_km);
                        }}
                      >
-                       <SelectTrigger>
-                         <SelectValue placeholder="เลือกระดับ" />
+                       <SelectTrigger className="h-11 border-primary/20 focus:border-primary/40">
+                         <SelectValue placeholder="เลือกระดับความหนัก" />
                        </SelectTrigger>
                        <SelectContent>
                          {intensityLevels.map((level) => (
-                           <SelectItem key={level.label} value={level.label}>{level.label}</SelectItem>
+                           <SelectItem key={level.label} value={level.label} className="py-2">
+                             <div className="flex items-center gap-2">
+                               <div className={`w-3 h-3 rounded-full ${level.color}`}></div>
+                               {level.label}
+                             </div>
+                           </SelectItem>
                          ))}
                        </SelectContent>
                      </Select>
                    </div>
 
-                                     <div className="space-y-2">
-                     <Label htmlFor="calories">แคลอรีที่เผาผลาญ</Label>
-                     <Input
-                       id="calories"
-                       type="number"
-                       placeholder="250"
-                       value={formData.calories_burned}
-                       onChange={(e) => {
-                         console.log('🔥 เปลี่ยนแคลอรี:', e.target.value);
-                         setFormData({...formData, calories_burned: e.target.value});
-                       }}
-                     />
+                                     <div className="space-y-3">
+                     <Label htmlFor="calories" className="flex items-center gap-2 text-sm font-medium">
+                       <Flame className="h-4 w-4 text-primary" />
+                       แคลอรีที่เผาผลาญ
+                     </Label>
+                     <div className="space-y-3">
+                       <Input
+                         id="calories"
+                         type="number"
+                         placeholder="250"
+                         value={formData.calories_burned}
+                         onChange={(e) => {
+                           console.log('🔥 เปลี่ยนแคลอรี:', e.target.value);
+                           setFormData({...formData, calories_burned: e.target.value});
+                         }}
+                         className="h-11 border-primary/20 focus:border-primary/40"
+                       />
+                       <div className="flex items-center gap-3">
+                         <Button
+                           type="button"
+                           variant="outline"
+                           size="sm"
+                           onClick={() => {
+                             if (formData.exercise_type && formData.duration_minutes && formData.intensity) {
+                               const calculatedCalories = calculateTotalCalories(
+                                 formData.exercise_type, 
+                                 Number(formData.duration_minutes), 
+                                 formData.intensity,
+                                 formData.distance_km ? Number(formData.distance_km) : undefined
+                               );
+                               setFormData(prev => ({ ...prev, calories_burned: calculatedCalories.toString() }));
+                             }
+                           }}
+                           disabled={!formData.exercise_type || !formData.duration_minutes || !formData.intensity}
+                           className="text-xs h-8 px-3 border-primary/30 hover:border-primary/50"
+                         >
+                           <Flame className="h-3 w-3 mr-1" />
+                           คำนวณอัตโนมัติ
+                         </Button>
+                         {formData.exercise_type && formData.duration_minutes && formData.intensity && (
+                           <div className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-md">
+                             💡 {distanceBasedExercises.includes(formData.exercise_type) && formData.distance_km ? (
+                               <>
+                                 {formData.exercise_type}: {formData.distance_km} กม. × {intensityLevels.find(l => l.label === formData.intensity)?.multiplier || 1.3} = {calculateTotalCalories(formData.exercise_type, Number(formData.duration_minutes), formData.intensity, Number(formData.distance_km))} แคล
+                               </>
+                             ) : (
+                               <>
+                                 {getCaloriesPerMinute(formData.exercise_type, formData.intensity)} แคล/นาที × {formData.duration_minutes} นาที = {calculateTotalCalories(formData.exercise_type, Number(formData.duration_minutes), formData.intensity)} แคล
+                               </>
+                             )}
+                           </div>
+                         )}
+                       </div>
+                     </div>
                    </div>
                 </div>
 
@@ -689,41 +840,69 @@ export default function ExerciseLog() {
                   </div>
                 )}
 
-                {cardioTypes.includes(formData.exercise_type) && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="distance_km">ระยะทาง (กม.)</Label>
+                {distanceBasedExercises.includes(formData.exercise_type) && (
+                  <div className="bg-primary/5 border border-primary/10 rounded-lg p-4 space-y-3">
+                    <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                      <MapPin className="h-4 w-4" />
+                      ข้อมูลระยะทาง
+                    </div>
+                    <div className="space-y-3">
+                      <Label htmlFor="distance_km" className="text-sm font-medium">
+                        ระยะทาง (กิโลเมตร)
+                      </Label>
                       <Input
                         id="distance_km"
                         type="number"
                         placeholder="5"
                         value={formData.distance_km}
-                        onChange={(e) => setFormData({ ...formData, distance_km: e.target.value })}
+                        onChange={(e) => {
+                          setFormData({ ...formData, distance_km: e.target.value });
+                          // คำนวณแคลอรี่อัตโนมัติเมื่อเปลี่ยนระยะทาง
+                          updateCaloriesAutomatically(formData.exercise_type, formData.duration_minutes, formData.intensity, e.target.value);
+                        }}
+                        className="h-11 border-primary/20 focus:border-primary/40"
                       />
+                      <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded-md border border-blue-200">
+                        💡 ระยะทางจะช่วยให้การคำนวณแคลอรี่แม่นยำขึ้น
+                      </div>
                     </div>
-                    
                   </div>
                 )}
 
-                                 <div className="space-y-2">
-                   <Label htmlFor="notes">หมายเหตุ</Label>
+                                 <div className="space-y-3">
+                   <Label htmlFor="notes" className="flex items-center gap-2 text-sm font-medium">
+                     <Activity className="h-4 w-4 text-primary" />
+                     หมายเหตุ
+                   </Label>
                    <Textarea
                      id="notes"
-                     placeholder="รายละเอียดเพิ่มเติม..."
+                     placeholder="รายละเอียดเพิ่มเติม เช่น ความรู้สึก, สภาพอากาศ, หรือเทคนิคที่ใช้..."
                      value={formData.notes}
                      onChange={(e) => {
                        console.log('📝 เปลี่ยนหมายเหตุ:', e.target.value);
                        setFormData({...formData, notes: e.target.value});
                      }}
+                     className="min-h-[80px] border-primary/20 focus:border-primary/40 resize-none"
                    />
                  </div>
 
-                                                  <div className="flex gap-2">
-                    <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting 
-                        ? (editingId ? 'กำลังอัปเดต...' : 'กำลังบันทึก...') 
-                        : (editingId ? 'อัปเดต' : 'บันทึก')
-                      }
+                                                  <div className="flex gap-3 pt-4 border-t border-border/50">
+                    <Button 
+                      type="submit" 
+                      disabled={isSubmitting}
+                      className="flex-1 h-11 bg-primary hover:bg-primary/90 text-primary-foreground"
+                    >
+                      {isSubmitting ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          {editingId ? 'กำลังอัปเดต...' : 'กำลังบันทึก...'}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Activity className="h-4 w-4" />
+                          {editingId ? 'อัปเดตข้อมูล' : 'บันทึกการออกกำลังกาย'}
+                        </div>
+                      )}
                     </Button>
                     <Button 
                       type="button" 
@@ -747,6 +926,7 @@ export default function ExerciseLog() {
                           exercise_time: new Date().toTimeString().split(' ')[0]
                         });
                       }}
+                      className="h-11 px-6 border-primary/20 hover:border-primary/40"
                     >
                       ยกเลิก
                     </Button>
@@ -756,19 +936,36 @@ export default function ExerciseLog() {
           </Card>
         )}
 
-        <div className="grid gap-4">
-          <h2 className="text-xl font-semibold">ประวัติการออกกำลังกาย</h2>
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="p-1.5 bg-primary/10 rounded-md">
+              <Activity className="h-5 w-5 text-primary" />
+            </div>
+            <h2 className="text-xl font-semibold text-foreground">ประวัติการออกกำลังกาย</h2>
+            {sessions.length > 0 && (
+              <Badge variant="secondary" className="ml-2 bg-primary/10 text-primary border-primary/20">
+                {sessions.length} รายการ
+              </Badge>
+            )}
+          </div>
           
           {sessions.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <div className="flex flex-col items-center gap-4">
-                  <Dumbbell className="h-16 w-16 text-muted-foreground/50" />
-                  <div>
-                    <h3 className="text-lg font-medium text-muted-foreground">ไม่มีข้อมูลการออกกำลังกาย</h3>
-                    <p className="text-sm text-muted-foreground">เริ่มต้นบันทึกการออกกำลังกายของคุณเพื่อติดตามความคืบหน้า</p>
+            <Card className="border-dashed border-2 border-primary/20 bg-primary/5">
+              <CardContent className="p-12 text-center">
+                <div className="flex flex-col items-center gap-6">
+                  <div className="p-4 bg-primary/10 rounded-full">
+                    <Dumbbell className="h-12 w-12 text-primary/60" />
                   </div>
-                  <Button onClick={() => setShowForm(true)} className="gap-2">
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-semibold text-foreground">ยังไม่มีข้อมูลการออกกำลังกาย</h3>
+                    <p className="text-muted-foreground max-w-md">
+                      เริ่มต้นบันทึกการออกกำลังกายของคุณเพื่อติดตามความคืบหน้าและสร้างแรงบันดาลใจในการดูแลสุขภาพ
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={() => setShowForm(true)} 
+                    className="gap-2 h-11 px-6 bg-primary hover:bg-primary/90 shadow-sm"
+                  >
                     <Plus className="h-4 w-4" />
                     เพิ่มการออกกำลังกายแรก
                   </Button>
@@ -776,40 +973,52 @@ export default function ExerciseLog() {
               </CardContent>
             </Card>
           ) : (
-            sessions.map((session) => (
-              <Card key={session.session_id}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="p-2 bg-primary/10 rounded-lg">
-                        <Dumbbell className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold">{session.exercise_type}</h3>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Calendar className="h-4 w-4" />
-                          {new Date(session.session_date).toLocaleDateString('th-TH')}
+            <div className="grid gap-4">
+              {sessions.map((session) => (
+                <Card key={session.session_id} className="hover:shadow-md transition-shadow duration-200 border-primary/10">
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-primary/10 rounded-xl">
+                          <Dumbbell className="h-6 w-6 text-primary" />
+                        </div>
+                        <div className="space-y-1">
+                          <h3 className="font-semibold text-lg text-foreground">{session.exercise_type}</h3>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Calendar className="h-4 w-4" />
+                            {new Date(session.session_date).toLocaleDateString('th-TH', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })}
+                          </div>
                         </div>
                       </div>
-                    </div>
                     
-                                         <div className="flex items-center gap-2">
+                                         <div className="flex items-center gap-3">
                        <Badge 
                          className={`${
                            intensityLevels.find(l => l.value === session.intensity_level)?.color || 'bg-gray-500'
-                         } text-white`}
+                         } text-white px-3 py-1`}
                        >
                          {session.intensity_level}
                        </Badge>
                        
                        {/* แสดงสถานะการลบได้ */}
                        {!session.backend_id && (
-                         <Badge variant="secondary" className="text-xs">
+                         <Badge variant="secondary" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200">
                            ⚠️ รีเฟรชก่อนลบ
                          </Badge>
                        )}
                        
-                       <Button variant="outline" size="sm" onClick={() => startEdit(session)}>แก้ไข</Button>
+                       <Button 
+                         variant="outline" 
+                         size="sm" 
+                         onClick={() => startEdit(session)}
+                         className="h-8 px-3 border-primary/20 hover:border-primary/40"
+                       >
+                         แก้ไข
+                       </Button>
                        <AlertDialog>
                          <AlertDialogTrigger asChild>
                            <Button 
@@ -817,6 +1026,7 @@ export default function ExerciseLog() {
                              size="sm" 
                              disabled={deletingId === session.session_id || !session.backend_id}
                              title={!session.backend_id ? 'กรุณารีเฟรชก่อนลบข้อมูล' : 'ลบข้อมูล'}
+                             className="h-8 px-3"
                            >
                              {deletingId === session.session_id ? 'กำลังลบ...' : 'ลบ'}
                            </Button>
@@ -847,38 +1057,63 @@ export default function ExerciseLog() {
                      </div>
                   </div>
                   
-                                     <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
-                     <div className="flex items-center gap-2">
-                       <Clock className="h-4 w-4 text-muted-foreground" />
-                       <span className="text-sm">{session.duration_minutes} นาที</span>
+                                     <div className="mt-5 grid grid-cols-2 md:grid-cols-3 gap-4">
+                     <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                       <div className="p-1.5 bg-blue-100 rounded-md">
+                         <Clock className="h-4 w-4 text-blue-600" />
+                       </div>
+                       <div>
+                         <p className="text-sm font-medium text-foreground">{session.duration_minutes} นาที</p>
+                         <p className="text-xs text-muted-foreground">ระยะเวลา</p>
+                       </div>
                      </div>
-                     <div className="flex items-center gap-2">
-                       <Flame className="h-4 w-4 text-orange-500" />
-                       <span className="text-sm">{session.calories_burned} แคล</span>
+                     <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                       <div className="p-1.5 bg-orange-100 rounded-md">
+                         <Flame className="h-4 w-4 text-orange-600" />
+                       </div>
+                       <div>
+                         <p className="text-sm font-medium text-foreground">{session.calories_burned} แคล</p>
+                         <p className="text-xs text-muted-foreground">เผาผลาญ</p>
+                       </div>
                      </div>
                      
                      {/* แสดงข้อมูลยกน้ำหนักถ้ามี */}
                      {session.exercise_type === "ยกน้ำหนัก" && session.sets && session.reps && session.weight_kg && (
                        <>
-                         <div className="flex items-center gap-2">
-                           <Dumbbell className="h-4 w-4 text-blue-500" />
-                           <span className="text-sm">{session.sets} เซ็ต x {session.reps} ครั้ง</span>
+                         <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                           <div className="p-1.5 bg-purple-100 rounded-md">
+                             <Dumbbell className="h-4 w-4 text-purple-600" />
+                           </div>
+                           <div>
+                             <p className="text-sm font-medium text-foreground">{session.sets} เซ็ต x {session.reps} ครั้ง</p>
+                             <p className="text-xs text-muted-foreground">การฝึก</p>
+                           </div>
                          </div>
-                         <div className="flex items-center gap-2">
-                           <span className="text-sm font-medium">น้ำหนัก: {session.weight_kg} กก.</span>
+                         <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                           <div className="p-1.5 bg-green-100 rounded-md">
+                             <Target className="h-4 w-4 text-green-600" />
+                           </div>
+                           <div>
+                             <p className="text-sm font-medium text-foreground">{session.weight_kg} กก.</p>
+                             <p className="text-xs text-muted-foreground">น้ำหนัก</p>
+                           </div>
                          </div>
                        </>
                      )}
                    </div>
                   
                   {session.notes && (
-                    <div className="mt-3 p-2 bg-muted rounded-md">
-                      <p className="text-sm text-muted-foreground">{session.notes}</p>
+                    <div className="mt-4 p-3 bg-primary/5 border border-primary/10 rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <Activity className="h-4 w-4 text-primary/60 mt-0.5 flex-shrink-0" />
+                        <p className="text-sm text-foreground leading-relaxed">{session.notes}</p>
+                      </div>
                     </div>
                   )}
                 </CardContent>
               </Card>
-            ))
+            ))}
+            </div>
           )}
         </div>
       </div>
