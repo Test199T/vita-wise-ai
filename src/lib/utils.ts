@@ -5,8 +5,21 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// Token utilities type definition
+interface TokenUtils {
+  isValidToken: (token: string | null) => boolean;
+  getToken: () => string | null;
+  getValidToken: () => string | null;
+  setToken: (token: string) => boolean;
+  removeToken: () => void;
+  isLoggedIn: () => boolean;
+  getUserId: () => number | null;
+  logout: () => void;
+  requireAuth: () => boolean;
+}
+
 // Token management utilities
-export const tokenUtils = {
+export const tokenUtils: TokenUtils = {
   // ตรวจสอบว่า token มีอยู่และมีรูปแบบถูกต้อง
   isValidToken: (token: string | null): boolean => {
     if (!token || typeof token !== 'string') return false;
@@ -90,6 +103,34 @@ export const tokenUtils = {
     }
     
     return true;
+  },
+
+  // รับ User ID จาก token
+  getUserId: (): number | null => {
+    try {
+      const token = tokenUtils.getValidToken();
+      if (!token) {
+        console.log('No valid token found');
+        return null;
+      }
+      
+      const tokenData = JSON.parse(atob(token.split('.')[1]));
+      console.log('Token data:', tokenData);
+      
+      // Try different possible user ID fields
+      const userId = tokenData.userId || tokenData.id || tokenData.sub || tokenData.user_id;
+      
+      if (userId) {
+        console.log('Found user ID:', userId);
+        return typeof userId === 'string' ? parseInt(userId, 10) : userId;
+      }
+      
+      console.log('No user ID found in token data');
+      return null;
+    } catch (error) {
+      console.error('Error extracting user ID from token:', error);
+      return null;
+    }
   },
 
   // ฟังก์ชัน logout ที่สมบูรณ์
