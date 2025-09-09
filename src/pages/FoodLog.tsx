@@ -739,24 +739,29 @@ export default function FoodLog() {
   return (
     <MainLayout>
       <div className="space-y-6">
-                                   <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-primary">บันทึกอาหาร</h1>
-              <p className="text-muted-foreground">ติดตามการรับประทานอาหารและโภชนาการ</p>
+        <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Utensils className="h-6 w-6 text-primary" />
+                </div>
+                <h1 className="text-3xl font-bold text-primary">บันทึกอาหาร</h1>
+              </div>
+              <p className="text-muted-foreground ml-12">ติดตามการรับประทานอาหารและโภชนาการ</p>
             </div>
             <div className="flex gap-2">
               <Button 
                 onClick={fetchFoodLogs} 
                 disabled={isLoading}
                 variant="outline"
-                className="gap-2 rounded-full border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all duration-200"
+                className="gap-2"
               >
                 <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                 {isLoading ? 'กำลังโหลด...' : 'รีเฟรช'}
               </Button>
               <Button 
                 onClick={() => setShowForm(!showForm)} 
-                className="gap-2 rounded-full bg-gradient-to-r from-primary to-secondary hover:from-primary-hover hover:to-secondary-hover text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                className="gap-2"
               >
                 <Plus className="h-4 w-4" />
                 เพิ่มบันทึกอาหาร
@@ -1031,7 +1036,7 @@ export default function FoodLog() {
         )}
 
                                    {/* Nutrition Summary */}
-          <Card className="health-stat-card">
+          <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -1115,27 +1120,27 @@ export default function FoodLog() {
 
                                      {/* Calories Summary (match height with macronutrients) */}
                    <div className="space-y-4 flex flex-col h-full">
-                     <h4 className="font-semibold text-xl flex items-center gap-3 text-gray-800">
-                       <div className="p-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg">
-                         <Flame className="h-5 w-5 text-white" />
+                     <h4 className="font-semibold text-lg flex items-center gap-2 text-foreground">
+                       <div className="p-2 bg-primary/10 rounded-lg">
+                         <Flame className="h-5 w-5 text-primary" />
                        </div>
                        แคลอรี่รวม
                      </h4>
-                     <div className="text-center p-8 bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 rounded-2xl border border-orange-200 shadow-lg flex-1 flex flex-col justify-center">
-                       <div className="text-5xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-2">
+                     <div className="text-center p-6 bg-muted/30 rounded-lg border flex-1 flex flex-col justify-center">
+                       <div className="text-4xl font-bold text-primary mb-2">
                          {totalNutrition.calories}
                        </div>
-                       <div className="text-lg font-semibold text-gray-700 mb-3">แคลอรี่</div>
-                       <div className="text-sm text-gray-600 mb-4">
+                       <div className="text-lg font-semibold text-foreground mb-3">แคลอรี่</div>
+                       <div className="text-sm text-muted-foreground mb-4">
                          จากเป้าหมาย 2,000 แคลอรี่
                        </div>
-                       <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
+                       <div className="w-full bg-muted rounded-full h-2 mb-2">
                          <div
-                           className="bg-gradient-to-r from-orange-500 to-red-500 h-3 rounded-full transition-all duration-500 shadow-sm"
+                           className="bg-primary h-2 rounded-full transition-all duration-500"
                            style={{ width: `${Math.min((totalNutrition.calories / 2000) * 100, 100)}%` }}
                          />
                        </div>
-                       <div className="text-xs text-gray-500">
+                       <div className="text-xs text-muted-foreground">
                          {Math.round((totalNutrition.calories / 2000) * 100)}% ของเป้าหมาย
                        </div>
                      </div>
@@ -1191,61 +1196,73 @@ export default function FoodLog() {
 
                  <div className="grid gap-6">
            <div className="text-center">
-             <h2 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent mb-2">
+             <h2 className="text-2xl font-bold text-foreground mb-2">
                ประวัติการรับประทานอาหาร
              </h2>
-             <p className="text-gray-600">ติดตามมื้ออาหารและโภชนาการของคุณ</p>
+             <p className="text-muted-foreground">ติดตามมื้ออาหารและโภชนาการของคุณ</p>
            </div>
           
                      {isLoading ? (
-             <div className="flex items-center justify-center p-12">
-               <div className="text-center">
-                 <div className="p-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full w-16 h-16 mx-auto mb-4 shadow-lg">
-                   <RefreshCw className="h-8 w-8 mx-auto text-white animate-spin" />
+             <Card>
+               <CardContent className="p-12">
+                 <div className="flex items-center justify-center">
+                   <div className="text-center">
+                     <div className="p-3 bg-primary/10 rounded-lg w-12 h-12 mx-auto mb-4">
+                       <RefreshCw className="h-6 w-6 mx-auto text-primary animate-spin" />
+                     </div>
+                     <h3 className="text-lg font-semibold text-foreground mb-2">กำลังโหลดข้อมูล...</h3>
+                     <p className="text-muted-foreground">กรุณารอสักครู่</p>
+                   </div>
                  </div>
-                 <h3 className="text-lg font-semibold text-gray-700 mb-2">กำลังโหลดข้อมูล...</h3>
-                 <p className="text-gray-600">กรุณารอสักครู่</p>
-               </div>
-             </div>
+               </CardContent>
+             </Card>
                      ) : foodLogs.length === 0 ? (
-             <div className="text-center p-12 bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl border-2 border-dashed border-gray-300">
-               <div className="p-4 bg-white rounded-full w-20 h-20 mx-auto mb-6 shadow-lg">
-                 <Utensils className="h-10 w-10 mx-auto text-gray-400" />
-               </div>
-               <h3 className="text-xl font-semibold text-gray-700 mb-2">ยังไม่มีบันทึกอาหาร</h3>
-               <p className="text-gray-600 mb-6">เริ่มต้นบันทึกอาหารมื้อแรกของคุณเพื่อติดตามโภชนาการ</p>
-               <Button 
-                 onClick={() => setShowForm(true)} 
-                 className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg"
-               >
-                 <Plus className="h-4 w-4 mr-2" />
-                 เพิ่มบันทึกแรก
-               </Button>
-             </div>
+             <Card className="border-dashed border-2 border-muted-foreground/20">
+               <CardContent className="p-8 text-center">
+                 <div className="flex flex-col items-center gap-4">
+                   <div className="p-3 bg-muted/30 rounded-lg">
+                     <Utensils className="h-8 w-8 text-muted-foreground" />
+                   </div>
+                   <div className="space-y-2">
+                     <h3 className="text-lg font-medium text-foreground">เริ่มต้นบันทึกอาหารของคุณ</h3>
+                     <p className="text-sm text-muted-foreground max-w-md">
+                       เริ่มต้นบันทึกอาหารมื้อแรกของคุณเพื่อติดตามโภชนาการ
+                     </p>
+                   </div>
+                   <Button 
+                     onClick={() => setShowForm(true)} 
+                     className="gap-2"
+                   >
+                     <Plus className="h-4 w-4" />
+                     เพิ่มบันทึกอาหาร
+                   </Button>
+                 </div>
+               </CardContent>
+             </Card>
           ) : (
                          foodLogs.map((log) => (
-               <Card key={log.food_log_id} className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-white to-gray-50">
+               <Card key={log.food_log_id} className="border border-border hover:shadow-md transition-shadow duration-200">
                  <CardContent className="p-6">
                                      <div className="flex items-center justify-between">
-                     <div className="flex items-center gap-4">
-                       <div className={`p-3 rounded-xl ${getMealIcon(log.meal_time)} shadow-lg`}>
-                         <Utensils className="h-6 w-6 text-white" />
+                     <div className="flex items-center gap-3">
+                       <div className="p-2 bg-primary/10 rounded-lg">
+                         <Utensils className="h-5 w-5 text-primary" />
                        </div>
                        <div>
-                         <h3 className="text-xl font-bold text-gray-800">มื้อ{log.meal_time}</h3>
-                         <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
-                           <Calendar className="h-4 w-4" />
+                         <h3 className="text-lg font-semibold text-foreground">มื้อ{log.meal_time}</h3>
+                         <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                           <Calendar className="h-3 w-3" />
                            {getThaiDateString(log.log_date)}
                          </div>
                        </div>
                      </div>
                      
-                     <div className="flex items-center gap-3">
+                     <div className="flex items-center gap-2">
                                                <Button 
                           variant="outline" 
                           size="sm" 
                           onClick={() => startEdit(log)}
-                          className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300"
+                          className="h-8 px-3 border-primary/20 hover:border-primary/40"
                           disabled={deletingId === log.food_log_id}
                         >
                           แก้ไข
@@ -1255,7 +1272,7 @@ export default function FoodLog() {
                                                        <Button 
                               variant="destructive" 
                               size="sm"
-                              className="bg-red-500 hover:bg-red-600"
+                              className="h-8 px-3"
                               disabled={deletingId === log.food_log_id}
                             >
                               {deletingId === log.food_log_id ? (
@@ -1285,62 +1302,62 @@ export default function FoodLog() {
                    </div>
                   
                   <div className="mt-4">
-                    <h4 className="text-sm font-medium mb-2 text-gray-700">รายการอาหาร:</h4>
+                    <h4 className="text-sm font-medium mb-2 text-foreground">รายการอาหาร:</h4>
                     <div className="space-y-2">
                       {log.food_items.map((item, index) => (
-                        <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-100">
-                          <span className="text-sm font-medium text-gray-800">{item.name} ({item.amount})</span>
-                          <span className="text-sm font-bold text-orange-600 bg-orange-50 px-3 py-1 rounded-full">{item.calories} แคล</span>
+                        <div key={index} className="flex justify-between items-center p-3 bg-muted/30 rounded-lg border">
+                          <span className="text-sm font-medium text-foreground">{item.name} ({item.amount})</span>
+                          <span className="text-sm font-bold text-primary bg-primary/10 px-3 py-1 rounded-full">{item.calories} แคล</span>
                         </div>
                       ))}
                     </div>
                   </div>
                   
-                  <div className="mt-6">
-                    <h4 className="text-sm font-medium mb-3 text-gray-700">สารอาหารหลัก:</h4>
+                  <div className="mt-4">
+                    <h4 className="text-sm font-medium mb-3 text-foreground">สารอาหารหลัก:</h4>
                     <div className="grid grid-cols-3 gap-3">
-                      <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 shadow-sm">
-                        <div className="text-lg font-bold text-blue-700">{log.total_protein}g</div>
-                        <div className="text-xs text-blue-600 font-medium">โปรตีน</div>
+                      <div className="text-center p-3 bg-muted/30 rounded-lg border">
+                        <div className="text-lg font-bold text-foreground">{log.total_protein}g</div>
+                        <div className="text-xs text-muted-foreground font-medium">โปรตีน</div>
                       </div>
-                      <div className="text-center p-3 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200 shadow-sm">
-                        <div className="text-lg font-bold text-green-700">{log.total_carbs}g</div>
-                        <div className="text-xs text-green-600 font-medium">คาร์โบ</div>
+                      <div className="text-center p-3 bg-muted/30 rounded-lg border">
+                        <div className="text-lg font-bold text-foreground">{log.total_carbs}g</div>
+                        <div className="text-xs text-muted-foreground font-medium">คาร์โบ</div>
                       </div>
-                      <div className="text-center p-3 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-200 shadow-sm">
-                        <div className="text-lg font-bold text-orange-700">{log.total_fats}g</div>
-                        <div className="text-xs text-orange-600 font-medium">ไขมัน</div>
+                      <div className="text-center p-3 bg-muted/30 rounded-lg border">
+                        <div className="text-lg font-bold text-foreground">{log.total_fats}g</div>
+                        <div className="text-xs text-muted-foreground font-medium">ไขมัน</div>
                       </div>
                     </div>
                   </div>
 
                                      <div className="mt-4">
-                     <h4 className="text-sm font-medium mb-3 text-gray-700">สารอาหารอื่นๆ:</h4>
+                     <h4 className="text-sm font-medium mb-3 text-foreground">สารอาหารอื่นๆ:</h4>
                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                        {log.total_fiber > 0 && (
-                         <div className="text-center p-2 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border border-purple-200 shadow-sm">
-                           <div className="text-sm font-bold text-purple-700">{log.total_fiber}g</div>
-                           <div className="text-xs text-purple-600 font-medium">ไฟเบอร์</div>
+                         <div className="text-center p-2 bg-muted/30 rounded-lg border">
+                           <div className="text-sm font-bold text-foreground">{log.total_fiber}g</div>
+                           <div className="text-xs text-muted-foreground font-medium">ไฟเบอร์</div>
                          </div>
                        )}
                        {log.total_sugar > 0 && (
-                         <div className="text-center p-2 bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg border border-pink-200 shadow-sm">
-                           <div className="text-sm font-bold text-pink-700">{log.total_sugar}g</div>
-                           <div className="text-xs text-pink-600 font-medium">น้ำตาล</div>
+                         <div className="text-center p-2 bg-muted/30 rounded-lg border">
+                           <div className="text-sm font-bold text-foreground">{log.total_sugar}g</div>
+                           <div className="text-xs text-muted-foreground font-medium">น้ำตาล</div>
                          </div>
                        )}
                        {log.total_sodium > 0 && (
-                         <div className="text-center p-2 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg border border-indigo-200 shadow-sm">
-                           <div className="text-sm font-bold text-indigo-700">{log.total_sodium}mg</div>
-                           <div className="text-xs text-indigo-600 font-medium">โซเดียม</div>
+                         <div className="text-center p-2 bg-muted/30 rounded-lg border">
+                           <div className="text-sm font-bold text-foreground">{log.total_sodium}mg</div>
+                           <div className="text-xs text-muted-foreground font-medium">โซเดียม</div>
                          </div>
                        )}
                      </div>
                    </div>
                   
                   {log.notes && (
-                    <div className="mt-3 p-2 bg-muted rounded-md">
-                      <p className="text-sm text-muted-foreground">{log.notes}</p>
+                    <div className="mt-3 p-3 bg-muted/20 rounded-lg border">
+                      <p className="text-sm text-foreground">{log.notes}</p>
                     </div>
                   )}
                 </CardContent>

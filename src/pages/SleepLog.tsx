@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Moon, Calendar, Clock, RefreshCw, Pencil, Trash2 } from "lucide-react";
+import { Moon, Calendar, Clock, RefreshCw, Pencil, Trash2, Plus, Activity } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
@@ -223,11 +223,12 @@ export default function SleepLog() {
     const end = wH * 60 + wM;
     const minutes = end >= start ? end - start : (24 * 60 - start) + end; // handle overnight
 
-    // thresholds (simple): <4h bad, 4-6h medium, 6-9h good, >9h medium
-    if (minutes < 240) return { quality: "แย่", colorClass: "bg-red-500 text-white", apiValue: "very_poor" };
-    if (minutes < 360) return { quality: "ปานกลาง", colorClass: "bg-yellow-500 text-black", apiValue: "poor" };
-    if (minutes <= 540) return { quality: "ดี", colorClass: "bg-green-600 text-white", apiValue: "good" };
-    if (minutes <= 600) return { quality: "ดี", colorClass: "bg-green-600 text-white", apiValue: "excellent" };
+    // ปรับปรุงเกณฑ์การประเมินคุณภาพการนอนให้เหมาะสม
+    // < 4 ชม = แย่มาก, 4-6 ชม = แย่, 6-8 ชม = ดี, 8-10 ชม = ดีมาก, > 10 ชม = ปานกลาง (เยอะเกินไป)
+    if (minutes < 240) return { quality: "แย่มาก", colorClass: "bg-red-600 text-white", apiValue: "very_poor" };
+    if (minutes < 360) return { quality: "แย่", colorClass: "bg-red-500 text-white", apiValue: "poor" };
+    if (minutes <= 480) return { quality: "ดี", colorClass: "bg-green-600 text-white", apiValue: "good" };
+    if (minutes <= 600) return { quality: "ดีมาก", colorClass: "bg-green-700 text-white", apiValue: "excellent" };
     return { quality: "ปานกลาง", colorClass: "bg-yellow-500 text-black", apiValue: "fair" };
   };
 
@@ -498,16 +499,12 @@ export default function SleepLog() {
         <div className="flex items-center justify-between">
           <div className="space-y-2">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-gradient-to-r from-primary to-secondary rounded-xl shadow-lg">
-                <Moon className="h-6 w-6 text-primary-foreground" />
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Moon className="h-6 w-6 text-primary" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-800">
-                บันทึกการนอน
-              </h2>
+              <h1 className="text-3xl font-bold text-primary">บันทึกการนอน</h1>
             </div>
-            <p className="text-muted-foreground ml-16">
-              ติดตามคุณภาพการนอนของคุณ
-            </p>
+            <p className="text-muted-foreground ml-12">ติดตามคุณภาพการนอนของคุณเพื่อสุขภาพที่ดี</p>
           </div>
           <div className="flex gap-2">
             <Button 
@@ -516,65 +513,82 @@ export default function SleepLog() {
               variant="outline"
               className="gap-2 rounded-full border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all duration-200"
             >
-              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <svg className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
               {isLoading ? 'กำลังโหลด...' : 'รีเฟรช'}
             </Button>
             <Button 
               onClick={() => setShowForm(!showForm)} 
               className="gap-2 rounded-full bg-gradient-to-r from-primary to-secondary hover:from-primary-hover hover:to-secondary-hover text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
             >
-              <Moon className="h-4 w-4" />
-              เพิ่มบันทึก
+              <Plus className="h-4 w-4" />
+              เพิ่มการนอน
             </Button>
           </div>
         </div>
 
         {showForm && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <Card className="border-l-4 border-l-primary/20 shadow-sm">
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
+              <CardTitle className="flex items-center gap-2 text-primary">
                 <Moon className="h-5 w-5" />
-                บันทึกการนอนใหม่
+                {editingId ? 'แก้ไขข้อมูลการนอน' : 'บันทึกการนอนใหม่'}
               </CardTitle>
-              <CardDescription>
-                กรอกข้อมูลการนอนของคุณ
+              <CardDescription className="text-muted-foreground">
+                {editingId ? 'ปรับปรุงข้อมูลการนอนของคุณ' : 'กรอกข้อมูลการนอนเพื่อติดตามความคืบหน้า'}
               </CardDescription>
             </CardHeader>
-            <CardContent className="pt-0">
+            <CardContent className="pt-6">
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="date">วันที่</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <Label htmlFor="date" className="flex items-center gap-2 text-sm font-medium">
+                      <Calendar className="h-4 w-4 text-primary" />
+                      วันที่นอน
+                    </Label>
                     <Input 
                       id="date" 
                       type="date" 
                       value={formData.date} 
                       onChange={(e) => setFormData({ ...formData, date: e.target.value })} 
+                      className="h-11 border-primary/20 focus:border-primary/40"
                       required 
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="sleep_time">เข้านอน</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="sleep_time" className="flex items-center gap-2 text-sm font-medium">
+                      <Moon className="h-4 w-4 text-primary" />
+                      เวลาเข้านอน
+                    </Label>
                     <Input 
                       id="sleep_time" 
                       type="time" 
                       value={formData.sleep_time} 
                       onChange={(e) => setFormData({ ...formData, sleep_time: e.target.value })} 
+                      className="h-11 border-primary/20 focus:border-primary/40"
                       required 
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="wake_time">ตื่นนอน</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="wake_time" className="flex items-center gap-2 text-sm font-medium">
+                      <Clock className="h-4 w-4 text-primary" />
+                      เวลาตื่นนอน
+                    </Label>
                     <Input 
                       id="wake_time" 
                       type="time" 
                       value={formData.wake_time} 
                       onChange={(e) => setFormData({ ...formData, wake_time: e.target.value })} 
+                      className="h-11 border-primary/20 focus:border-primary/40"
                       required 
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>คุณภาพโดยอัตโนมัติ</Label>
+                  <div className="space-y-3">
+                    <Label className="flex items-center gap-2 text-sm font-medium">
+                      <Activity className="h-4 w-4 text-primary" />
+                      คุณภาพการนอน
+                    </Label>
                     {(() => {
                       const { quality } = computeSleepQuality(formData.sleep_time, formData.wake_time);
                       return (
@@ -582,31 +596,53 @@ export default function SleepLog() {
                           value={quality || ""} 
                           readOnly 
                           placeholder="ระบบจะคำนวณอัตโนมัติ" 
-                          className="bg-muted"
+                          className="h-11 bg-muted border-primary/20"
                         />
                       );
                     })()}
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="notes">หมายเหตุ</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="notes" className="flex items-center gap-2 text-sm font-medium">
+                    <Activity className="h-4 w-4 text-primary" />
+                    หมายเหตุ
+                  </Label>
                   <Textarea 
                     id="notes" 
-                    placeholder="รายละเอียดเพิ่มเติม..." 
+                    placeholder="รายละเอียดเพิ่มเติม เช่น ความรู้สึก, สภาพแวดล้อม, หรือปัจจัยที่ส่งผลต่อการนอน..." 
                     value={formData.notes} 
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })} 
-                    className="min-h-[100px]"
+                    className="min-h-[80px] border-primary/20 focus:border-primary/40 resize-none"
                   />
                 </div>
-                <div className="flex gap-2">
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? 'กำลังบันทึก...' : 'บันทึก'}
+                <div className="flex gap-3 pt-4 border-t border-border/50">
+                  <Button 
+                    type="submit" 
+                    disabled={isSubmitting}
+                    className="flex-1 h-11 bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    {isSubmitting ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        {editingId ? 'กำลังอัปเดต...' : 'กำลังบันทึก...'}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Moon className="h-4 w-4" />
+                        {editingId ? 'อัปเดตข้อมูล' : 'บันทึกการนอน'}
+                      </div>
+                    )}
                   </Button>
                   <Button 
                     type="button" 
                     variant="outline" 
-                    onClick={() => setShowForm(false)} 
+                    onClick={() => {
+                      setShowForm(false);
+                      setEditingId(null);
+                      setFormData({ date: new Date().toISOString().split('T')[0], sleep_time: "", wake_time: "", sleep_quality: "", notes: "" });
+                    }} 
                     disabled={isSubmitting}
+                    className="h-11 px-6 border-primary/20 hover:border-primary/40"
                   >
                     ยกเลิก
                   </Button>
@@ -616,32 +652,52 @@ export default function SleepLog() {
           </Card>
         )}
 
-        {/* Statistics Section */}
-        {Array.isArray(logs) && logs.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-full bg-primary/10">
-                    <Moon className="h-6 w-6 text-primary" />
+        {/* สรุปการนอน - Layout แนวตั้ง */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Moon className="h-5 w-5" />
+                  สรุปการนอน
+                </CardTitle>
+                <CardDescription>
+                  ข้อมูลการนอนและคุณภาพการพักผ่อน
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {Array.isArray(logs) && logs.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* คอลัมน์ซ้าย - สถิติหลัก */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-muted/50 rounded-lg">
+                        <Moon className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-foreground">จำนวนวันบันทึก</div>
+                        <div className="text-xs text-muted-foreground">การนอนทั้งหมด</div>
+                      </div>
+                    </div>
+                    <div className="text-3xl font-bold text-foreground">
+                      {logs.length}
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">จำนวนวัน</p>
-                    <p className="text-3xl font-bold text-primary">{logs.length}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-full bg-emerald-100">
-                    <Clock className="h-6 w-6 text-emerald-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">คุณภาพการนอน</p>
-                    <p className="text-3xl font-bold text-emerald-600">
+
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-muted/50 rounded-lg">
+                        <Clock className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-foreground">คุณภาพการนอน</div>
+                        <div className="text-xs text-muted-foreground">เปอร์เซ็นต์การนอนดี</div>
+                      </div>
+                    </div>
+                    <div className="text-3xl font-bold text-foreground">
                       {(() => {
                         const goodCount = logs.filter(log => 
                           log.sleep_quality === 'good' || 
@@ -650,38 +706,80 @@ export default function SleepLog() {
                         ).length;
                         return `${Math.round((goodCount / logs.length) * 100)}%`;
                       })()}
-                    </p>
+                    </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-full bg-blue-100">
-                    <Calendar className="h-6 w-6 text-blue-600" />
+
+                {/* คอลัมน์ขวา - สถิติเพิ่มเติม */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-muted/50 rounded-lg">
+                        <Activity className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-foreground">ระยะเวลานอนเฉลี่ย</div>
+                        <div className="text-xs text-muted-foreground">ชั่วโมงต่อคืน</div>
+                      </div>
+                    </div>
+                    <div className="text-3xl font-bold text-foreground">
+                      {(() => {
+                        const totalHours = logs.reduce((sum, log) => {
+                          const duration = calculateSleepDuration(log.sleep_time, log.wake_time);
+                          return sum + duration;
+                        }, 0);
+                        return Math.round(totalHours / logs.length * 10) / 10;
+                      })()}
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">บันทึกล่าสุด</p>
-                    <p className="text-lg font-semibold text-blue-600">
+
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-muted/50 rounded-lg">
+                        <Calendar className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-foreground">บันทึกล่าสุด</div>
+                        <div className="text-xs text-muted-foreground">วันที่</div>
+                      </div>
+                    </div>
+                    <div className="text-3xl font-bold text-foreground">
                       {(() => {
                         const latest = logs.sort((a, b) => 
                           new Date(b.date).getTime() - new Date(a.date).getTime()
                         )[0];
-                        return latest ? new Date(latest.date).toLocaleDateString('th-TH') : 'ไม่มี';
+                        return latest ? new Date(latest.date).getDate() : '--';
                       })()}
-                    </p>
+                    </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+              </div>
+            ) : (
+              <div className="text-center p-8 text-muted-foreground">
+                <Moon className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="text-lg font-medium">ยังไม่มีข้อมูลการนอน</p>
+                <p className="text-sm">เริ่มต้นบันทึกการนอนของคุณเพื่อดูสถิติ</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-        <div className="grid gap-4">
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">ประวัติการนอน</h2>
+            <div className="flex items-center gap-3">
+              <div className="p-1.5 bg-primary/10 rounded-md">
+                <Moon className="h-5 w-5 text-primary" />
+              </div>
+              <h2 className="text-xl font-semibold text-foreground">ประวัติการนอน</h2>
+              {logs.length > 0 && (
+                <Badge variant="secondary" className="ml-2 bg-primary/10 text-primary border-primary/20">
+                  {logs.length} รายการ
+                </Badge>
+              )}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              เรียงตามวันที่ล่าสุด
+            </div>
           </div>
           
           {isLoading ? (
@@ -694,89 +792,112 @@ export default function SleepLog() {
               </CardContent>
             </Card>
           ) : !Array.isArray(logs) || logs.length === 0 ? (
-            <Card>
-              <CardContent className="p-6">
-                <div className="text-center text-muted-foreground">
-                  <Moon className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium">ยังไม่มีข้อมูลการนอน</p>
-                  <p className="text-sm">เริ่มต้นบันทึกการนอนของคุณ</p>
+            <Card className="border-dashed border-2 border-muted-foreground/20">
+              <CardContent className="p-8 text-center">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="p-3 bg-muted/30 rounded-lg">
+                    <Moon className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-medium text-foreground">ยังไม่มีข้อมูลการนอน</h3>
+                    <p className="text-sm text-muted-foreground max-w-md">
+                      เริ่มต้นบันทึกการนอนของคุณเพื่อติดตามความคืบหน้าและสร้างแรงบันดาลใจในการดูแลสุขภาพ
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={() => setShowForm(true)} 
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    เพิ่มการนอนแรก
+                  </Button>
                 </div>
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4">
+            <div className="grid gap-5">
               {Array.isArray(logs) && logs.map((item) => (
-                <Card key={item.id} className="hover:shadow-md transition-shadow">
+                <Card key={item.id} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-primary/30">
                   <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-full bg-primary/10">
-                          <Moon className="h-6 w-6 text-primary" />
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 bg-muted/30 rounded-xl">
+                          <Moon className="h-6 w-6 text-muted-foreground" />
                         </div>
-                        <div className="space-y-1">
-                          <h3 className="text-lg font-semibold text-foreground">
-                            {item.sleep_time || '--:--'} — {item.wake_time || '--:--'}
-                          </h3>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Calendar className="h-4 w-4" />
-                            {item.date ? new Date(item.date).toLocaleDateString('th-TH') : 'ไม่ระบุวันที่'}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-3">
+                            <h3 className="text-lg font-semibold text-foreground">
+                              {item.sleep_time || '--:--'} — {item.wake_time || '--:--'}
+                            </h3>
+                            {(() => {
+                              const mapColor = (q: string) => {
+                                if (q === "แย่" || q === "very_poor" || q === "poor") return "bg-red-500 text-white";
+                                if (q === "ปานกลาง" || q === "fair") return "bg-yellow-500 text-black";
+                                if (q === "ดี" || q === "good" || q === "excellent") return "bg-green-600 text-white";
+                                return "bg-gray-500 text-white";
+                              };
+                              
+                              // แปลง API value กลับเป็นภาษาไทยสำหรับแสดงผล
+                              const getDisplayQuality = (apiValue: string) => {
+                                switch (apiValue) {
+                                  case "excellent": return "ดีมาก";
+                                  case "good": return "ดี";
+                                  case "fair": return "ปานกลาง";
+                                  case "poor": return "แย่";
+                                  case "very_poor": return "แย่มาก";
+                                  default: return apiValue || "ไม่ระบุ";
+                                }
+                              };
+                              
+                              return (
+                                <Badge className={`${mapColor(item.sleep_quality || '')} px-3 py-1`}>
+                                  {getDisplayQuality(item.sleep_quality || '')}
+                                </Badge>
+                              );
+                            })()}
                           </div>
-                          {item.notes && (
-                            <div className="text-sm text-muted-foreground mt-2 p-2 bg-muted rounded-md">
-                              {item.notes}
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-4 w-4" />
+                              {item.date ? new Date(item.date).toLocaleDateString('th-TH', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                              }) : 'ไม่ระบุวันที่'}
                             </div>
-                          )}
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              {calculateSleepDuration(item.sleep_time, item.wake_time)} ชม.
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        {(() => {
-                          const mapColor = (q: string) => {
-                            if (q === "แย่" || q === "very_poor" || q === "poor") return "bg-red-100 text-red-700";
-                            if (q === "ปานกลาง" || q === "fair") return "bg-yellow-100 text-yellow-700";
-                            if (q === "ดี" || q === "good" || q === "excellent") return "bg-emerald-100 text-emerald-700";
-                            return "bg-muted text-muted-foreground";
-                          };
-                          
-                          // แปลง API value กลับเป็นภาษาไทยสำหรับแสดงผล
-                          const getDisplayQuality = (apiValue: string) => {
-                            switch (apiValue) {
-                              case "excellent": return "ดีมาก";
-                              case "good": return "ดี";
-                              case "fair": return "ปานกลาง";
-                              case "poor": return "แย่";
-                              case "very_poor": return "แย่มาก";
-                              default: return apiValue || "ไม่ระบุ";
-                            }
-                          };
-                          
-                          return (
-                            <Badge className={`${mapColor(item.sleep_quality || '')} px-3 py-1 font-medium`}>
-                              {getDisplayQuality(item.sleep_quality || '')}
-                            </Badge>
-                          );
-                        })()}
+                      
+                      <div className="flex items-center gap-2">
                         <Button 
                           variant="outline" 
                           size="sm" 
                           onClick={() => startEdit(item)}
-                          className="gap-2 rounded-full border-2 border-blue-200 hover:border-blue-300 hover:bg-blue-50 text-blue-600 hover:text-blue-700 transition-all duration-200 shadow-sm"
+                          className="h-8 px-3 border-primary/20 hover:border-primary/40"
                         >
-                          <Pencil className="h-4 w-4" /> แก้ไข
+                          แก้ไข
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button 
-                              variant="outline" 
+                              variant="destructive" 
                               size="sm"
-                              className="gap-2 rounded-full border-2 border-red-300 hover:border-red-400 hover:bg-red-50 text-red-600 hover:text-red-700 transition-all duration-200 shadow-sm"
+                              className="h-8 px-3"
                             >
-                              <Trash2 className="h-4 w-4" /> ลบ
+                              ลบ
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
                               <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
-                              <AlertDialogDescription>ต้องการลบรายการนี้หรือไม่?</AlertDialogDescription>
+                              <AlertDialogDescription>
+                                ต้องการลบรายการนี้หรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้
+                              </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
@@ -786,6 +907,15 @@ export default function SleepLog() {
                         </AlertDialog>
                       </div>
                     </div>
+                    
+                    {item.notes && (
+                      <div className="mt-4 p-3 bg-muted/20 border rounded-lg">
+                        <div className="flex items-start gap-2">
+                          <Activity className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                          <p className="text-sm text-foreground leading-relaxed">{item.notes}</p>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}

@@ -1108,19 +1108,15 @@ export default function HealthGoals() {
 
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-gradient-to-r from-primary to-secondary rounded-xl shadow-lg">
-                <Target className="h-6 w-6 text-primary-foreground" />
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Target className="h-6 w-6 text-primary" />
+                </div>
+                <h1 className="text-3xl font-bold text-primary">เป้าหมายของคุณ</h1>
               </div>
-              <h2 className="text-2xl font-bold text-gray-800">
-                เป้าหมายของคุณ
-              </h2>
+              <p className="text-muted-foreground ml-12">ติดตามความคืบหน้าและบรรลุเป้าหมายสุขภาพ</p>
             </div>
-            <p className="text-muted-foreground ml-16">
-              ติดตามความคืบหน้าและบรรลุเป้าหมายสุขภาพ
-            </p>
-          </div>
           <div className="flex gap-2">
             <Button 
               onClick={loadHealthGoals} 
@@ -1507,18 +1503,18 @@ export default function HealthGoals() {
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">เป้าหมายของคุณ</h2>
             <Tabs defaultValue={filter} onValueChange={(v) => setFilter(v as any)} className="w-full md:w-auto">
-              <TabsList className="grid w-full md:w-auto grid-cols-4 md:inline-grid rounded-2xl bg-gradient-to-r from-primary-light/30 to-secondary-light/30 p-2 border-2 border-primary/20">
-                <TabsTrigger value="all" className="rounded-xl data-[state=active]:bg-card data-[state=active]:shadow-md data-[state=active]:text-primary font-semibold transition-all duration-200">ทั้งหมด</TabsTrigger>
-                <TabsTrigger value="active" className="rounded-xl data-[state=active]:bg-card data-[state=active]:shadow-md data-[state=active]:text-primary font-semibold transition-all duration-200">กำลังดำเนินการ</TabsTrigger>
-                <TabsTrigger value="completed" className="rounded-xl data-[state=active]:bg-card data-[state=active]:shadow-md data-[state=active]:text-primary font-semibold transition-all duration-200">สำเร็จแล้ว</TabsTrigger>
-                <TabsTrigger value="history" className="rounded-xl data-[state=active]:bg-card data-[state=active]:shadow-md data-[state=active]:text-primary font-semibold transition-all duration-200">ประวัติ</TabsTrigger>
+              <TabsList className="grid w-full md:w-auto grid-cols-4 md:inline-grid">
+                <TabsTrigger value="all">ทั้งหมด</TabsTrigger>
+                <TabsTrigger value="active">กำลังดำเนินการ</TabsTrigger>
+                <TabsTrigger value="completed">สำเร็จแล้ว</TabsTrigger>
+                <TabsTrigger value="history">ประวัติ</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
           {filter !== 'history' ? (
             <>
             {isLoading ? (
-              <Card className="border-0 rounded-xl bg-gradient-to-br from-card to-muted">
+              <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-center gap-2 text-muted-foreground">
                     <RefreshCw className="h-4 w-4 animate-spin" />
@@ -1527,72 +1523,80 @@ export default function HealthGoals() {
                 </CardContent>
               </Card>
             ) : filteredGoals.length === 0 ? (
-              <Card className="border-0 rounded-xl bg-gradient-to-br from-card to-muted">
-                <CardContent className="p-6">
-                  <div className="text-center text-muted-foreground">
-                    <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p className="text-lg font-medium">ยังไม่มีเป้าหมายในฐานข้อมูล</p>
-                    <p className="text-sm">คลิก "เพิ่มเป้าหมายใหม่" เพื่อสร้างเป้าหมายแรก</p>
-                    <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                      <p className="text-xs text-blue-600">
-                        💡 ข้อมูลจะถูกบันทึกลงฐานข้อมูลและแสดงผลที่นี่
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+               <Card className="border-dashed border-2 border-muted-foreground/20">
+                 <CardContent className="p-8 text-center">
+                   <div className="flex flex-col items-center gap-4">
+                     <div className="p-3 bg-muted/30 rounded-lg">
+                       <Target className="h-8 w-8 text-muted-foreground" />
+                     </div>
+                     <div className="space-y-2">
+                       <h3 className="text-lg font-medium text-foreground">เริ่มต้นสร้างเป้าหมายสุขภาพของคุณ</h3>
+                       <p className="text-sm text-muted-foreground max-w-md">
+                         ตั้งเป้าหมายเพื่อติดตามความคืบหน้าและสร้างแรงบันดาลใจในการดูแลสุขภาพ
+                       </p>
+                     </div>
+                     <Button 
+                       onClick={() => setShowForm(true)} 
+                       className="gap-2"
+                     >
+                       <Plus className="h-4 w-4" />
+                       เพิ่มเป้าหมายใหม่
+                     </Button>
+                   </div>
+                 </CardContent>
+               </Card>
             ) : (
               (() => {
                 console.log('🔍 Rendering goals:', filteredGoals);
                 return filteredGoals.map((goal) => {
                   console.log('🔍 Rendering individual goal:', goal);
                   return (
-            <Card key={goal.goal_id} className={`border-0 rounded-3xl ${getGoalCardStyle(goal.goal_type)} shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] backdrop-blur-sm`}>
+            <Card key={goal.goal_id} className="border border-border hover:shadow-md transition-shadow duration-200">
               <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-4">
-                    <div className={`p-3 rounded-lg ${getGoalIcon(goal.goal_type)}`}>
-                      <Target className="h-6 w-6 text-white" />
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <Target className="h-5 w-5 text-primary" />
                     </div>
-                    <div className="space-y-2">
-                      <h3 className="text-lg font-bold text-foreground">{getGoalDisplayTitle(goal)}</h3>
+                    <div className="space-y-1">
+                      <h3 className="text-lg font-semibold text-foreground">{getGoalDisplayTitle(goal)}</h3>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
+                        <Calendar className="h-3 w-3" />
                         <span>{new Date(goal.start_date).toLocaleDateString('th-TH')} - {new Date(goal.end_date).toLocaleDateString('th-TH')}</span>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
                     {getStatusBadge(goal.status)}
-                    <Button variant="outline" size="sm" className="gap-2 rounded-full border-2 border-blue-200 hover:border-blue-300 hover:bg-blue-50 text-blue-600 hover:text-blue-700 transition-all duration-200 shadow-sm" onClick={() => startEdit(goal)}>
-                      <Pencil className="h-4 w-4" /> แก้ไข
+                    <Button variant="outline" size="sm" className="h-8 px-3 border-primary/20 hover:border-primary/40" onClick={() => startEdit(goal)}>
+                      <Pencil className="h-4 w-4" />
                     </Button>
                     {goal.status !== 'completed' && (
                       <>
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="gap-2 rounded-full border-2 border-green-200 hover:border-green-300 hover:bg-green-50 text-green-600 hover:text-green-700 transition-all duration-200 shadow-sm"
+                          className="h-8 px-3 border-primary/20 hover:border-primary/40"
                           onClick={() => updateProgress(goal)}
                         >
-                          <TrendingUp className="h-4 w-4" /> อัปเดต
+                          <TrendingUp className="h-4 w-4 mr-1" />
+                          อัปเดต
                         </Button>
                         <Button 
                           variant="secondary" 
                           size="sm" 
-                          className="gap-2 rounded-full border-2 border-green-500 bg-green-500 hover:bg-green-600 text-white hover:text-white transition-all duration-200 shadow-md hover:shadow-lg"
+                          className="h-8 px-3"
                           onClick={() => markCompleted(goal)}
                         >
-                          <Check className="h-4 w-4" /> 
-                          {getProgressPercentage(goal.current_value, goal.target_value, goal.goal_type) >= 100 ? 'สำเร็จ' : 'สำเร็จ'}
+                          <Check className="h-4 w-4" />
                         </Button>
                       </>
                     )}
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="gap-2 rounded-full border-2 border-red-300 hover:border-red-400 hover:bg-red-50 text-red-600 hover:text-red-700 transition-all duration-200 shadow-sm">
-                          <Trash2 className="h-4 w-4" /> ลบ
+                        <Button variant="outline" size="sm" className="h-8 px-3">
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
@@ -1611,73 +1615,50 @@ export default function HealthGoals() {
                   </div>
                 </div>
                 
-                <div className="space-y-6 mt-8">
+                <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-lg font-bold text-gray-800">ความคืบหน้า</h4>
-                    <span className="text-xl font-bold text-blue-600">{goal.current_value} / {goal.target_value}</span>
+                    <h4 className="text-base font-semibold text-foreground">ความคืบหน้า</h4>
+                    <span className="text-lg font-bold text-foreground">{goal.current_value} / {goal.target_value}</span>
                   </div>
                   
-                  {/* Basic Progress */}
-                  <div className="relative">
+                  {/* Progress Bar */}
+                  <div className="space-y-2">
                     <Progress 
                       value={getProgressPercentage(goal.current_value, goal.target_value, goal.goal_type)} 
-                      className="h-3 rounded-full"
+                      className="h-2"
                     />
-                    <div className={`absolute inset-0 bg-gradient-to-r ${getGoalProgressStyle(goal.goal_type)} rounded-full opacity-20`}></div>
+                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                      <span>{getProgressPercentage(goal.current_value, goal.target_value, goal.goal_type).toFixed(1)}% สำเร็จ</span>
+                      <span>{goal.status === 'active' ? 'กำลังดำเนินการ' : goal.status === 'completed' ? 'สำเร็จแล้ว' : 'รอดำเนินการ'}</span>
+                    </div>
                   </div>
                   
-                  {/* Compact Progress Analysis */}
+                  {/* Advanced Progress Analysis */}
                   {(() => {
                     const advancedProgress = calculateAdvancedProgress(goal);
                     return (
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-3 gap-2 text-xs">
-                          <div className="text-center p-2 bg-muted rounded-lg">
-                            <div className="font-semibold text-foreground">ความคืบหน้า</div>
-                            <div className="text-primary">{advancedProgress.baseProgress.toFixed(1)}%</div>
-                          </div>
-                          <div className="text-center p-2 bg-muted rounded-lg">
-                            <div className="font-semibold text-foreground">เวลา</div>
-                            <div className="text-orange-600">{advancedProgress.timeProgress.toFixed(1)}%</div>
-                          </div>
-                          <div className="text-center p-2 bg-muted rounded-lg">
-                            <div className="font-semibold text-foreground">ความสม่ำเสมอ</div>
-                            <div className="text-green-600">{advancedProgress.consistencyFactor.toFixed(1)}%</div>
-                          </div>
+                      <div className="grid grid-cols-3 gap-3 text-sm">
+                        <div className="text-center p-3 bg-muted/30 rounded-lg border">
+                          <div className="font-medium text-foreground">ความคืบหน้า</div>
+                          <div className="text-primary font-semibold">{advancedProgress.baseProgress.toFixed(1)}%</div>
                         </div>
-                        
-                        {/* Overall Progress */}
-                        <div className="relative">
-                          <div className="text-sm font-medium text-foreground mb-1">ความคืบหน้ารวม</div>
-                          <Progress 
-                            value={advancedProgress.overallProgress} 
-                            className="h-2 rounded-full"
-                          />
-                          <div className="text-xs text-muted-foreground mt-1 text-center">
-                            {advancedProgress.overallProgress.toFixed(1)}%
-                          </div>
+                        <div className="text-center p-3 bg-muted/30 rounded-lg border">
+                          <div className="font-medium text-foreground">เวลา</div>
+                          <div className="text-muted-foreground font-semibold">{advancedProgress.timeProgress.toFixed(1)}%</div>
+                        </div>
+                        <div className="text-center p-3 bg-muted/30 rounded-lg border">
+                          <div className="font-medium text-foreground">ความสม่ำเสมอ</div>
+                          <div className="text-muted-foreground font-semibold">{advancedProgress.consistencyFactor.toFixed(1)}%</div>
                         </div>
                       </div>
                     );
                   })()}
                   
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 bg-green-50 px-3 py-2 rounded-lg border border-green-200">
-                      <TrendingUp className="h-4 w-4 text-green-600" />
-                      <span className="text-green-700 font-semibold text-sm">{getProgressPercentage(goal.current_value, goal.target_value, goal.goal_type).toFixed(1)}% สำเร็จ</span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
-                      <Clock className="h-4 w-4 text-blue-600" />
-                      <span className="text-blue-700 font-medium text-sm">{goal.status === 'active' ? 'กำลังดำเนินการ' : goal.status === 'completed' ? 'สำเร็จแล้ว' : 'รอดำเนินการ'}</span>
-                    </div>
-                  </div>
-                  
                   {goal.status === "active" && getProgressPercentage(goal.current_value, goal.target_value, goal.goal_type) < 100 && (
-                    <div className="mt-2 p-2 bg-orange-50 rounded-lg border border-orange-200">
-                      <div className="flex items-center gap-2 text-orange-700">
+                    <div className="p-3 bg-muted/20 rounded-lg border">
+                      <div className="flex items-center gap-2 text-muted-foreground">
                         <Clock className="h-4 w-4" />
-                        <span className="text-xs font-medium">ต้องอัปเดตความคืบหน้าให้ถึง {goal.target_value} ก่อนทำสำเร็จ</span>
+                        <span className="text-sm">ต้องอัปเดตความคืบหน้าให้ถึง {goal.target_value} ก่อนทำสำเร็จ</span>
                       </div>
                     </div>
                   )}
@@ -1691,7 +1672,7 @@ export default function HealthGoals() {
             )}
             </>
           ) : (
-            <Card className="border-0 rounded-xl bg-gradient-to-br from-card to-muted">
+            <Card>
               <CardContent className="p-4">
                 {history.length === 0 && goals.filter(g => g.status === 'completed').length === 0 ? (
                   <div className="text-sm text-muted-foreground">ยังไม่มีประวัติ</div>
@@ -1699,20 +1680,20 @@ export default function HealthGoals() {
                   <div className="space-y-4">
                     {/* แสดงเป้าหมายที่สำเร็จแล้ว */}
                     {goals.filter(g => g.status === 'completed').map((goal) => (
-                      <div key={goal.goal_id} className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+                      <div key={goal.goal_id} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-full bg-green-500 text-white">
+                          <div className="p-2 rounded-full bg-primary text-primary-foreground">
                             <CheckCircle className="h-4 w-4" />
                           </div>
                           <div>
-                            <p className="font-medium text-green-800">{getGoalDisplayTitle(goal)}</p>
-                            <p className="text-sm text-green-600">ทำสำเร็จ: {goal.current_value}/{goal.target_value}</p>
-                            <p className="text-xs text-green-500">
+                            <p className="font-medium text-foreground">{getGoalDisplayTitle(goal)}</p>
+                            <p className="text-sm text-muted-foreground">ทำสำเร็จ: {goal.current_value}/{goal.target_value}</p>
+                            <p className="text-xs text-muted-foreground">
                               {new Date(goal.start_date).toLocaleDateString('th-TH')} - {new Date(goal.end_date).toLocaleDateString('th-TH')}
                             </p>
                           </div>
                         </div>
-                        <Badge className="bg-green-500 text-white rounded-full px-2.5 py-0.5 text-xs">
+                        <Badge variant="secondary" className="text-xs">
                           สำเร็จแล้ว
                         </Badge>
                       </div>
@@ -1739,7 +1720,7 @@ export default function HealthGoals() {
                                     <div className="text-xs text-muted-foreground">{new Date(h.timestamp).toLocaleString('th-TH')}</div>
                                   </div>
                                 </div>
-                                <Badge className="rounded-full px-2.5 py-0.5 text-xs">
+                                <Badge variant="outline" className="text-xs">
                                   {h.action === 'created' ? 'สร้าง' : h.action === 'updated' ? 'แก้ไข' : h.action === 'completed' ? 'สำเร็จ' : 'ลบ'}
                                 </Badge>
                               </div>
@@ -1758,28 +1739,26 @@ export default function HealthGoals() {
 
       {/* Confirmation Dialog */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent className="sm:max-w-[500px] rounded-2xl border-2 border-accent/20">
-          <DialogHeader className="pb-4">
-            <DialogTitle className="flex items-center gap-3 text-2xl text-accent">
-              <div className="p-2 bg-gradient-to-r from-accent to-secondary rounded-xl">
-                <Target className="h-6 w-6 text-accent-foreground" />
-              </div>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-primary" />
               ยืนยันการทำสำเร็จ
             </DialogTitle>
-            <DialogDescription className="text-base mt-2">
+            <DialogDescription>
               คุณต้องการทำเครื่องหมายเป้าหมาย "{goalToComplete && getGoalDisplayTitle(goalToComplete)}" เป็นสำเร็จหรือไม่?
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="p-4 bg-muted/30 rounded-lg border">
               <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="h-4 w-4 text-blue-600" />
-                <span className="font-medium text-blue-800">ความคืบหน้าปัจจุบัน</span>
+                <TrendingUp className="h-4 w-4 text-primary" />
+                <span className="font-medium text-foreground">ความคืบหน้าปัจจุบัน</span>
               </div>
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-2xl font-bold text-primary">
                 {goalToComplete && getProgressPercentage(goalToComplete.current_value, goalToComplete.target_value, goalToComplete.goal_type).toFixed(1)}%
               </div>
-              <div className="text-sm text-blue-600">
+              <div className="text-sm text-muted-foreground">
                 {goalToComplete?.current_value} / {goalToComplete?.target_value}
               </div>
               <Progress 
@@ -1789,12 +1768,12 @@ export default function HealthGoals() {
             </div>
             
             {goalToComplete && getProgressPercentage(goalToComplete.current_value, goalToComplete.target_value, goalToComplete.goal_type) < 100 && (
-              <div className="p-3 bg-red-50 rounded-lg border border-red-200">
-                <div className="flex items-center gap-2 text-red-800">
+              <div className="p-3 bg-muted/20 rounded-lg border">
+                <div className="flex items-center gap-2 text-muted-foreground">
                   <Clock className="h-4 w-4" />
                   <span className="text-sm font-medium">⚠️ เป้าหมายยังไม่ครบ 100%</span>
                 </div>
-                <p className="text-xs text-red-700 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   ระบบอาจปฏิเสธการทำสำเร็จเนื่องจากเป้าหมายยังไม่ถึง 100% 
                   กรุณาอัปเดตความคืบหน้าก่อนทำสำเร็จ
                 </p>
@@ -1802,12 +1781,12 @@ export default function HealthGoals() {
             )}
             
             {goalToComplete && getProgressPercentage(goalToComplete.current_value, goalToComplete.target_value, goalToComplete.goal_type) >= 100 && (
-              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                <div className="flex items-center gap-2 text-green-800">
+              <div className="p-3 bg-muted/20 rounded-lg border">
+                <div className="flex items-center gap-2 text-foreground">
                   <CheckCircle className="h-4 w-4" />
                   <span className="text-sm font-medium">เป้าหมายครบ 100%</span>
                 </div>
-                <p className="text-xs text-green-700 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   ยินดีด้วย! คุณได้ทำเป้าหมายสำเร็จแล้ว
                 </p>
               </div>
@@ -1836,7 +1815,6 @@ export default function HealthGoals() {
                   }
                 }
               }}
-              className="bg-green-600 hover:bg-green-700"
             >
               <Check className="h-4 w-4 mr-2" />
               ยืนยันสำเร็จ
@@ -1847,15 +1825,13 @@ export default function HealthGoals() {
 
       {/* Progress Update Dialog */}
       <Dialog open={showProgressDialog} onOpenChange={setShowProgressDialog}>
-        <DialogContent className="sm:max-w-[500px] rounded-2xl border-2 border-primary/20">
-          <DialogHeader className="pb-4">
-            <DialogTitle className="flex items-center gap-3 text-2xl text-primary">
-              <div className="p-2 bg-gradient-to-r from-primary to-secondary rounded-xl">
-                <TrendingUp className="h-6 w-6 text-primary-foreground" />
-              </div>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
               อัปเดตความคืบหน้า
             </DialogTitle>
-            <DialogDescription className="text-base mt-2">
+            <DialogDescription>
               อัปเดตความคืบหน้าปัจจุบันของเป้าหมาย "{selectedGoal && getGoalDisplayTitle(selectedGoal)}"
             </DialogDescription>
           </DialogHeader>
