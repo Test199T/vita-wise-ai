@@ -1107,16 +1107,38 @@ export default function Dashboard() {
     return chartData;
   };
 
-  // สร้างข้อมูลกราฟการนอนจากข้อมูลจริง
+  // สร้างข้อมูลกราฟการนอนจากข้อมูลจริง (แสดงข้อมูลสัปดาห์ปัจจุบัน)
   const generateSleepChartData = () => {
     const days = ["จันทร์", "อังคาร", "พุธ", "พฤหัส", "ศุกร์", "เสาร์", "อาทิตย์"];
-    const chartData = days.map(day => ({ name: day, value: 0 }));
+    const chartData = days.map(day => ({ 
+      name: day, 
+      value: 0,
+      date: "",
+      sleep_duration_hours: 0,
+      sleep_score: 0,
+      sleep_quality: "fair" as const,
+      sleep_efficiency_percentage: 0,
+      // เพิ่มข้อมูลสำหรับแสดงในกราฟ
+      quality: "fair" as const,
+      score: 0,
+      efficiency: 0,
+      isRealData: false
+    }));
     
     // ถ้ามีข้อมูลการนอน ให้แจกจ่ายชั่วโมงการนอนไปยังวันต่างๆ
     if (sleepLogs && sleepLogs.length > 0) {
+      console.log('🔍 Processing sleep logs for chart:', sleepLogs.length, 'items');
+      
+      // แสดงข้อมูลการนอนทั้งหมดโดยไม่กรองตามวันที่
+      console.log('📅 Showing all sleep data without date filtering');
+      
       sleepLogs.forEach(sleepLog => {
         if (sleepLog.sleep_date || sleepLog.date) {
           const sleepDate = new Date(sleepLog.sleep_date || sleepLog.date);
+          
+          console.log(`📅 Processing sleep log: ${sleepLog.sleep_date || sleepLog.date}`);
+          console.log(`📅 Sleep date: ${sleepDate.toISOString().split('T')[0]}`);
+          
           // แปลง JavaScript getDay() (0=อาทิตย์, 1=จันทร์, ..., 6=เสาร์) 
           // ให้เป็น index ของ array ไทย (0=จันทร์, 1=อังคาร, ..., 6=อาทิตย์)
           const dayIndex = sleepDate.getDay() === 0 ? 6 : sleepDate.getDay() - 1;
@@ -1135,11 +1157,28 @@ export default function Dashboard() {
             sleepHours = Math.round((duration / 60) * 10) / 10;
           }
           
-          chartData[dayIndex].value = sleepHours;
+          console.log(`✅ Adding sleep data: ${sleepHours} hours for ${days[dayIndex]} (${sleepLog.sleep_date || sleepLog.date})`);
+          
+          // อัปเดตข้อมูลใน chartData
+          chartData[dayIndex] = {
+            name: days[dayIndex],
+            value: sleepHours,
+            date: sleepLog.sleep_date || sleepLog.date,
+            sleep_duration_hours: sleepHours,
+            sleep_score: sleepLog.sleep_score || 0,
+            sleep_quality: sleepLog.sleep_quality || "fair",
+            sleep_efficiency_percentage: sleepLog.sleep_efficiency_percentage || 0,
+            // เพิ่มข้อมูลสำหรับแสดงในกราฟ
+            quality: sleepLog.sleep_quality || "fair",
+            score: sleepLog.sleep_score || 0,
+            efficiency: sleepLog.sleep_efficiency_percentage || 0,
+            isRealData: true
+          };
         }
       });
     }
     
+    console.log('📊 Final sleep chart data:', chartData);
     return chartData;
   };
 
@@ -1588,11 +1627,14 @@ export default function Dashboard() {
                   {/* แท็บการนอน */}
                   <TabsContent value="weight" className="space-y-6 mt-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <SleepChart
+                      <EnhancedHealthChart
                         title="แนวโน้มการนอนหลับ"
                         description="ชั่วโมงการนอนหลับในสัปดาห์ที่ผ่านมา"
-                        data={sleepWeeklyData}
-                        isLoading={isLoadingSleepData}
+                        data={realSleepData}
+                        type="line"
+                        color="hsl(210, 100%, 50%)"
+                        unit="ชม."
+                        showDataStatus={true}
                       />
                     </div>
                   </TabsContent>
