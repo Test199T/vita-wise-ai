@@ -2378,10 +2378,13 @@ class APIService {
         sleepLogs = result;
       } else if (result && result.data && Array.isArray(result.data)) {
         sleepLogs = result.data;
+      } else if (result && result.data && result.data.sleep_logs && Array.isArray(result.data.sleep_logs)) {
+        sleepLogs = result.data.sleep_logs;
       } else if (result && result.sleep_logs && Array.isArray(result.sleep_logs)) {
         sleepLogs = result.sleep_logs;
       }
       
+      console.log('🔍 Parsed sleep logs:', sleepLogs.length, 'items');
       return sleepLogs;
     } catch (error) {
       console.error('❌ Error fetching sleep logs:', error);
