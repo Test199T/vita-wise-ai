@@ -1206,6 +1206,139 @@ export default function Dashboard() {
     return chartData;
   };
 
+  // สร้างข้อมูลสรุปกิจกรรมรายสัปดาห์จากข้อมูลจริง
+  const generateWeeklyActivitySummary = () => {
+    // คำนวณข้อมูลการออกกำลังกาย (นาทีรวมในสัปดาห์)
+    const totalExerciseMinutes = realExerciseData.reduce((sum, day) => sum + day.value, 0);
+    
+    // คำนวณข้อมูลการนอน (ชั่วโมงรวมในสัปดาห์)
+    const totalSleepHours = realSleepData.reduce((sum, day) => sum + day.value, 0);
+    
+    // คำนวณข้อมูลน้ำดื่ม (ลิตรรวมในสัปดาห์)
+    const totalWaterLiters = realWaterData.reduce((sum, day) => sum + day.value, 0);
+    
+    // คำนวณข้อมูลอาหาร (จำนวนมื้อรวมในสัปดาห์)
+    const totalMeals = foodLogs ? foodLogs.length : 0;
+    
+    return [
+      { name: "ออกกำลังกาย", value: totalExerciseMinutes, unit: "นาที" },
+      { name: "นอนหลับ", value: totalSleepHours, unit: "ชั่วโมง" },
+      { name: "ดื่มน้ำ", value: totalWaterLiters, unit: "ลิตร" },
+      { name: "บริโภคอาหาร", value: totalMeals, unit: "มื้อ" }
+    ];
+  };
+
+  // สร้างข้อมูลกราฟเปรียบเทียบแคลอรี่ (บริโภค vs เผาผลาญ)
+  const generateCaloriesBalanceData = () => {
+    const days = ["จันทร์", "อังคาร", "พุธ", "พฤหัส", "ศุกร์", "เสาร์", "อาทิตย์"];
+    const consumedData = generateCaloriesData(dashboardData?.weekly_trends, foodLogs);
+    const burnedData = caloriesBurnedData;
+    
+    return {
+      consumed: consumedData.map((item, index) => ({
+        name: days[index],
+        value: item.value,
+        type: "บริโภค"
+      })),
+      burned: burnedData.map((item, index) => ({
+        name: days[index],
+        value: item.value,
+        type: "เผาผลาญ"
+      }))
+    };
+  };
+
+  // สร้างข้อมูลกราฟคุณภาพการนอน
+  const generateSleepQualityData = () => {
+    const days = ["จันทร์", "อังคาร", "พุธ", "พฤหัส", "ศุกร์", "เสาร์", "อาทิตย์"];
+    
+    return realSleepData.map((sleepData, index) => ({
+      name: days[index],
+      hours: sleepData.value,
+      score: sleepData.score || 0,
+      quality: sleepData.quality || "fair",
+      efficiency: sleepData.efficiency || 0,
+      isRealData: sleepData.isRealData || false
+    }));
+  };
+
+  // สร้างข้อมูลกราฟสารอาหารหลัก
+  const generateMacronutrientsData = () => {
+    const targets = getNutritionTargetsForPeriod(selectedNutritionPeriod);
+    
+    return [
+      { 
+        name: "โปรตีน", 
+        current: currentNutritionData?.total_protein || 0, 
+        target: targets.protein,
+        unit: "g",
+        color: "hsl(142, 69%, 58%)"
+      },
+      { 
+        name: "คาร์โบไฮเดรต", 
+        current: currentNutritionData?.total_carbs || 0, 
+        target: targets.carbs,
+        unit: "g",
+        color: "hsl(200, 70%, 60%)"
+      },
+      { 
+        name: "ไขมัน", 
+        current: currentNutritionData?.total_fat || 0, 
+        target: targets.fats,
+        unit: "g",
+        color: "hsl(45, 100%, 50%)"
+      },
+      { 
+        name: "ไฟเบอร์", 
+        current: currentNutritionData?.total_fiber || 0, 
+        target: targets.fiber,
+        unit: "g",
+        color: "hsl(280, 70%, 60%)"
+      }
+    ];
+  };
+
+  // สร้างข้อมูลกราฟประสิทธิภาพรายสัปดาห์
+  const generateWeeklyPerformanceData = () => {
+    const days = ["จันทร์", "อังคาร", "พุธ", "พฤหัส", "ศุกร์", "เสาร์", "อาทิตย์"];
+    
+    return days.map((day, index) => {
+      const exercise = realExerciseData[index]?.value || 0;
+      const sleep = realSleepData[index]?.value || 0;
+      const water = realWaterData[index]?.value || 0;
+      const calories = generateCaloriesData(dashboardData?.weekly_trends, foodLogs)[index]?.value || 0;
+      
+      // คำนวณคะแนนประสิทธิภาพ (0-100)
+      const exerciseScore = Math.min((exercise / 45) * 100, 100); // เป้าหมาย 45 นาที
+      const sleepScore = Math.min((sleep / 8) * 100, 100); // เป้าหมาย 8 ชั่วโมง
+      const waterScore = Math.min((water / 2.5) * 100, 100); // เป้าหมาย 2.5 ลิตร
+      const caloriesScore = Math.min((calories / 2000) * 100, 100); // เป้าหมาย 2000 แคล
+      
+      const overallScore = (exerciseScore + sleepScore + waterScore + caloriesScore) / 4;
+      
+      return {
+        name: day,
+        exercise: exerciseScore,
+        sleep: sleepScore,
+        water: waterScore,
+        calories: caloriesScore,
+        overall: overallScore
+      };
+    });
+  };
+
+  // สร้างข้อมูลกราฟแนวโน้มระยะยาว (4 สัปดาห์)
+  const generateLongTermTrendsData = () => {
+    const weeks = ["สัปดาห์ 1", "สัปดาห์ 2", "สัปดาห์ 3", "สัปดาห์ 4"];
+    
+    return {
+      exercise: monthlyExerciseData,
+      calories: monthlyCaloriesBurnedData,
+      protein: monthlyProteinData,
+      sleep: generateWeeklySleepData(sleepLogs)
+    };
+  };
+
   // คำนวณชั่วโมงการนอนของวันนี้จากข้อมูลจริง (ใช้ average_sleep_duration_hours จาก API)
   const getTodaySleepHours = () => {
     if (!sleepStats || !sleepStats.average_sleep_duration_hours) {
@@ -1506,7 +1639,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="daily" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="daily" className="flex items-center gap-2">
                   <Clock className="h-4 w-4" />
                   รายวัน
@@ -1514,6 +1647,14 @@ export default function Dashboard() {
                 <TabsTrigger value="weekly" className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
                   รายสัปดาห์
+                </TabsTrigger>
+                <TabsTrigger value="balance" className="flex items-center gap-2">
+                  <Flame className="h-4 w-4" />
+                  สมดุลแคลอรี่
+                </TabsTrigger>
+                <TabsTrigger value="performance" className="flex items-center gap-2">
+                  <Target className="h-4 w-4" />
+                  ประสิทธิภาพ
                 </TabsTrigger>
                 <TabsTrigger value="nutrition" className="flex items-center gap-2">
                   <iconify-icon icon="lucide:apple" width="16" height="16"></iconify-icon>
@@ -1527,6 +1668,12 @@ export default function Dashboard() {
 
               {/* Daily Trends Tab */}
               <TabsContent value="daily" className="space-y-6">
+                <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                  <h4 className="font-medium text-blue-900 mb-1">แนวโน้มรายวัน</h4>
+                  <p className="text-sm text-blue-700">
+                        ติดตามแนวโน้มและกิจกรรมสุขภาพในแต่ละวัน เพื่อให้เห็นรูปแบบและพฤติกรรมที่สม่ำเสมอ
+                      </p>
+                </div>
                 <Tabs defaultValue="exercise" className="w-full">
                   <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="exercise" className="flex items-center gap-2">
@@ -1549,10 +1696,16 @@ export default function Dashboard() {
 
                   {/* แท็บออกกำลังกาย */}
                   <TabsContent value="exercise" className="space-y-6 mt-6">
+                    <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                      <h4 className="font-medium text-blue-900 mb-1">การออกกำลังกาย</h4>
+                      <p className="text-sm text-blue-700">
+                        ติดตามความสม่ำเสมอและความเข้มข้นของการออกกำลังกาย เพื่อประเมินความคืบหน้าและปรับแผนการออกกำลังกายให้เหมาะสม
+                      </p>
+                    </div>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       <EnhancedHealthChart
                         title="แนวโน้มการออกกำลังกาย"
-                        description="นาทีการออกกำลังกายในสัปดาห์ที่ผ่านมา"
+                        description="📊 ดูความสม่ำเสมอ: เป้าหมาย 45 นาที/วัน | ช่วยวางแผนการออกกำลังกายและติดตามความคืบหน้า"
                         data={realExerciseData}
                         type="line"
                         color="hsl(200, 70%, 60%)"
@@ -1561,7 +1714,7 @@ export default function Dashboard() {
                       />
                       <EnhancedHealthChart
                         title="แนวโน้มแคลอรี่ที่เผาผลาญ"
-                        description="แคลอรี่ที่เผาผลาญจากการออกกำลังกายในสัปดาห์ที่ผ่านมา"
+                        description="🔥 ดูประสิทธิภาพ: แคลอรี่ที่เผาผลาญจากการออกกำลังกาย | ช่วยคำนวณสมดุลแคลอรี่และวางแผนลดน้ำหนัก"
                         data={caloriesBurnedData}
                         type="line"
                         color="hsl(0, 70%, 50%)"
@@ -1573,10 +1726,16 @@ export default function Dashboard() {
 
                   {/* แท็บโภชนาการ */}
                   <TabsContent value="nutrition" className="space-y-6 mt-6">
+                    <div className="mb-4 p-3 bg-orange-50 rounded-lg">
+                      <h4 className="font-medium text-orange-900 mb-1">โภชนาการ</h4>
+                      <p className="text-sm text-orange-700">
+                        ติดตามการบริโภคอาหารและสารอาหาร เพื่อให้แน่ใจว่าคุณได้รับสารอาหารครบถ้วนและอยู่ในเกณฑ์ที่เหมาะสม
+                      </p>
+                    </div>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       <EnhancedHealthChart
                         title="แนวโน้มแคลอรี่ที่บริโภค"
-                        description="แคลอรี่ที่บริโภคในสัปดาห์ที่ผ่านมา"
+                        description="🍽️ ดูปริมาณพลังงาน: แคลอรี่ที่บริโภคในแต่ละวัน | ช่วยควบคุมน้ำหนักและวางแผนมื้ออาหาร"
                         data={generateCaloriesData(dashboardData?.weekly_trends, foodLogs)}
                         type="line"
                         color="hsl(45, 100%, 50%)"
@@ -1585,7 +1744,7 @@ export default function Dashboard() {
                       />
                       <EnhancedHealthChart
                         title="แนวโน้มโปรตีนรายวัน"
-                        description="ปริมาณโปรตีนที่บริโภคในสัปดาห์ที่ผ่านมา (กรัม)"
+                        description="🥩 ดูสารอาหารหลัก: ปริมาณโปรตีนที่บริโภค | ช่วยเสริมสร้างกล้ามเนื้อและซ่อมแซมร่างกาย"
                         data={realProteinData}
                         type="line"
                         color="hsl(142, 69%, 58%)"
@@ -1593,28 +1752,20 @@ export default function Dashboard() {
                         showDataStatus={true}
                       />
                     </div>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <EnhancedHealthChart
-                        title="สรุปแคลอรี่รายสัปดาห์"
-                        description="เปรียบเทียบแคลอรี่ที่บริโภค vs เผาผลาญในสัปดาห์นี้"
-                        data={[
-                          ...generateCaloriesData(dashboardData?.weekly_trends, foodLogs).map(item => ({ ...item, type: 'บริโภค' })),
-                          ...caloriesBurnedData.map(item => ({ ...item, type: 'เผาผลาญ' }))
-                        ]}
-                        type="line"
-                        color="hsl(120, 70%, 50%)"
-                        unit="แคล"
-                        showDataStatus={true}
-                      />
-                    </div>
                   </TabsContent>
 
                   {/* แท็บดื่มน้ำ */}
                   <TabsContent value="water" className="space-y-6 mt-6">
+                    <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                      <h4 className="font-medium text-blue-900 mb-1">การดื่มน้ำ</h4>
+                      <p className="text-sm text-blue-700">
+                        ติดตามการดื่มน้ำเพื่อให้แน่ใจว่าร่างกายได้รับน้ำเพียงพอ ช่วยให้ระบบต่างๆ ในร่างกายทำงานได้อย่างมีประสิทธิภาพ
+                      </p>
+                    </div>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       <EnhancedHealthChart
                         title="แนวโน้มการดื่มน้ำ"
-                        description="ลิตรน้ำที่ดื่มในสัปดาห์ที่ผ่านมา"
+                        description="💧 ดูความเพียงพอ: ลิตรน้ำที่ดื่มในแต่ละวัน | เป้าหมาย 2.5 ลิตร/วัน เพื่อสุขภาพที่ดี"
                         data={realWaterData}
                         type="line"
                         color="hsl(210, 100%, 50%)"
@@ -1626,10 +1777,16 @@ export default function Dashboard() {
 
                   {/* แท็บการนอน */}
                   <TabsContent value="weight" className="space-y-6 mt-6">
+                    <div className="mb-4 p-3 bg-purple-50 rounded-lg">
+                      <h4 className="font-medium text-purple-900 mb-1">การนอนหลับ</h4>
+                      <p className="text-sm text-purple-700">
+                        ติดตามคุณภาพการนอนเพื่อให้แน่ใจว่าร่างกายได้พักผ่อนเพียงพอ ช่วยให้ร่างกายและสมองฟื้นฟูได้อย่างเต็มที่
+                      </p>
+                    </div>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       <EnhancedHealthChart
                         title="แนวโน้มการนอนหลับ"
-                        description="ชั่วโมงการนอนหลับในสัปดาห์ที่ผ่านมา"
+                        description="😴 ดูคุณภาพการพักผ่อน: ชั่วโมงการนอนในแต่ละวัน | เป้าหมาย 7-8 ชั่วโมง/คืน เพื่อสุขภาพที่ดี"
                         data={realSleepData}
                         type="line"
                         color="hsl(210, 100%, 50%)"
@@ -1643,6 +1800,12 @@ export default function Dashboard() {
 
               {/* Weekly Trends Tab */}
               <TabsContent value="weekly" className="space-y-6">
+                <div className="mb-4 p-3 bg-indigo-50 rounded-lg">
+                  <h4 className="font-medium text-indigo-900 mb-1">แนวโน้มรายสัปดาห์</h4>
+                  <p className="text-sm text-indigo-700">
+                        ดูแนวโน้มและภาพรวมในระยะสัปดาห์ เพื่อประเมินความคืบหน้าและวางแผนสำหรับสัปดาห์ถัดไป
+                      </p>
+                </div>
                 <Tabs defaultValue="exercise" className="w-full">
                   <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="exercise" className="flex items-center gap-2">
@@ -1714,12 +1877,7 @@ export default function Dashboard() {
                       <EnhancedHealthChart
                         title="สรุปกิจกรรมรายสัปดาห์"
                         description="ภาพรวมกิจกรรมสุขภาพในสัปดาห์ที่ผ่านมา"
-                        data={[
-                          { name: "ออกกำลังกาย", value: 35, unit: "นาที" },
-                          { name: "นอนหลับ", value: 56, unit: "ชั่วโมง" },
-                          { name: "ดื่มน้ำ", value: 14, unit: "แก้ว" },
-                          { name: "บริโภคอาหาร", value: 21, unit: "มื้อ" }
-                        ]}
+                        data={generateWeeklyActivitySummary()}
                         type="bar"
                         color="hsl(120, 70%, 50%)"
                         unit=""
@@ -1730,8 +1888,122 @@ export default function Dashboard() {
                 </Tabs>
               </TabsContent>
 
+              {/* Calories Balance Tab */}
+              <TabsContent value="balance" className="space-y-6">
+                <div className="mb-4 p-3 bg-green-50 rounded-lg">
+                  <h4 className="font-medium text-green-900 mb-1">สมดุลแคลอรี่</h4>
+                  <p className="text-sm text-green-700">
+                        วิเคราะห์สมดุลพลังงานและสารอาหาร เพื่อให้แน่ใจว่าร่างกายได้รับพลังงานและสารอาหารที่เหมาะสมสำหรับเป้าหมายสุขภาพ
+                      </p>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <EnhancedHealthChart
+                    title="สมดุลแคลอรี่รายวัน"
+                    description="⚖️ ดูสมดุลพลังงาน: เปรียบเทียบแคลอรี่ที่บริโภค vs เผาผลาญ | ช่วยควบคุมน้ำหนักและวางแผนการออกกำลังกาย"
+                    data={[
+                      ...generateCaloriesBalanceData().consumed,
+                      ...generateCaloriesBalanceData().burned
+                    ]}
+                    type="line"
+                    color="hsl(120, 70%, 50%)"
+                    unit="แคล"
+                    showDataStatus={true}
+                  />
+                  <EnhancedHealthChart
+                    title="สารอาหารหลัก"
+                    description="🥗 ดูความสมดุล: เปรียบเทียบสารอาหารหลักกับเป้าหมาย | ช่วยให้แน่ใจว่าร่างกายได้รับสารอาหารครบถ้วน"
+                    data={generateMacronutrientsData().map(item => ({
+                      name: item.name,
+                      value: item.current,
+                      target: item.target,
+                      unit: item.unit
+                    }))}
+                    type="bar"
+                    color="hsl(142, 69%, 58%)"
+                    unit="g"
+                    showDataStatus={true}
+                  />
+                </div>
+                <div className="grid grid-cols-1 gap-6">
+                  <EnhancedHealthChart
+                    title="แนวโน้มระยะยาว"
+                    description="📈 ดูแนวโน้ม: การเปลี่ยนแปลงการออกกำลังกายและโปรตีนใน 4 สัปดาห์ล่าสุด | ช่วยประเมินความคืบหน้าและปรับแผน"
+                    data={[
+                      ...generateLongTermTrendsData().exercise.map(item => ({ ...item, type: "ออกกำลังกาย" })),
+                      ...generateLongTermTrendsData().protein.map(item => ({ ...item, type: "โปรตีน" }))
+                    ]}
+                    type="bar"
+                    color="hsl(200, 70%, 60%)"
+                    unit=""
+                    showDataStatus={true}
+                  />
+                </div>
+              </TabsContent>
+
+              {/* Performance Tab */}
+              <TabsContent value="performance" className="space-y-6">
+                <div className="mb-4 p-3 bg-purple-50 rounded-lg">
+                  <h4 className="font-medium text-purple-900 mb-1">ประสิทธิภาพ</h4>
+                  <p className="text-sm text-purple-700">
+                        ประเมินประสิทธิภาพโดยรวมในด้านต่างๆ เพื่อให้เห็นภาพรวมความคืบหน้าและจุดที่ต้องปรับปรุง
+                      </p>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <EnhancedHealthChart
+                    title="ประสิทธิภาพรายวัน"
+                    description="📊 ดูคะแนนรวม: ประสิทธิภาพในแต่ละวันของสัปดาห์ (0-100%) | ช่วยติดตามความสม่ำเสมอและความคืบหน้า"
+                    data={generateWeeklyPerformanceData().map(item => ({
+                      name: item.name,
+                      value: item.overall,
+                      exercise: item.exercise,
+                      sleep: item.sleep,
+                      water: item.water,
+                      calories: item.calories
+                    }))}
+                    type="line"
+                    color="hsl(280, 70%, 60%)"
+                    unit="%"
+                    showDataStatus={true}
+                  />
+                  <EnhancedHealthChart
+                    title="สรุปประสิทธิภาพรายสัปดาห์"
+                    description="🏆 ดูคะแนนเฉลี่ย: เปรียบเทียบประสิทธิภาพในแต่ละด้าน | ช่วยระบุจุดแข็งและจุดที่ต้องปรับปรุง"
+                    data={[
+                      { name: "ออกกำลังกาย", value: generateWeeklyPerformanceData().reduce((sum, day) => sum + day.exercise, 0) / 7 },
+                      { name: "การนอน", value: generateWeeklyPerformanceData().reduce((sum, day) => sum + day.sleep, 0) / 7 },
+                      { name: "น้ำดื่ม", value: generateWeeklyPerformanceData().reduce((sum, day) => sum + day.water, 0) / 7 },
+                      { name: "แคลอรี่", value: generateWeeklyPerformanceData().reduce((sum, day) => sum + day.calories, 0) / 7 }
+                    ]}
+                    type="bar"
+                    color="hsl(45, 100%, 50%)"
+                    unit="%"
+                    showDataStatus={true}
+                  />
+                </div>
+                <div className="grid grid-cols-1 gap-6">
+                  <EnhancedHealthChart
+                    title="แนวโน้มระยะยาว - การออกกำลังกาย"
+                    description="📈 ดูแนวโน้ม: การเปลี่ยนแปลงการออกกำลังกายและแคลอรี่ที่เผาผลาญใน 4 สัปดาห์ล่าสุด | ช่วยประเมินความคืบหน้าและวางแผน"
+                    data={[
+                      ...generateLongTermTrendsData().exercise.map(item => ({ ...item, type: "นาที" })),
+                      ...generateLongTermTrendsData().calories.map(item => ({ ...item, type: "แคลอรี่" }))
+                    ]}
+                    type="line"
+                    color="hsl(0, 70%, 50%)"
+                    unit=""
+                    showDataStatus={true}
+                  />
+                </div>
+              </TabsContent>
+
               {/* Nutrition Analysis Tab */}
               <TabsContent value="nutrition" className="space-y-6">
+                <div className="mb-4 p-3 bg-orange-50 rounded-lg">
+                  <h4 className="font-medium text-orange-900 mb-1">การวิเคราะห์โภชนาการ</h4>
+                  <p className="text-sm text-orange-700">
+                        วิเคราะห์รายละเอียดสารอาหารและวิตามิน เพื่อให้แน่ใจว่าร่างกายได้รับสารอาหารครบถ้วนและอยู่ในเกณฑ์ที่เหมาะสม
+                      </p>
+                </div>
                 {/* เพิ่ม dropdown เลือกช่วงเวลา */}
                 <div className="flex items-center justify-between">
                   <div>
@@ -1849,6 +2121,12 @@ export default function Dashboard() {
 
               {/* Health Insights Tab */}
               <TabsContent value="insights" className="space-y-6">
+                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                  <h4 className="font-medium text-gray-900 mb-1">ข้อมูลเชิงลึก</h4>
+                  <p className="text-sm text-gray-700">
+                        ตรวจสอบสถานะข้อมูลและระบบ เพื่อให้แน่ใจว่าข้อมูลที่แสดงเป็นข้อมูลจริงและอัปเดตล่าสุด
+                      </p>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   <div className="space-y-4">
                     <div className="flex items-center gap-2">
