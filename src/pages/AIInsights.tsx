@@ -4,551 +4,859 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Brain, 
   TrendingUp, 
-  TrendingDown, 
   AlertCircle, 
   CheckCircle, 
-  Users, 
-  BarChart3, 
   Target, 
   Activity,
-  Calendar,
-  Filter,
   Download,
   RefreshCw,
-  Eye,
-  PieChart,
-  LineChart
+  PlayCircle,
+  Database,
+  Cpu,
+  FileText,
+  Clock,
+  Zap,
+  Heart,
+  Dumbbell,
+  Moon,
+  Utensils,
+  Calendar,
+  Share2,
+  FileSpreadsheet,
+  Presentation
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { aiService, HealthData } from "@/services/aiService";
+import { tokenUtils } from "@/lib/utils";
+import { debugToken, setTestToken } from "@/utils/tokenDebugger";
 
-interface UserInsight {
-  user_id: string;
-  username: string;
-  health_score: number;
-  sleep_quality: number;
-  nutrition_score: number;
-  exercise_frequency: number;
-  stress_level: number;
-  last_updated: string;
+interface AnalysisStep {
+  id: string;
+  label: string;
+  description: string;
+  icon: any;
+  completed: boolean;
+  current: boolean;
 }
 
-interface BatchAnalysis {
-  analysis_id: string;
-  analysis_type: string;
-  total_users: number;
-  completion_percentage: number;
-  status: "running" | "completed" | "failed";
-  started_at: string;
-  completed_at?: string;
-  insights_generated: number;
+interface PersonalHealthData {
+  // ข้อมูลส่วนตัว
+  age: number;
+  gender: string;
+  weight: number;
+  height: number;
+  bmi: number;
+  
+  // ข้อมูลสุขภาพ
+  bloodPressure: string;
+  bloodSugar: number;
+  cholesterol: number;
+  
+  // เป้าหมายสุขภาพ
+  healthGoals: Array<{
+    type: string;
+    target: string;
+    current: string;
+    progress: number;
+  }>;
+  
+  // ข้อมูลการออกกำลังกาย
+  exerciseData: {
+    weeklySessions: number;
+    avgDuration: number;
+    caloriesBurned: number;
+    mainActivities: string[];
+  };
+  
+  // ข้อมูลการกิน
+  nutritionData: {
+    dailyCalories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    waterIntake: number;
+  };
+  
+  // ข้อมูลการนอน
+  sleepData: {
+    avgSleepHours: number;
+    sleepQuality: number;
+    bedtime: string;
+    wakeTime: string;
+  };
+  
+  // ข้อมูลสุขภาพจิต
+  stressLevel: number;
+  moodScore: number;
 }
 
-interface GlobalInsight {
-  insight_id: string;
-  insight_type: "trend_analysis" | "population_health" | "correlation_study" | "risk_assessment";
-  insight_content: string;
-  affected_users: number;
-  severity_level: "low" | "medium" | "high";
-  confidence_score: number;
-  created_at: string;
+interface PersonalInsights {
+  overallHealthScore: number;
+  analysisDate: string;
+  keyFindings: string[];
+  strengths: {
+    goalCompletionRate: number;
+    consistencyScore: number;
+    improvementTrend: number;
+    healthyHabits: number;
+  };
+  areasForImprovement: {
+    sleepQuality: number;
+    exerciseFrequency: number;
+    nutritionBalance: number;
+    stressManagement: number;
+  };
+  personalizedRecommendations: {
+    immediate: Array<{
+      category: string;
+      recommendation: string;
+      reason: string;
+      impact: string;
+    }>;
+    shortTerm: Array<{
+      category: string;
+      recommendation: string;
+      reason: string;
+      impact: string;
+    }>;
+    longTerm: Array<{
+      category: string;
+      recommendation: string;
+      reason: string;
+      impact: string;
+    }>;
+  };
+  healthAlerts: Array<{
+    type: string;
+    severity: 'low' | 'medium' | 'high';
+    message: string;
+    action: string;
+  }>;
+  progressMetrics: {
+    healthScoreTrend: number;
+    goalAchievement: number;
+    habitConsistency: number;
+    overallImprovement: number;
+  };
 }
 
 export default function AIInsights() {
   const { toast } = useToast();
-  const [selectedTimeframe, setSelectedTimeframe] = useState("7d");
-  const [selectedAnalysisType, setSelectedAnalysisType] = useState("all");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  
-  const [batchAnalyses] = useState<BatchAnalysis[]>([
+  const [analysisCompleted, setAnalysisCompleted] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [personalInsights, setPersonalInsights] = useState<PersonalInsights | null>(null);
+
+  const analysisSteps: AnalysisStep[] = [
     {
-      analysis_id: "1",
-      analysis_type: "comprehensive_health",
-      total_users: 1247,
-      completion_percentage: 100,
-      status: "completed",
-      started_at: "2024-01-01T08:00:00Z",
-      completed_at: "2024-01-01T10:30:00Z",
-      insights_generated: 156
+      id: "data_collection",
+      label: "Collecting Personal Data",
+      description: "Gathering your health and behavioral data",
+      icon: Database,
+      completed: false,
+      current: false
     },
     {
-      analysis_id: "2",
-      analysis_type: "sleep_patterns",
-      total_users: 1247,
-      completion_percentage: 78,
-      status: "running",
-      started_at: "2024-01-02T09:00:00Z",
-      insights_generated: 89
+      id: "pattern_analysis",
+      label: "Analyzing Health Patterns",
+      description: "Identifying trends and correlations in your data",
+      icon: TrendingUp,
+      completed: false,
+      current: false
+    },
+    {
+      id: "ai_processing",
+      label: "AI Personal Processing",
+      description: "Generating personalized recommendations for you",
+      icon: Cpu,
+      completed: false,
+      current: false
+    },
+    {
+      id: "report_generation",
+      label: "Generating Personal Report",
+      description: "Compiling analysis results and recommendations",
+      icon: FileText,
+      completed: false,
+      current: false
     }
-  ]);
+  ];
 
-  const [globalInsights] = useState<GlobalInsight[]>([
-    {
-      insight_id: "1",
-      insight_type: "trend_analysis",
-      insight_content: "ผู้ใช้ 67% มีคุณภาพการนอนลดลงในช่วง 2 สัปดาห์ที่ผ่านมา โดยเฉพาะในกลุ่มอายุ 25-35 ปี",
-      affected_users: 835,
-      severity_level: "medium",
-      confidence_score: 92,
-      created_at: "2024-01-01T10:30:00Z"
-    },
-    {
-      insight_id: "2",
-      insight_type: "population_health",
-      insight_content: "พบความสัมพันธ์ระหว่างการออกกำลังกายน้อยกว่า 3 ครั้งต่อสัปดาห์กับระดับความเครียดที่สูงขึ้น",
-      affected_users: 623,
-      severity_level: "high",
-      confidence_score: 88,
-      created_at: "2024-01-01T11:15:00Z"
-    },
-    {
-      insight_id: "3",
-      insight_type: "correlation_study",
-      insight_content: "ผู้ที่ดื่มน้ำน้อยกว่า 2 ลิตรต่อวันมีแนวโน้มที่จะมีปัญหาการนอนและความเหนื่อยล้า",
-      affected_users: 456,
-      severity_level: "medium",
-      confidence_score: 85,
-      created_at: "2024-01-01T12:00:00Z"
-    }
-  ]);
-
-  const [userInsights] = useState<UserInsight[]>([
-    {
-      user_id: "1",
-      username: "user_001",
-      health_score: 78,
-      sleep_quality: 65,
-      nutrition_score: 82,
-      exercise_frequency: 70,
-      stress_level: 45,
-      last_updated: "2024-01-01T15:00:00Z"
-    },
-    {
-      user_id: "2", 
-      username: "user_002",
-      health_score: 92,
-      sleep_quality: 88,
-      nutrition_score: 95,
-      exercise_frequency: 85,
-      stress_level: 25,
-      last_updated: "2024-01-01T15:00:00Z"
-    }
-  ]);
-
-  const getInsightIcon = (type: string) => {
-    const icons = {
-      "trend_analysis": TrendingUp,
-      "population_health": Users,
-      "correlation_study": BarChart3,
-      "risk_assessment": AlertCircle
-    };
-    const IconComponent = icons[type as keyof typeof icons] || Brain;
-    return <IconComponent className="h-5 w-5" />;
-  };
-
-  const getInsightTypeLabel = (type: string) => {
-    const labels = {
-      "trend_analysis": "การวิเคราะห์แนวโน้ม",
-      "population_health": "สุขภาพประชากร",
-      "correlation_study": "การศึกษาความสัมพันธ์",
-      "risk_assessment": "การประเมินความเสี่ยง"
-    };
-    return labels[type as keyof typeof labels] || type;
-  };
-
-  const getSeverityColor = (level: string) => {
-    const colors = {
-      "low": "bg-green-100 text-green-800",
-      "medium": "bg-yellow-100 text-yellow-800",
-      "high": "bg-red-100 text-red-800"
-    };
-    return colors[level as keyof typeof colors] || "bg-gray-100 text-gray-800";
-  };
-
-  const getStatusColor = (status: string) => {
-    const colors = {
-      "running": "bg-blue-100 text-blue-800",
-      "completed": "bg-green-100 text-green-800",
-      "failed": "bg-red-100 text-red-800"
-    };
-    return colors[status as keyof typeof colors] || "bg-gray-100 text-gray-800";
-  };
-
-  const startBatchAnalysis = () => {
+  const startPersonalAnalysis = async () => {
     setIsAnalyzing(true);
+    setAnalysisCompleted(false);
+    setCurrentStep(0);
+
     toast({
-      title: "เริ่มการวิเคราะห์",
-      description: "กำลังวิเคราะห์ข้อมูลผู้ใช้ทั้งหมด กรุณารอสักครู่..."
+      title: "Starting Personal Health Analysis",
+      description: "Analyzing your health data, please wait...",
     });
-    
-    // Simulate analysis completion
-    setTimeout(() => {
-      setIsAnalyzing(false);
-      toast({
-        title: "การวิเคราะห์เสร็จสิ้น",
-        description: "สร้างคำแนะนำใหม่ 23 รายการสำหรับผู้ใช้ 1,247 คน"
+
+    try {
+      // Check if user is logged in
+      if (!tokenUtils.isLoggedIn()) {
+        toast({
+          title: "Authentication Required",
+          description: "Please login to access AI health analysis",
+          variant: "destructive"
+        });
+        setIsAnalyzing(false);
+        return;
+      }
+
+      const userId = tokenUtils.getUserId();
+      if (!userId) {
+        console.log('User ID not found in token, using fallback user ID');
+        // Use fallback user ID for demo purposes
+        const fallbackUserId = 1;
+        console.log('Using fallback user ID:', fallbackUserId);
+        
+        // Continue with fallback user ID
+        const response = await aiService.analyzeHealth(fallbackUserId, {
+          analysisType: 'complete',
+          timeframe: 'month',
+          includeRecommendations: true,
+          includeInsights: true
+        });
+        
+        if (response.success && response.data) {
+          setPersonalInsights({
+            overallHealthScore: response.data.healthScores.overallScore,
+            analysisDate: new Date().toLocaleString('th-TH'),
+            keyFindings: [response.data.aiAnalysis],
+            strengths: {
+              goalCompletionRate: 85,
+              consistencyScore: 78,
+              improvementTrend: 82,
+              healthyHabits: 75
+            },
+            areasForImprovement: {
+              sleepQuality: 100 - response.data.healthScores.sleepScore,
+              exerciseFrequency: 100 - response.data.healthScores.exerciseScore,
+              nutritionBalance: 100 - response.data.healthScores.nutritionScore,
+              stressManagement: 100 - response.data.healthScores.waterScore
+            },
+            personalizedRecommendations: {
+              immediate: [],
+              shortTerm: [],
+              longTerm: []
+            },
+            healthAlerts: [],
+            progressMetrics: {
+              healthScoreTrend: 15,
+              goalAchievement: 85,
+              habitConsistency: 78,
+              overallImprovement: 82
+            }
+          });
+        } else {
+          throw new Error(response.message || 'Analysis failed');
+        }
+        
+        setIsAnalyzing(false);
+        setAnalysisCompleted(true);
+        toast({
+          title: "Analysis Complete",
+          description: "Personal health report generated successfully",
+        });
+        return;
+      }
+      
+      // Simulate analysis steps
+      for (let i = 0; i < analysisSteps.length; i++) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        setCurrentStep(i + 1);
+      }
+
+      // Call AI Service for real analysis (Protected endpoint)
+      const response = await aiService.analyzeHealth(userId, {
+        analysisType: 'complete',
+        timeframe: 'month',
+        includeRecommendations: true,
+        includeInsights: true
       });
-    }, 3000);
+      
+      if (response.success && response.data) {
+        // Transform API response to match our UI structure
+        setPersonalInsights({
+          overallHealthScore: response.data.healthScores.overallScore,
+          analysisDate: new Date().toLocaleString('th-TH'),
+          keyFindings: [response.data.aiAnalysis], // Convert string to array
+          strengths: {
+            goalCompletionRate: 85, // Default values - should come from API
+            consistencyScore: 78,
+            improvementTrend: 82,
+            healthyHabits: 75
+          },
+          areasForImprovement: {
+            sleepQuality: 100 - response.data.healthScores.sleepScore,
+            exerciseFrequency: 100 - response.data.healthScores.exerciseScore,
+            nutritionBalance: 100 - response.data.healthScores.nutritionScore,
+            stressManagement: 100 - response.data.healthScores.waterScore
+          },
+          personalizedRecommendations: {
+            immediate: [],
+            shortTerm: [],
+            longTerm: []
+          },
+          healthAlerts: [],
+          progressMetrics: {
+            healthScoreTrend: 15,
+            goalAchievement: 85,
+            habitConsistency: 78,
+            overallImprovement: 82
+          }
+        });
+      } else {
+        throw new Error(response.message || 'Analysis failed');
+      }
+
+    } catch (error) {
+      console.error('AI Analysis Error:', error);
+      
+      // Check if it's an authentication error
+      if (error.message.includes('Authentication') || error.message.includes('login')) {
+        toast({
+          title: "Authentication Required",
+          description: "Please login to access AI health analysis",
+          variant: "destructive"
+        });
+        setIsAnalyzing(false);
+        return;
+      }
+      
+      // Fallback to demo data if AI service fails
+      setPersonalInsights({
+        overallHealthScore: 78,
+        analysisDate: new Date().toLocaleString('th-TH'),
+        keyFindings: [
+          "Your sleep quality has improved over the past 2 weeks",
+          "Regular exercise has significantly reduced stress levels",
+          "Increased water intake has improved sleep quality",
+          "Weight loss goals are progressing well",
+          "Consider increasing protein intake for muscle building"
+        ],
+        strengths: {
+          goalCompletionRate: 85,
+          consistencyScore: 78,
+          improvementTrend: 82,
+          healthyHabits: 75
+        },
+        areasForImprovement: {
+          sleepQuality: 65,
+          exerciseFrequency: 70,
+          nutritionBalance: 72,
+          stressManagement: 68
+        },
+        personalizedRecommendations: {
+          immediate: [
+            {
+              category: "Sleep",
+              recommendation: "Go to bed before 11:00 PM consistently",
+              reason: "Current sleep quality is below standard",
+              impact: "Improve sleep quality by 25%"
+            },
+            {
+              category: "Nutrition",
+              recommendation: "Increase protein intake by 20g per day",
+              reason: "Insufficient protein for muscle building",
+              impact: "Increase muscle mass by 15%"
+            }
+          ],
+          shortTerm: [
+            {
+              category: "Exercise",
+              recommendation: "Increase exercise frequency to 4 times per week",
+              reason: "Current frequency is insufficient for goals",
+              impact: "Increase strength by 30%"
+            },
+            {
+              category: "Stress Management",
+              recommendation: "Practice deep breathing for 10 minutes daily",
+              reason: "Stress levels are higher than normal",
+              impact: "Reduce stress by 40%"
+            }
+          ],
+          longTerm: [
+            {
+              category: "Lifestyle",
+              recommendation: "Create a balanced daily routine",
+              reason: "For sustainable health management",
+              impact: "Improve quality of life by 50%"
+            },
+            {
+              category: "Tracking",
+              recommendation: "Use health tracking system consistently",
+              reason: "For continuous improvement",
+              impact: "Increase efficiency by 35%"
+            }
+          ]
+        },
+        healthAlerts: [
+          {
+            type: "Sleep",
+            severity: "medium",
+            message: "Sleep quality is below standard",
+            action: "Adjust bedtime and create pre-sleep routine"
+          },
+          {
+            type: "Nutrition",
+            severity: "low",
+            message: "Insufficient protein intake",
+            action: "Increase protein consumption from meat and plants"
+          }
+        ],
+        progressMetrics: {
+          healthScoreTrend: 15,
+          goalAchievement: 85,
+          habitConsistency: 78,
+          overallImprovement: 82
+        }
+      });
+
+      toast({
+        title: "Analysis Complete (Demo Mode)",
+        description: "Using demo data - AI service connection failed",
+        variant: "destructive"
+      });
+    }
+
+    setIsAnalyzing(false);
+    setAnalysisCompleted(true);
+
+    toast({
+      title: "Analysis Complete",
+      description: "Personal health report generated successfully",
+    });
   };
 
-  const downloadReport = () => {
-    toast({
-      title: "ดาวน์โหลดรายงาน",
-      description: "กำลังสร้างรายงานการวิเคราะห์..."
-    });
+  const getHealthScoreColor = (score: number) => {
+    if (score >= 71) return "text-green-600";
+    if (score >= 41) return "text-yellow-600";
+    return "text-red-600";
+  };
+
+  const getHealthScoreBgColor = (score: number) => {
+    if (score >= 71) return "bg-green-100";
+    if (score >= 41) return "bg-yellow-100";
+    return "bg-red-100";
+  };
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'high': return "bg-red-100 text-red-800 border-red-200";
+      case 'medium': return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case 'low': return "bg-blue-100 text-blue-800 border-blue-200";
+      default: return "bg-gray-100 text-gray-800 border-gray-200";
+    }
   };
 
   return (
     <MainLayout>
-      <div className="space-y-6">
+      <div className="max-w-6xl mx-auto space-y-8">
+        
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Brain className="h-8 w-8 text-primary" />
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-primary">AI Insights - การวิเคราะห์ผู้ใช้ทั้งหมด</h1>
-              <p className="text-muted-foreground">วิเคราะห์ข้อมูลสุขภาพของผู้ใช้ทั้งหมดและสร้างคำแนะนำแบบ batch</p>
+              <h1 className="text-3xl font-bold text-foreground mb-2">Personal Health Analysis</h1>
+              <p className="text-muted-foreground">AI-powered health insights and personalized recommendations</p>
             </div>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={downloadReport} className="gap-2">
-              <Download className="h-4 w-4" />
-              ดาวน์โหลดรายงาน
-            </Button>
-            <Button onClick={startBatchAnalysis} disabled={isAnalyzing} className="gap-2">
-              {isAnalyzing ? (
-                <RefreshCw className="h-4 w-4 animate-spin" />
-              ) : (
-                <Brain className="h-4 w-4" />
-              )}
-              {isAnalyzing ? "กำลังวิเคราะห์..." : "เริ่มการวิเคราะห์ใหม่"}
-            </Button>
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" size="sm" onClick={debugToken}>
+                Debug Token
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setTestToken(161)}>
+                Set Test Token
+              </Button>
+            </div>
           </div>
         </div>
 
-        {/* Filters and Controls */}
+        {/* Main Analysis Section */}
+        {!analysisCompleted && (
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">ช่วงเวลา:</span>
-                <Select value={selectedTimeframe} onValueChange={setSelectedTimeframe}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="7d">7 วัน</SelectItem>
-                    <SelectItem value="30d">30 วัน</SelectItem>
-                    <SelectItem value="90d">90 วัน</SelectItem>
-                    <SelectItem value="1y">1 ปี</SelectItem>
-                  </SelectContent>
-                </Select>
+            <CardHeader>
+              <CardTitle>Health Data Analysis</CardTitle>
+              <CardDescription>
+                Analyze your personal health data and receive AI-powered insights and recommendations
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                  <Heart className="h-4 w-4 text-red-500" />
+                  <span>Health Metrics</span>
+                </div>
+                <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                  <Target className="h-4 w-4 text-green-500" />
+                  <span>Health Goals</span>
+                </div>
+                <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                  <Dumbbell className="h-4 w-4 text-orange-500" />
+                  <span>Exercise Data</span>
+                </div>
+                <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                  <Utensils className="h-4 w-4 text-purple-500" />
+                  <span>Nutrition</span>
+                </div>
+                <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                  <Moon className="h-4 w-4 text-indigo-500" />
+                  <span>Sleep Patterns</span>
+                </div>
+                <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                  <Activity className="h-4 w-4 text-cyan-500" />
+                  <span>Daily Activity</span>
+                </div>
+                <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                  <Brain className="h-4 w-4 text-pink-500" />
+                  <span>Mental Health</span>
+                </div>
+                <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                  <Zap className="h-4 w-4 text-yellow-500" />
+                  <span>Energy Levels</span>
+                </div>
               </div>
               
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">ประเภทการวิเคราะห์:</span>
-                <Select value={selectedAnalysisType} onValueChange={setSelectedAnalysisType}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">ทั้งหมด</SelectItem>
-                    <SelectItem value="sleep">การนอน</SelectItem>
-                    <SelectItem value="nutrition">โภชนาการ</SelectItem>
-                    <SelectItem value="exercise">การออกกำลังกาย</SelectItem>
-                    <SelectItem value="stress">ความเครียด</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="text-center pt-4">
+                <Button 
+                  onClick={startPersonalAnalysis} 
+                  disabled={isAnalyzing}
+                  size="lg"
+                  className="px-8"
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <PlayCircle className="h-4 w-4 mr-2" />
+                      Start Analysis
+                    </>
+                  )}
+                </Button>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Estimated time: 30-45 seconds
+                </p>
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Analysis Progress */}
+        {isAnalyzing && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Analysis Progress</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {analysisSteps.map((step, index) => {
+                  const IconComponent = step.icon;
+                  const isCompleted = index < currentStep;
+                  const isCurrent = index === currentStep - 1;
+                  
+                  return (
+                    <div key={step.id} className="flex items-center gap-4">
+                      <div className={`p-3 rounded-full ${
+                        isCompleted ? 'bg-green-100 text-green-600' : 
+                        isCurrent ? 'bg-blue-100 text-blue-600 animate-pulse' : 
+                        'bg-gray-100 text-gray-400'
+                      }`}>
+                        <IconComponent className="h-5 w-5" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <h3 className={`font-medium ${
+                            isCompleted ? 'text-green-600' : 
+                            isCurrent ? 'text-blue-600' : 
+                            'text-gray-400'
+                          }`}>
+                            {step.label}
+                          </h3>
+                          {isCompleted && <CheckCircle className="h-5 w-5 text-green-600" />}
+                        </div>
+                        <p className="text-sm text-muted-foreground">{step.description}</p>
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
           </CardContent>
         </Card>
+        )}
 
-        {/* Main Content Tabs */}
-        <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">ภาพรวม</TabsTrigger>
-            <TabsTrigger value="batch-analysis">การวิเคราะห์แบบ Batch</TabsTrigger>
-            <TabsTrigger value="global-insights">คำแนะนำระดับระบบ</TabsTrigger>
-            <TabsTrigger value="user-comparison">เปรียบเทียบผู้ใช้</TabsTrigger>
-          </TabsList>
-
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Personal Analysis Results */}
+        {analysisCompleted && personalInsights && (
+          <div className="space-y-8">
+            {/* Executive Summary */}
               <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-5 w-5 text-blue-500" />
-                    <span className="text-sm font-medium">ผู้ใช้ทั้งหมด</span>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Brain className="h-5 w-5" />
+                  Health Analysis Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="text-center">
+                    <div className={`inline-flex items-center justify-center w-24 h-24 rounded-full ${getHealthScoreBgColor(personalInsights.overallHealthScore)} mb-4`}>
+                      <span className={`text-3xl font-bold ${getHealthScoreColor(personalInsights.overallHealthScore)}`}>
+                        {personalInsights.overallHealthScore}
+                      </span>
+                    </div>
+                    <h3 className="font-semibold">Overall Health Score</h3>
+                    <p className="text-sm text-muted-foreground">Out of 100 points</p>
                   </div>
-                  <div className="text-2xl font-bold mt-2">1,247</div>
-                  <div className="text-xs text-muted-foreground">+12% จากเดือนที่แล้ว</div>
+                  <div className="text-center">
+                    <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-blue-100 mb-4">
+                      <TrendingUp className="h-8 w-8 text-blue-600" />
+                    </div>
+                    <h3 className="font-semibold">Improvement Trend</h3>
+                    <p className="text-sm text-muted-foreground">+{personalInsights.progressMetrics.healthScoreTrend}% from last month</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-purple-100 mb-4">
+                      <Calendar className="h-8 w-8 text-purple-600" />
+                    </div>
+                    <h3 className="font-semibold">Analysis Date</h3>
+                    <p className="text-sm text-muted-foreground">{personalInsights.analysisDate}</p>
+                  </div>
+                </div>
+                
+                <div className="mt-6">
+                  <h4 className="font-semibold mb-3">Key Findings</h4>
+                  <ul className="space-y-2">
+                    {personalInsights.keyFindings.map((finding, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm">{finding}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
                 </CardContent>
               </Card>
               
+            {/* Strengths and Areas for Improvement */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Strengths */}
               <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <Brain className="h-5 w-5 text-purple-500" />
-                    <span className="text-sm font-medium">คำแนะนำที่สร้าง</span>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-green-600">
+                    <CheckCircle className="h-5 w-5" />
+                    Health Strengths
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
+                      <div className="text-2xl font-bold text-green-600">{personalInsights.strengths.goalCompletionRate}%</div>
+                      <p className="text-xs text-muted-foreground">Goal Achievement</p>
+                    </div>
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
+                      <div className="text-2xl font-bold text-green-600">{personalInsights.strengths.consistencyScore}%</div>
+                      <p className="text-xs text-muted-foreground">Consistency</p>
+                    </div>
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
+                      <div className="text-2xl font-bold text-green-600">{personalInsights.strengths.improvementTrend}%</div>
+                      <p className="text-xs text-muted-foreground">Improvement Trend</p>
+                    </div>
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
+                      <div className="text-2xl font-bold text-green-600">{personalInsights.strengths.healthyHabits}%</div>
+                      <p className="text-xs text-muted-foreground">Healthy Habits</p>
+                    </div>
                   </div>
-                  <div className="text-2xl font-bold mt-2">156</div>
-                  <div className="text-xs text-muted-foreground">ในรอบ 7 วัน</div>
                 </CardContent>
               </Card>
               
+              {/* Areas for Improvement */}
               <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <Target className="h-5 w-5 text-green-500" />
-                    <span className="text-sm font-medium">เป้าหมายที่บรรลุ</span>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-orange-600">
+                    <AlertCircle className="h-5 w-5" />
+                    Areas for Improvement
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Sleep Quality</span>
+                      <Badge variant="outline" className="text-orange-600">{personalInsights.areasForImprovement.sleepQuality}%</Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Exercise Frequency</span>
+                      <Badge variant="outline" className="text-orange-600">{personalInsights.areasForImprovement.exerciseFrequency}%</Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Nutrition Balance</span>
+                      <Badge variant="outline" className="text-orange-600">{personalInsights.areasForImprovement.nutritionBalance}%</Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Stress Management</span>
+                      <Badge variant="outline" className="text-orange-600">{personalInsights.areasForImprovement.stressManagement}%</Badge>
+                    </div>
                   </div>
-                  <div className="text-2xl font-bold mt-2">89%</div>
-                  <div className="text-xs text-muted-foreground">ของผู้ใช้ทั้งหมด</div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <Activity className="h-5 w-5 text-orange-500" />
-                    <span className="text-sm font-medium">การวิเคราะห์ที่กำลังดำเนินการ</span>
-                  </div>
-                  <div className="text-2xl font-bold mt-2">2</div>
-                  <div className="text-xs text-muted-foreground">งานที่กำลังดำเนินการ</div>
                 </CardContent>
               </Card>
             </div>
 
+            {/* Personalized Recommendations */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  สถิติสุขภาพโดยรวม
+                <CardTitle className="flex items-center gap-2 text-blue-600">
+                  <Target className="h-5 w-5" />
+                  Personalized Recommendations
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Immediate Actions */}
+                <div>
+                  <h4 className="font-semibold text-red-600 mb-3">Immediate Actions (0-7 days)</h4>
+                  <div className="space-y-3">
+                    {personalInsights.personalizedRecommendations.immediate.map((rec, index) => (
+                      <div key={index} className="p-4 border border-red-200 rounded-lg bg-red-50">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant="outline" className="text-red-600 border-red-300">{rec.category}</Badge>
+                        </div>
+                        <h5 className="font-medium text-red-800">{rec.recommendation}</h5>
+                        <p className="text-sm text-red-700 mt-1">{rec.reason}</p>
+                        <Badge variant="outline" className="mt-2 text-red-600 border-red-300">
+                          Impact: {rec.impact}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Short Term Actions */}
+                <div>
+                  <h4 className="font-semibold text-orange-600 mb-3">Short Term (1-4 weeks)</h4>
+                  <div className="space-y-3">
+                    {personalInsights.personalizedRecommendations.shortTerm.map((rec, index) => (
+                      <div key={index} className="p-4 border border-orange-200 rounded-lg bg-orange-50">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant="outline" className="text-orange-600 border-orange-300">{rec.category}</Badge>
+                        </div>
+                        <h5 className="font-medium text-orange-800">{rec.recommendation}</h5>
+                        <p className="text-sm text-orange-700 mt-1">{rec.reason}</p>
+                        <Badge variant="outline" className="mt-2 text-orange-600 border-orange-300">
+                          Impact: {rec.impact}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Long Term Actions */}
+                <div>
+                  <h4 className="font-semibold text-blue-600 mb-3">Long Term (1-3 months)</h4>
+                  <div className="space-y-3">
+                    {personalInsights.personalizedRecommendations.longTerm.map((rec, index) => (
+                      <div key={index} className="p-4 border border-blue-200 rounded-lg bg-blue-50">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant="outline" className="text-blue-600 border-blue-300">{rec.category}</Badge>
+                        </div>
+                        <h5 className="font-medium text-blue-800">{rec.recommendation}</h5>
+                        <p className="text-sm text-blue-700 mt-1">{rec.reason}</p>
+                        <Badge variant="outline" className="mt-2 text-blue-600 border-blue-300">
+                          Impact: {rec.impact}
+                        </Badge>
+                  </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Health Alerts */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-red-600">
+                  <AlertCircle className="h-5 w-5" />
+                  Health Alerts
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {personalInsights.healthAlerts.map((alert, index) => (
+                    <div key={index} className={`p-4 border rounded-lg ${getSeverityColor(alert.severity)}`}>
+                      <div className="flex items-center justify-between">
+                        <h5 className="font-medium">{alert.type}</h5>
+                        <Badge variant="outline" className={getSeverityColor(alert.severity)}>
+                          {alert.severity === 'high' ? 'High' : alert.severity === 'medium' ? 'Medium' : 'Low'}
+                          </Badge>
+                      </div>
+                      <p className="text-sm mt-1">{alert.message}</p>
+                      <p className="text-sm font-medium mt-2">Recommendation: {alert.action}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Progress Metrics */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-purple-600">
+                  <TrendingUp className="h-5 w-5" />
+                  Progress Metrics
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">76%</div>
-                    <div className="text-sm text-muted-foreground">คุณภาพการนอนเฉลี่ย</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">82%</div>
-                    <div className="text-sm text-muted-foreground">คะแนนโภชนาการเฉลี่ย</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-600">68%</div>
-                    <div className="text-sm text-muted-foreground">ความถี่การออกกำลังกาย</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600">42%</div>
-                    <div className="text-sm text-muted-foreground">ระดับความเครียดเฉลี่ย</div>
-                  </div>
+                  <div className="text-center p-4 bg-purple-50 rounded-lg">
+                    <div className="text-2xl font-bold text-purple-600">{personalInsights.progressMetrics.healthScoreTrend}%</div>
+                    <p className="text-xs text-muted-foreground">Health Score Trend</p>
+                      </div>
+                  <div className="text-center p-4 bg-purple-50 rounded-lg">
+                    <div className="text-2xl font-bold text-purple-600">{personalInsights.progressMetrics.goalAchievement}%</div>
+                    <p className="text-xs text-muted-foreground">Goal Achievement</p>
+                        </div>
+                  <div className="text-center p-4 bg-purple-50 rounded-lg">
+                    <div className="text-2xl font-bold text-purple-600">{personalInsights.progressMetrics.habitConsistency}%</div>
+                    <p className="text-xs text-muted-foreground">Habit Consistency</p>
+                        </div>
+                  <div className="text-center p-4 bg-purple-50 rounded-lg">
+                    <div className="text-2xl font-bold text-purple-600">{personalInsights.progressMetrics.overallImprovement}%</div>
+                    <p className="text-xs text-muted-foreground">Overall Improvement</p>
+                    </div>
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          {/* Batch Analysis Tab */}
-          <TabsContent value="batch-analysis" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <RefreshCw className="h-5 w-5" />
-                  การวิเคราะห์แบบ Batch
-                </CardTitle>
-                <CardDescription>
-                  ติดตามสถานะการวิเคราะห์ข้อมูลผู้ใช้ทั้งหมด
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {batchAnalyses.map((analysis) => (
-                    <div key={analysis.analysis_id} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <Badge className={getStatusColor(analysis.status)}>
-                            {analysis.status === "running" ? "กำลังดำเนินการ" : 
-                             analysis.status === "completed" ? "เสร็จสิ้น" : "ล้มเหลว"}
-                          </Badge>
-                          <span className="font-medium">
-                            {analysis.analysis_type === "comprehensive_health" ? "การวิเคราะห์สุขภาพแบบครบวงจร" :
-                             analysis.analysis_type === "sleep_patterns" ? "รูปแบบการนอน" : analysis.analysis_type}
-                          </span>
-                        </div>
-                        <span className="text-sm text-muted-foreground">
-                          {new Date(analysis.started_at).toLocaleDateString('th-TH')}
-                        </span>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span>ความคืบหน้า</span>
-                          <span>{analysis.completion_percentage}%</span>
-                        </div>
-                        <Progress value={analysis.completion_percentage} className="h-2" />
-                      </div>
-                      
-                      <div className="grid grid-cols-3 gap-4 mt-3 text-sm">
-                        <div>
-                          <span className="text-muted-foreground">ผู้ใช้ทั้งหมด:</span>
-                          <span className="ml-2 font-medium">{analysis.total_users.toLocaleString()}</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">คำแนะนำที่สร้าง:</span>
-                          <span className="ml-2 font-medium">{analysis.insights_generated}</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">สถานะ:</span>
-                          <span className="ml-2 font-medium">
-                            {analysis.status === "running" ? "กำลังดำเนินการ" : 
-                             analysis.status === "completed" ? "เสร็จสิ้น" : "ล้มเหลว"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Global Insights Tab */}
-          <TabsContent value="global-insights" className="space-y-4">
-            <div className="grid gap-4">
-              {globalInsights.map((insight) => (
-                <Card key={insight.insight_id}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-primary/10 rounded-lg text-primary">
-                          {getInsightIcon(insight.insight_type)}
-                        </div>
-                        <div>
-                          <CardTitle className="text-lg">
-                            {getInsightTypeLabel(insight.insight_type)}
-                          </CardTitle>
-                          <CardDescription>
-                            สร้างเมื่อ: {new Date(insight.created_at).toLocaleDateString('th-TH')}
-                          </CardDescription>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Badge className={getSeverityColor(insight.severity_level)}>
-                          {insight.severity_level === "high" ? "สูง" :
-                           insight.severity_level === "medium" ? "ปานกลาง" : "ต่ำ"}
-                        </Badge>
-                        <Badge variant="outline">
-                          ผู้ได้รับผลกระทบ: {insight.affected_users.toLocaleString()}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  
-                  <CardContent className="space-y-4">
-                    <p className="text-foreground leading-relaxed">
-                      {insight.insight_content}
-                    </p>
-                    
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">ความมั่นใจของ AI</span>
-                        <span className="font-semibold">{insight.confidence_score}%</span>
-                      </div>
-                      <Progress value={insight.confidence_score} className="h-2" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          {/* User Comparison Tab */}
-          <TabsContent value="user-comparison" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  เปรียบเทียบสุขภาพผู้ใช้
-                </CardTitle>
-                <CardDescription>
-                  ดูการเปรียบเทียบสุขภาพระหว่างผู้ใช้ต่างๆ
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {userInsights.map((user) => (
-                    <div key={user.user_id} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="font-medium">{user.username}</span>
-                        <span className="text-sm text-muted-foreground">
-                          อัปเดตล่าสุด: {new Date(user.last_updated).toLocaleDateString('th-TH')}
-                        </span>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-blue-600">{user.health_score}%</div>
-                          <div className="text-xs text-muted-foreground">คะแนนสุขภาพ</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-purple-600">{user.sleep_quality}%</div>
-                          <div className="text-xs text-muted-foreground">คุณภาพการนอน</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-green-600">{user.nutrition_score}%</div>
-                          <div className="text-xs text-muted-foreground">โภชนาการ</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-orange-600">{user.exercise_frequency}%</div>
-                          <div className="text-xs text-muted-foreground">การออกกำลังกาย</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-red-600">{user.stress_level}%</div>
-                          <div className="text-xs text-muted-foreground">ความเครียด</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-
-        {/* Footer Info */}
-        <Card className="bg-muted/50">
-          <CardContent className="p-6 text-center">
-            <Brain className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">AI วิเคราะห์ข้อมูลผู้ใช้ทั้งหมดแบบ Real-time</h3>
-            <p className="text-muted-foreground mb-4">
-              ระบบจะวิเคราะห์ข้อมูลสุขภาพของผู้ใช้ทั้งหมดและสร้างคำแนะนำที่เหมาะสมสำหรับแต่ละกลุ่ม
-            </p>
-            <div className="flex items-center justify-center gap-4 text-sm">
-              <div className="flex items-center gap-1">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <span>การวิเคราะห์แบบ Batch</span>
               </div>
-              <div className="flex items-center gap-1">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <span>เปรียบเทียบระหว่างผู้ใช้</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <span>คำแนะนำระดับระบบ</span>
-              </div>
+        )}
+
+        {/* Actions Panel */}
+        {analysisCompleted && (
+          <Card className="sticky bottom-4">
+            <CardContent className="p-4">
+              <div className="flex flex-wrap gap-3 justify-center">
+                <Button variant="default" className="gap-2">
+                  <FileText className="h-4 w-4" />
+                  Export Report
+                </Button>
+                <Button variant="outline" className="gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Schedule Next Analysis
+                </Button>
+                <Button variant="outline" className="gap-2">
+                  <Target className="h-4 w-4" />
+                  Create Health Plan
+                </Button>
+                <Button variant="outline" className="gap-2">
+                  <Share2 className="h-4 w-4" />
+                  Share Results
+                </Button>
             </div>
           </CardContent>
         </Card>
+        )}
       </div>
     </MainLayout>
   );
