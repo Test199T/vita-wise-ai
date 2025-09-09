@@ -1029,7 +1029,7 @@ export default function ExerciseLog() {
         )}
 
         {/* สรุปการเผาผลาญแคลอรี่ */}
-        <Card className="health-stat-card">
+        <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -1060,94 +1060,90 @@ export default function ExerciseLog() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* แคลอรี่รวม */}
-              <div className="text-center p-6 bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 rounded-2xl border border-orange-200 shadow-lg">
-                <div className="p-3 bg-gradient-to-r from-orange-500 to-red-500 rounded-full w-16 h-16 mx-auto mb-4 shadow-lg">
-                  <Flame className="h-8 w-8 mx-auto text-white" />
+              <div className="text-center p-4 bg-muted/30 rounded-lg border">
+                <div className="p-2 bg-orange-100 rounded-lg w-12 h-12 mx-auto mb-3">
+                  <Flame className="h-6 w-6 mx-auto text-orange-600" />
                 </div>
-                <div className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-2">
+                <div className="text-2xl font-bold text-foreground mb-1">
                   {currentExerciseStats.totalCalories}
                 </div>
-                <div className="text-lg font-semibold text-gray-700 mb-1">แคลอรี่</div>
-                <div className="text-sm text-gray-600">เผาผลาญรวม</div>
+                <div className="text-sm font-medium text-muted-foreground">แคลอรี่</div>
+                <div className="text-xs text-muted-foreground">เผาผลาญรวม</div>
               </div>
 
               {/* จำนวนครั้ง */}
-              <div className="text-center p-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-2xl border border-blue-200 shadow-lg">
-                <div className="p-3 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full w-16 h-16 mx-auto mb-4 shadow-lg">
-                  <Activity className="h-8 w-8 mx-auto text-white" />
+              <div className="text-center p-4 bg-muted/30 rounded-lg border">
+                <div className="p-2 bg-blue-100 rounded-lg w-12 h-12 mx-auto mb-3">
+                  <Activity className="h-6 w-6 mx-auto text-blue-600" />
                 </div>
-                <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+                <div className="text-2xl font-bold text-foreground mb-1">
                   {currentExerciseStats.totalSessions}
                 </div>
-                <div className="text-lg font-semibold text-gray-700 mb-1">ครั้ง</div>
-                <div className="text-sm text-gray-600">การออกกำลังกาย</div>
+                <div className="text-sm font-medium text-muted-foreground">ครั้ง</div>
+                <div className="text-xs text-muted-foreground">การออกกำลังกาย</div>
               </div>
 
               {/* ระยะเวลารวม */}
-              <div className="text-center p-6 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 rounded-2xl border border-green-200 shadow-lg">
-                <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full w-16 h-16 mx-auto mb-4 shadow-lg">
-                  <Clock className="h-8 w-8 mx-auto text-white" />
+              <div className="text-center p-4 bg-muted/30 rounded-lg border">
+                <div className="p-2 bg-green-100 rounded-lg w-12 h-12 mx-auto mb-3">
+                  <Clock className="h-6 w-6 mx-auto text-green-600" />
                 </div>
-                <div className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">
+                <div className="text-2xl font-bold text-foreground mb-1">
                   {currentExerciseStats.totalDuration}
                 </div>
-                <div className="text-lg font-semibold text-gray-700 mb-1">นาที</div>
-                <div className="text-sm text-gray-600">ระยะเวลารวม</div>
+                <div className="text-sm font-medium text-muted-foreground">นาที</div>
+                <div className="text-xs text-muted-foreground">ระยะเวลารวม</div>
               </div>
 
               {/* ค่าเฉลี่ยต่อครั้ง */}
-              <div className="text-center p-6 bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 rounded-2xl border border-purple-200 shadow-lg">
-                <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full w-16 h-16 mx-auto mb-4 shadow-lg">
-                  <Target className="h-8 w-8 mx-auto text-white" />
+              <div className="text-center p-4 bg-muted/30 rounded-lg border">
+                <div className="p-2 bg-purple-100 rounded-lg w-12 h-12 mx-auto mb-3">
+                  <Target className="h-6 w-6 mx-auto text-purple-600" />
                 </div>
-                <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+                <div className="text-2xl font-bold text-foreground mb-1">
                   {currentExerciseStats.averageCalories}
                 </div>
-                <div className="text-lg font-semibold text-gray-700 mb-1">แคลอรี่</div>
-                <div className="text-sm text-gray-600">เฉลี่ยต่อครั้ง</div>
+                <div className="text-sm font-medium text-muted-foreground">แคลอรี่</div>
+                <div className="text-xs text-muted-foreground">เฉลี่ยต่อครั้ง</div>
               </div>
             </div>
 
             {/* สถิติเพิ่มเติม */}
             {currentExerciseStats.totalSessions > 0 && (
-              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* ประเภทการออกกำลังกาย */}
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-lg flex items-center gap-2">
-                    <Dumbbell className="h-5 w-5" />
+                <div className="space-y-3">
+                  <h4 className="font-medium text-base flex items-center gap-2">
+                    <Dumbbell className="h-4 w-4" />
                     ประเภทการออกกำลังกาย
                   </h4>
                   <div className="space-y-2">
                     {Object.entries(currentExerciseStats.exerciseTypes).map(([type, count]) => (
-                      <div key={type} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                        <div className="font-medium">{type}</div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                            {count} ครั้ง
-                          </Badge>
-                        </div>
+                      <div key={type} className="flex items-center justify-between p-2 bg-muted/20 rounded border">
+                        <div className="text-sm font-medium">{type}</div>
+                        <Badge variant="outline" className="text-xs">
+                          {count} ครั้ง
+                        </Badge>
                       </div>
                     ))}
                   </div>
                 </div>
 
                 {/* ระดับความหนัก */}
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-lg flex items-center gap-2">
-                    <Zap className="h-5 w-5" />
+                <div className="space-y-3">
+                  <h4 className="font-medium text-base flex items-center gap-2">
+                    <Zap className="h-4 w-4" />
                     ระดับความหนัก
                   </h4>
                   <div className="space-y-2">
                     {Object.entries(currentExerciseStats.intensityDistribution).map(([intensity, count]) => (
-                      <div key={intensity} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                        <div className="font-medium">{intensity}</div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary" className="bg-green-100 text-green-800">
-                            {count} ครั้ง
-                          </Badge>
-                        </div>
+                      <div key={intensity} className="flex items-center justify-between p-2 bg-muted/20 rounded border">
+                        <div className="text-sm font-medium">{intensity}</div>
+                        <Badge variant="outline" className="text-xs">
+                          {count} ครั้ง
+                        </Badge>
                       </div>
                     ))}
                   </div>
@@ -1155,27 +1151,6 @@ export default function ExerciseLog() {
               </div>
             )}
 
-            {/* ข้อความเมื่อไม่มีข้อมูล */}
-            {currentExerciseStats.totalSessions === 0 && (
-              <div className="text-center p-8 bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl border-2 border-dashed border-gray-300">
-                <div className="p-4 bg-white rounded-full w-20 h-20 mx-auto mb-6 shadow-lg">
-                  <Activity className="h-10 w-10 mx-auto text-gray-400" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-700 mb-2">ยังไม่มีข้อมูลการออกกำลังกาย</h3>
-                <p className="text-gray-600 mb-6">
-                  {selectedPeriod === 'today' && 'เริ่มต้นออกกำลังกายวันนี้เพื่อติดตามแคลอรี่ที่เผาผลาญ'}
-                  {selectedPeriod === 'week' && 'ยังไม่มีข้อมูลการออกกำลังกายในสัปดาห์นี้'}
-                  {selectedPeriod === 'month' && 'ยังไม่มีข้อมูลการออกกำลังกายในเดือนนี้'}
-                </p>
-                <Button 
-                  onClick={() => setShowForm(true)} 
-                  className="gap-2 rounded-full bg-gradient-to-r from-primary to-secondary hover:from-primary-hover hover:to-secondary-hover text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                >
-                  <Plus className="h-4 w-4" />
-                  เพิ่มการออกกำลังกาย
-                </Button>
-              </div>
-            )}
           </CardContent>
         </Card>
 
@@ -1193,21 +1168,21 @@ export default function ExerciseLog() {
           </div>
           
           {sessions.length === 0 ? (
-            <Card className="border-dashed border-2 border-primary/20 bg-primary/5">
-              <CardContent className="p-12 text-center">
-                <div className="flex flex-col items-center gap-6">
-                  <div className="p-4 bg-primary/10 rounded-full">
-                    <Dumbbell className="h-12 w-12 text-primary/60" />
+            <Card className="border-dashed border-2 border-muted-foreground/20">
+              <CardContent className="p-8 text-center">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="p-3 bg-muted/30 rounded-lg">
+                    <Dumbbell className="h-8 w-8 text-muted-foreground" />
                   </div>
                   <div className="space-y-2">
-                    <h3 className="text-xl font-semibold text-foreground">ยังไม่มีข้อมูลการออกกำลังกาย</h3>
-                    <p className="text-muted-foreground max-w-md">
+                    <h3 className="text-lg font-medium text-foreground">ยังไม่มีข้อมูลการออกกำลังกาย</h3>
+                    <p className="text-sm text-muted-foreground max-w-md">
                       เริ่มต้นบันทึกการออกกำลังกายของคุณเพื่อติดตามความคืบหน้าและสร้างแรงบันดาลใจในการดูแลสุขภาพ
                     </p>
                   </div>
                   <Button 
                     onClick={() => setShowForm(true)} 
-                    className="gap-2 rounded-full bg-gradient-to-r from-primary to-secondary hover:from-primary-hover hover:to-secondary-hover text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                    className="gap-2"
                   >
                     <Plus className="h-4 w-4" />
                     เพิ่มการออกกำลังกายแรก
@@ -1218,17 +1193,17 @@ export default function ExerciseLog() {
           ) : (
             <div className="grid gap-6">
               {sessions.map((session) => (
-                <Card key={session.session_id} className="hover:shadow-lg transition-all duration-300 border-2 border-primary/20 hover:border-primary/40 bg-white shadow-md hover:shadow-xl transform hover:-translate-y-1">
-                  <CardContent className="p-6">
+                <Card key={session.session_id} className="hover:shadow-md transition-shadow duration-200">
+                  <CardContent className="p-4">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 bg-primary/10 rounded-xl">
-                          <Dumbbell className="h-6 w-6 text-primary" />
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-muted/30 rounded-lg">
+                          <Dumbbell className="h-5 w-5 text-muted-foreground" />
                         </div>
                         <div className="space-y-1">
-                          <h3 className="font-semibold text-lg text-foreground">{session.exercise_type}</h3>
+                          <h3 className="font-medium text-base text-foreground">{session.exercise_type}</h3>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Calendar className="h-4 w-4" />
+                            <Calendar className="h-3 w-3" />
                             {new Date(session.session_date).toLocaleDateString('th-TH', {
                               year: 'numeric',
                               month: 'long',
@@ -1300,45 +1275,37 @@ export default function ExerciseLog() {
                      </div>
                   </div>
                   
-                                     <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-4">
-                     <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl border border-blue-200 shadow-sm">
-                       <div className="p-2 bg-blue-500 rounded-lg shadow-md">
-                         <Clock className="h-4 w-4 text-white" />
-                       </div>
+                                     <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3">
+                     <div className="flex items-center gap-2 p-3 bg-muted/20 rounded border">
+                       <Clock className="h-4 w-4 text-muted-foreground" />
                        <div>
-                         <p className="text-sm font-semibold text-blue-900">{session.duration_minutes} นาที</p>
-                         <p className="text-xs text-blue-700">ระยะเวลา</p>
+                         <p className="text-sm font-medium text-foreground">{session.duration_minutes} นาที</p>
+                         <p className="text-xs text-muted-foreground">ระยะเวลา</p>
                        </div>
                      </div>
-                     <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-orange-50 to-orange-100 rounded-xl border border-orange-200 shadow-sm">
-                       <div className="p-2 bg-orange-500 rounded-lg shadow-md">
-                         <Flame className="h-4 w-4 text-white" />
-                       </div>
+                     <div className="flex items-center gap-2 p-3 bg-muted/20 rounded border">
+                       <Flame className="h-4 w-4 text-muted-foreground" />
                        <div>
-                         <p className="text-sm font-semibold text-orange-900">{session.calories_burned} แคล</p>
-                         <p className="text-xs text-orange-700">เผาผลาญ</p>
+                         <p className="text-sm font-medium text-foreground">{session.calories_burned} แคล</p>
+                         <p className="text-xs text-muted-foreground">เผาผลาญ</p>
                        </div>
                      </div>
                      
                      {/* แสดงข้อมูลยกน้ำหนักถ้ามี */}
                      {session.exercise_type === "ยกน้ำหนัก" && session.sets && session.reps && session.weight_kg && (
                        <>
-                         <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl border border-purple-200 shadow-sm">
-                           <div className="p-2 bg-purple-500 rounded-lg shadow-md">
-                             <Dumbbell className="h-4 w-4 text-white" />
-                           </div>
+                         <div className="flex items-center gap-2 p-3 bg-muted/20 rounded border">
+                           <Dumbbell className="h-4 w-4 text-muted-foreground" />
                            <div>
-                             <p className="text-sm font-semibold text-purple-900">{session.sets} เซ็ต x {session.reps} ครั้ง</p>
-                             <p className="text-xs text-purple-700">การฝึก</p>
+                             <p className="text-sm font-medium text-foreground">{session.sets} เซ็ต x {session.reps} ครั้ง</p>
+                             <p className="text-xs text-muted-foreground">การฝึก</p>
                            </div>
                          </div>
-                         <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-xl border border-green-200 shadow-sm">
-                           <div className="p-2 bg-green-500 rounded-lg shadow-md">
-                             <Target className="h-4 w-4 text-white" />
-                           </div>
+                         <div className="flex items-center gap-2 p-3 bg-muted/20 rounded border">
+                           <Target className="h-4 w-4 text-muted-foreground" />
                            <div>
-                             <p className="text-sm font-semibold text-green-900">{session.weight_kg} กก.</p>
-                             <p className="text-xs text-green-700">น้ำหนัก</p>
+                             <p className="text-sm font-medium text-foreground">{session.weight_kg} กก.</p>
+                             <p className="text-xs text-muted-foreground">น้ำหนัก</p>
                            </div>
                          </div>
                        </>
@@ -1346,12 +1313,10 @@ export default function ExerciseLog() {
                    </div>
                   
                   {session.notes && (
-                    <div className="mt-6 p-4 bg-gradient-to-r from-primary/5 to-primary/10 border-2 border-primary/20 rounded-xl shadow-sm">
-                      <div className="flex items-start gap-3">
-                        <div className="p-1.5 bg-primary/20 rounded-lg mt-0.5 flex-shrink-0">
-                          <Activity className="h-4 w-4 text-primary" />
-                        </div>
-                        <p className="text-sm text-foreground leading-relaxed font-medium">{session.notes}</p>
+                    <div className="mt-4 p-3 bg-muted/20 border rounded">
+                      <div className="flex items-start gap-2">
+                        <Activity className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <p className="text-sm text-foreground leading-relaxed">{session.notes}</p>
                       </div>
                     </div>
                   )}

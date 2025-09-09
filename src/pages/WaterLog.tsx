@@ -238,145 +238,202 @@ export default function WaterLog() {
   return (
     <MainLayout>
       <div className="space-y-6">
-        {/* Header Section */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-primary/10 rounded-xl">
-              <Droplets className="h-8 w-8 text-primary" />
-            </div>
-            <div>
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Droplets className="h-6 w-6 text-primary" />
+              </div>
               <h1 className="text-3xl font-bold text-primary">บันทึกน้ำดื่ม</h1>
-              <p className="text-muted-foreground">ติดตามคุณภาพการดื่มน้ำของคุณ</p>
             </div>
+            <p className="text-muted-foreground ml-12">ติดตามการดื่มน้ำของคุณเพื่อสุขภาพที่ดี</p>
           </div>
           <div className="flex gap-2">
             <Button 
               onClick={fetchWaterLogs} 
               disabled={isLoading}
               variant="outline"
-              className="gap-2"
+              className="gap-2 rounded-full border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all duration-200"
             >
-              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <svg className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
               {isLoading ? 'กำลังโหลด...' : 'รีเฟรช'}
             </Button>
             <Button 
               onClick={() => setShowForm(!showForm)} 
               className="gap-2 rounded-full bg-gradient-to-r from-primary to-secondary hover:from-primary-hover hover:to-secondary-hover text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
             >
-              <Droplets className="h-4 w-4" />
-              เพิ่มบันทึก
+              <Plus className="h-4 w-4" />
+              เพิ่มน้ำดื่ม
             </Button>
           </div>
         </div>
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="border-l-4 border-l-blue-500">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">ปริมาณรวมวันนี้</p>
-                  <p className="text-2xl font-bold text-blue-600">
-                    {calculateWaterStats('today').totalAmount.toLocaleString()} มล.
-                  </p>
+        {/* สรุปการดื่มน้ำ - Layout แนวนอน */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* ข้อมูลหลัก */}
+          <Card className="lg:col-span-1">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Droplets className="h-5 w-5 text-primary" />
+                สรุปการดื่มน้ำ
+              </CardTitle>
+              <CardDescription>
+                ข้อมูลการดื่มน้ำและความคืบหน้าเป้าหมาย
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* แถวแรก - ปริมาณและเป้าหมาย */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border">
+                    <div className="p-2 bg-muted/50 rounded-lg">
+                      <Droplets className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <div className="text-xl font-bold text-foreground">
+                        {calculateWaterStats('today').totalAmount.toLocaleString()}
+                      </div>
+                      <div className="text-xs text-muted-foreground">มล. วันนี้</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border">
+                    <div className="p-2 bg-muted/50 rounded-lg">
+                      <Target className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <div className="text-xl font-bold text-foreground">
+                        {calculateWaterStats('today').progressPercentage}%
+                      </div>
+                      <div className="text-xs text-muted-foreground">เป้าหมาย</div>
+                    </div>
+                  </div>
                 </div>
-                <div className="p-3 bg-blue-100 rounded-full">
-                  <Droplets className="h-6 w-6 text-blue-600" />
+                
+                {/* แถวที่สอง - จำนวนครั้งและเฉลี่ย */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border">
+                    <div className="p-2 bg-muted/50 rounded-lg">
+                      <Activity className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <div className="text-xl font-bold text-foreground">
+                        {calculateWaterStats('today').totalLogs}
+                      </div>
+                      <div className="text-xs text-muted-foreground">ครั้ง</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border">
+                    <div className="p-2 bg-muted/50 rounded-lg">
+                      <TrendingUp className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <div className="text-xl font-bold text-foreground">
+                        {calculateWaterStats('today').averageAmount}
+                      </div>
+                      <div className="text-xs text-muted-foreground">มล. เฉลี่ย</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-l-4 border-l-green-500">
+          {/* Progress Bar */}
+          <Card className="lg:col-span-1">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">เป้าหมายวันนี้</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {calculateWaterStats('today').progressPercentage}%
-                  </p>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Target className="h-5 w-5 text-primary" />
+                    ความคืบหน้าการดื่มน้ำวันนี้
+                  </h3>
+                  <Badge variant="outline" className="text-sm bg-primary/10 text-primary border-primary/20">
+                    {calculateWaterStats('today').totalAmount.toLocaleString()} / 2,000 มล.
+                  </Badge>
                 </div>
-                <div className="p-3 bg-green-100 rounded-full">
-                  <Target className="h-6 w-6 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-l-4 border-l-purple-500">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">จำนวนครั้ง</p>
-                  <p className="text-2xl font-bold text-purple-600">
-                    {calculateWaterStats('today').totalLogs} ครั้ง
-                  </p>
-                </div>
-                <div className="p-3 bg-purple-100 rounded-full">
-                  <Activity className="h-6 w-6 text-purple-600" />
+                <Progress 
+                  value={calculateWaterStats('today').progressPercentage} 
+                  className="h-3"
+                />
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>เป้าหมาย: 2,000 มล. ต่อวัน</span>
+                  <span>{calculateWaterStats('today').progressPercentage}% สำเร็จ</span>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Progress Bar */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">ความคืบหน้าการดื่มน้ำวันนี้</h3>
-                <Badge variant="outline" className="text-sm">
-                  {calculateWaterStats('today').totalAmount.toLocaleString()} / 2,000 มล.
-                </Badge>
-              </div>
-              <Progress 
-                value={calculateWaterStats('today').progressPercentage} 
-                className="h-3"
-              />
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>เป้าหมาย: 2,000 มล. ต่อวัน</span>
-                <span>{calculateWaterStats('today').progressPercentage}% สำเร็จ</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {showForm && (
-          <Card className="border-2 border-primary/20">
-            <CardHeader className="bg-gradient-to-r from-blue-50 to-cyan-50">
-              <CardTitle className="flex items-center gap-2">
-                <Droplets className="h-5 w-5 text-primary" />
-                {editingId ? "แก้ไขบันทึกน้ำดื่ม" : "บันทึกน้ำดื่มใหม่"}
+          <Card className="border-l-4 border-l-primary/20 shadow-sm">
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
+              <CardTitle className="flex items-center gap-2 text-primary">
+                <Droplets className="h-5 w-5" />
+                {editingId ? 'แก้ไขข้อมูลน้ำดื่ม' : 'บันทึกน้ำดื่มใหม่'}
               </CardTitle>
-              <CardDescription>
-                {editingId ? "แก้ไขข้อมูลการดื่มน้ำ" : "เพิ่มข้อมูลการดื่มน้ำในวันนี้"}
+              <CardDescription className="text-muted-foreground">
+                {editingId ? 'ปรับปรุงข้อมูลการดื่มน้ำของคุณ' : 'กรอกข้อมูลการดื่มน้ำเพื่อติดตามความคืบหน้า'}
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-6">
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="date">วันที่</Label>
-                    <Input id="date" type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} required />
+            <CardContent className="pt-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <Label htmlFor="date" className="flex items-center gap-2 text-sm font-medium">
+                      <Calendar className="h-4 w-4 text-primary" />
+                      วันที่ดื่ม
+                    </Label>
+                    <Input 
+                      id="date" 
+                      type="date" 
+                      value={formData.date} 
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })} 
+                      className="h-11 border-primary/20 focus:border-primary/40"
+                      required 
+                    />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="time">เวลา</Label>
-                    <Input id="time" type="time" value={formData.time} onChange={(e) => setFormData({ ...formData, time: e.target.value })} required />
+                  <div className="space-y-3">
+                    <Label htmlFor="time" className="flex items-center gap-2 text-sm font-medium">
+                      <Clock className="h-4 w-4 text-primary" />
+                      เวลาดื่ม
+                    </Label>
+                    <Input 
+                      id="time" 
+                      type="time" 
+                      value={formData.time} 
+                      onChange={(e) => setFormData({ ...formData, time: e.target.value })} 
+                      className="h-11 border-primary/20 focus:border-primary/40"
+                      required 
+                    />
                   </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="amount_ml">ปริมาณ (มล.)</Label>
-                    <Input id="amount_ml" type="number" placeholder="250" value={formData.amount_ml} onChange={(e) => setFormData({ ...formData, amount_ml: e.target.value })} required />
+                  <div className="space-y-3">
+                    <Label htmlFor="amount_ml" className="flex items-center gap-2 text-sm font-medium">
+                      <Droplets className="h-4 w-4 text-primary" />
+                      ปริมาณ (มล.)
+                    </Label>
+                    <Input 
+                      id="amount_ml" 
+                      type="number" 
+                      placeholder="250" 
+                      value={formData.amount_ml} 
+                      onChange={(e) => setFormData({ ...formData, amount_ml: e.target.value })} 
+                      className="h-11 border-primary/20 focus:border-primary/40"
+                      required 
+                    />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="drink_type">ประเภทเครื่องดื่ม</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="drink_type" className="flex items-center gap-2 text-sm font-medium">
+                      <Activity className="h-4 w-4 text-primary" />
+                      ประเภทเครื่องดื่ม
+                    </Label>
                     <select 
                       id="drink_type" 
                       value={formData.drink_type} 
                       onChange={(e) => setFormData({ ...formData, drink_type: e.target.value })}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex h-11 w-full rounded-md border border-primary/20 bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <option value="water">น้ำเปล่า</option>
                       <option value="tea">ชา</option>
@@ -388,13 +445,36 @@ export default function WaterLog() {
                     </select>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="notes">หมายเหตุ</Label>
-                  <Textarea id="notes" placeholder="หลังออกกำลังกาย ระหว่างทำงาน..." value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} />
+                <div className="space-y-3">
+                  <Label htmlFor="notes" className="flex items-center gap-2 text-sm font-medium">
+                    <Activity className="h-4 w-4 text-primary" />
+                    หมายเหตุ
+                  </Label>
+                  <Textarea 
+                    id="notes" 
+                    placeholder="รายละเอียดเพิ่มเติม เช่น หลังออกกำลังกาย, ระหว่างทำงาน, หรือความรู้สึก..." 
+                    value={formData.notes} 
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })} 
+                    className="min-h-[80px] border-primary/20 focus:border-primary/40 resize-none"
+                  />
                 </div>
-                <div className="flex gap-2">
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "กำลังบันทึก..." : editingId ? "อัปเดต" : "บันทึก"}
+                <div className="flex gap-3 pt-4 border-t border-border/50">
+                  <Button 
+                    type="submit" 
+                    disabled={isSubmitting}
+                    className="flex-1 h-11 bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    {isSubmitting ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        {editingId ? 'กำลังอัปเดต...' : 'กำลังบันทึก...'}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Droplets className="h-4 w-4" />
+                        {editingId ? 'อัปเดตข้อมูล' : 'บันทึกน้ำดื่ม'}
+                      </div>
+                    )}
                   </Button>
                   <Button 
                     type="button" 
@@ -405,6 +485,7 @@ export default function WaterLog() {
                       setFormData({ date: new Date().toISOString().split('T')[0], time: "", amount_ml: "", drink_type: "water", notes: "" });
                     }}
                     disabled={isSubmitting}
+                    className="h-11 px-6 border-primary/20 hover:border-primary/40"
                   >
                     ยกเลิก
                   </Button>
@@ -414,13 +495,22 @@ export default function WaterLog() {
           </Card>
         )}
 
-        {/* Water Log History */}
-        <div className="grid gap-4">
-          <div className="flex items-center gap-3">
-            <h2 className="text-xl font-semibold">ประวัติการดื่มน้ำ</h2>
-            <Badge variant="secondary" className="text-xs">
-              {logs.length} รายการ
-            </Badge>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-1.5 bg-primary/10 rounded-md">
+                <Droplets className="h-5 w-5 text-primary" />
+              </div>
+              <h2 className="text-xl font-semibold text-foreground">ประวัติการดื่มน้ำ</h2>
+              {logs.length > 0 && (
+                <Badge variant="secondary" className="ml-2 bg-primary/10 text-primary border-primary/20">
+                  {logs.length} รายการ
+                </Badge>
+              )}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              เรียงตามวันที่ล่าสุด
+            </div>
           </div>
           
           {isLoading && logs.length === 0 ? (
@@ -433,43 +523,55 @@ export default function WaterLog() {
               </CardContent>
             </Card>
           ) : logs.length === 0 ? (
-            <Card className="border-dashed">
-              <CardContent className="p-12 text-center text-muted-foreground">
-                <div className="p-4 bg-muted/50 rounded-full w-fit mx-auto mb-4">
-                  <Droplets className="h-8 w-8" />
+            <Card className="border-dashed border-2 border-muted-foreground/20">
+              <CardContent className="p-8 text-center">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="p-3 bg-muted/30 rounded-lg">
+                    <Droplets className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-medium text-foreground">ยังไม่มีข้อมูลการดื่มน้ำ</h3>
+                    <p className="text-sm text-muted-foreground max-w-md">
+                      เริ่มต้นบันทึกการดื่มน้ำของคุณเพื่อติดตามความคืบหน้าและสร้างแรงบันดาลใจในการดูแลสุขภาพ
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={() => setShowForm(true)}
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    เพิ่มน้ำดื่มแรก
+                  </Button>
                 </div>
-                <h3 className="text-lg font-semibold mb-2">ยังไม่มีข้อมูลการดื่มน้ำ</h3>
-                <p className="text-sm mb-4">เริ่มต้นการติดตามการดื่มน้ำเพื่อสุขภาพที่ดี</p>
-                <Button 
-                  onClick={() => setShowForm(true)}
-                  className="gap-2 rounded-full bg-gradient-to-r from-primary to-secondary hover:from-primary-hover hover:to-secondary-hover text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                >
-                  <Droplets className="h-4 w-4" />
-                  เพิ่มบันทึกแรก
-                </Button>
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-3">
+            <div className="grid gap-4">
               {logs.map((item) => (
-                <Card key={item.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-xl">
-                          <Droplets className="h-6 w-6 text-blue-600" />
+                <Card key={item.id} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-primary/30">
+                  <CardContent className="p-5">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 bg-muted/30 rounded-xl">
+                          <Droplets className="h-6 w-6 text-muted-foreground" />
                         </div>
-                        <div className="space-y-1">
+                        <div className="space-y-2">
                           <div className="flex items-center gap-3">
-                            <h3 className="text-lg font-bold text-blue-600">{item.amount_ml.toLocaleString()} มล.</h3>
-                            <Badge variant="outline" className="text-xs">
+                            <h3 className="text-lg font-semibold text-foreground">
+                              {item.amount_ml.toLocaleString()} มล.
+                            </h3>
+                            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
                               {getDrinkTypeLabel(item.drink_type || 'water')}
                             </Badge>
                           </div>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <Calendar className="h-4 w-4" />
-                              {new Date(item.date).toLocaleDateString('th-TH')}
+                              {new Date(item.date).toLocaleDateString('th-TH', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                              })}
                             </div>
                             <div className="flex items-center gap-1">
                               <Clock className="h-4 w-4" />
@@ -478,32 +580,33 @@ export default function WaterLog() {
                           </div>
                         </div>
                       </div>
+                      
                       <div className="flex items-center gap-2">
                         <Button 
                           variant="outline" 
                           size="sm" 
                           onClick={() => startEdit(item)}
                           disabled={isSubmitting}
-                          className="gap-2"
+                          className="h-8 px-3 border-primary/20 hover:border-primary/40"
                         >
-                          <TrendingUp className="h-4 w-4" /> แก้ไข
+                          แก้ไข
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button 
-                              variant="outline" 
+                              variant="destructive" 
                               size="sm"
                               disabled={isSubmitting}
-                              className="gap-2 rounded-full border-2 border-red-300 hover:border-red-400 hover:bg-red-50 text-red-600 hover:text-red-700 transition-all duration-200 shadow-sm"
+                              className="h-8 px-3"
                             >
-                              {isSubmitting ? "กำลังลบ..." : "ลบ"}
+                              ลบ
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
                               <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
                               <AlertDialogDescription>
-                                ต้องการลบรายการนี้หรือไม่? ข้อมูลจะถูกลบออกจากฐานข้อมูลอย่างถาวร
+                                ต้องการลบรายการนี้หรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -519,9 +622,13 @@ export default function WaterLog() {
                         </AlertDialog>
                       </div>
                     </div>
+                    
                     {item.notes && (
-                      <div className="mt-3 p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground border-l-4 border-l-blue-200">
-                        <strong>หมายเหตุ:</strong> {item.notes}
+                      <div className="mt-4 p-3 bg-muted/20 border rounded-lg">
+                        <div className="flex items-start gap-2">
+                          <Activity className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                          <p className="text-sm text-foreground leading-relaxed">{item.notes}</p>
+                        </div>
                       </div>
                     )}
                   </CardContent>

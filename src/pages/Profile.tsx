@@ -372,11 +372,11 @@ export default function Profile() {
         <div className="flex items-center justify-between">
           <div className="space-y-2">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-gradient-to-r from-primary to-secondary rounded-xl shadow-lg">
-                <User className="h-6 w-6 text-primary-foreground" />
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <User className="h-6 w-6 text-primary" />
               </div>
               <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-bold text-gray-800">
+                <h2 className="text-2xl font-bold text-foreground">
                   โปรไฟล์ของคุณ
                 </h2>
                 {profileLoading && (
@@ -384,13 +384,13 @@ export default function Profile() {
                 )}
               </div>
             </div>
-            <p className="text-muted-foreground ml-16">
+            <p className="text-muted-foreground ml-12">
               จัดการข้อมูลส่วนตัวและการตั้งค่าสุขภาพ
               {profile && (
-                <span className="block text-xs mt-1 text-blue-600">
+                <span className="block text-xs mt-1 text-muted-foreground">
                   อัปเดตล่าสุด: {new Date(profile.updated_at).toLocaleDateString('th-TH')}
                   {profile.id === 1 && profile.email === "test@example.com" && (
-                    <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
+                    <span className="ml-2 px-2 py-1 bg-muted/30 text-muted-foreground rounded-full text-xs">
                       Mock Data
                     </span>
                   )}
@@ -398,7 +398,7 @@ export default function Profile() {
               )}
             </p>
             {profileError && (
-              <div className="flex items-center gap-1 mt-2 text-yellow-600 ml-16">
+              <div className="flex items-center gap-1 mt-2 text-muted-foreground ml-12">
                 <AlertTriangle className="h-4 w-4" />
                 <span className="text-xs">
                   {profileError.includes('mock data') ? 
@@ -416,14 +416,14 @@ export default function Profile() {
                   onClick={refreshProfile}
                   disabled={profileLoading}
                   variant="outline"
-                  className="gap-2 rounded-full border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all duration-200"
+                  className="gap-2"
                 >
                   <RefreshCw className={`h-4 w-4 ${profileLoading ? 'animate-spin' : ''}`} />
                   {profileLoading ? 'กำลังโหลด...' : 'รีเฟรช'}
                 </Button>
                 <Button 
                   onClick={() => setIsEditing(true)} 
-                  className="gap-2 rounded-full bg-gradient-to-r from-primary to-secondary hover:from-primary-hover hover:to-secondary-hover text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                  className="gap-2"
                 >
                   <Edit className="h-4 w-4" />
                   แก้ไขโปรไฟล์
@@ -431,7 +431,7 @@ export default function Profile() {
                 <Button 
                   variant="outline" 
                   onClick={() => navigate("/onboarding")}
-                  className="gap-2 rounded-full border-2 border-blue-200 hover:border-blue-300 hover:bg-blue-50 text-blue-600 hover:text-blue-700 transition-all duration-200"
+                  className="gap-2"
                 >
                   <Settings className="h-4 w-4" />
                   อัปเดตข้อมูลสุขภาพ
@@ -443,14 +443,13 @@ export default function Profile() {
                   variant="outline"
                   onClick={() => setIsEditing(false)}
                   disabled={loading}
-                  className="rounded-full border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
                 >
                   ยกเลิก
                 </Button>
                 <Button
                   onClick={handleSave}
                   disabled={loading || profileLoading}
-                  className="gap-2 rounded-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                  className="gap-2"
                 >
                   <Save className="h-4 w-4" />
                   {loading ? "กำลังบันทึก..." : "บันทึก"}
@@ -460,15 +459,15 @@ export default function Profile() {
           </div>
         </div>
 
-        <div className="max-w-4xl mx-auto space-y-6">
-          {/* Profile Info */}
-          <div className="space-y-6">
+        <div className="max-w-6xl mx-auto">
+          {/* Profile Info - Grid Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Basic Info Card */}
-            <Card className="border-0 rounded-3xl bg-gradient-to-br from-white via-blue-50/40 to-blue-50/20 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] backdrop-blur-sm">
+            <Card className="border border-border hover:shadow-md transition-shadow duration-200">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-3 text-xl">
-                  <div className="p-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg">
-                    <User className="h-5 w-5 text-white" />
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <User className="h-5 w-5 text-primary" />
                   </div>
                   ข้อมูลส่วนตัว
                 </CardTitle>
@@ -476,15 +475,15 @@ export default function Profile() {
                   ข้อมูลพื้นฐานของคุณ
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4 md:space-y-6">
+              <CardContent className="space-y-4">
                 {/* Avatar */}
-                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
+                <div className="flex items-center gap-4">
                   <div className="relative">
-                    <Avatar className="h-24 w-24 border-4 border-white shadow-lg">
+                    <Avatar className="h-16 w-16 border-2 border-border">
                       {profilePicture ? (
                         <AvatarImage src={profilePicture} alt="Profile" />
                       ) : (
-                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white text-2xl font-bold">
+                        <AvatarFallback className="bg-primary/10 text-primary text-lg font-bold">
                           {profile ? (
                             profile.first_name?.charAt(0)?.toUpperCase() || profile.email?.charAt(0)?.toUpperCase() || "U"
                           ) : (
@@ -495,34 +494,40 @@ export default function Profile() {
                     </Avatar>
                     {uploadingPicture && (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
-                        <Loader2 className="h-6 w-6 animate-spin text-white" />
+                        <Loader2 className="h-4 w-4 animate-spin text-white" />
                       </div>
                     )}
                   </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-foreground">
+                      {profileData.firstName} {profileData.lastName}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">{profileData.email}</p>
+                  </div>
                   {isEditing && (
-                    <div className="flex flex-col gap-3 mt-2 sm:mt-0">
+                    <div className="flex gap-2">
                       <Button 
                         variant="outline" 
                         size="sm" 
                         onClick={handleChangePictureClick}
                         disabled={uploadingPicture}
-                        className="gap-2 rounded-full border-2 border-blue-200 hover:border-blue-300 hover:bg-blue-50 text-blue-600 hover:text-blue-700 transition-all duration-200"
+                        className="gap-2"
                       >
                         {uploadingPicture ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
-                          <Camera className="h-4 w-4" />
+                          <Camera className="h-3 w-3" />
                         )}
-                        {uploadingPicture ? "กำลังอัปโหลด..." : "เปลี่ยนรูปภาพ"}
+                        เปลี่ยนรูป
                       </Button>
                       {profilePicture && (
                         <Button 
                           variant="outline" 
                           size="sm"
                           onClick={handleRemoveProfilePicture}
-                          className="gap-2 rounded-full border-2 border-red-200 hover:border-red-300 hover:bg-red-50 text-red-600 hover:text-red-700 transition-all duration-200"
+                          className="gap-2"
                         >
-                          ลบรูปภาพ
+                          ลบ
                         </Button>
                       )}
                     </div>
@@ -539,57 +544,46 @@ export default function Profile() {
                 </div>
 
                 {/* Basic Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                  <div className="space-y-3">
-                    <Label htmlFor="firstName" className="text-sm font-semibold text-gray-700">ชื่อ</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName" className="text-sm font-semibold text-foreground">ชื่อ</Label>
                     <Input
                       id="firstName"
                       value={profileData.firstName}
                       onChange={(e) => handleInputChange("firstName", e.target.value)}
                       disabled={!isEditing}
-                      className="rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+                      className="h-9"
                     />
                   </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="lastName" className="text-sm font-semibold text-gray-700">นามสกุล</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName" className="text-sm font-semibold text-foreground">นามสกุล</Label>
                     <Input
                       id="lastName"
                       value={profileData.lastName}
                       onChange={(e) => handleInputChange("lastName", e.target.value)}
                       disabled={!isEditing}
-                      className="rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+                      className="h-9"
                     />
                   </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="email" className="text-sm font-semibold text-gray-700">อีเมล</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={profileData.email}
-                      onChange={(e) => handleInputChange("email", e.target.value)}
-                      disabled={!isEditing}
-                      className="rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
-                    />
-                  </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="age" className="text-sm font-semibold text-gray-700">อายุ</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="age" className="text-sm font-semibold text-foreground">อายุ</Label>
                     <Input
                       id="age"
                       type="number"
                       value={profileData.age}
                       onChange={(e) => handleInputChange("age", e.target.value)}
                       disabled={!isEditing}
-                      className="rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+                      className="h-9"
                     />
                   </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="gender" className="text-sm font-semibold text-gray-700">เพศ</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="gender" className="text-sm font-semibold text-foreground">เพศ</Label>
                     <Select
                       value={profileData.gender}
                       onValueChange={(value) => handleInputChange("gender", value)}
                       disabled={!isEditing}
                     >
-                      <SelectTrigger className="rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200">
+                      <SelectTrigger className="h-9">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -604,11 +598,11 @@ export default function Profile() {
             </Card>
 
             {/* Health Metrics Card */}
-            <Card className="border-0 rounded-3xl bg-gradient-to-br from-white via-green-50/40 to-green-50/20 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] backdrop-blur-sm">
+            <Card className="border border-border hover:shadow-md transition-shadow duration-200">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-3 text-xl">
-                  <div className="p-2 bg-gradient-to-r from-green-500 to-green-600 rounded-lg">
-                    <BarChart3 className="h-5 w-5 text-white" />
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <BarChart3 className="h-5 w-5 text-primary" />
                   </div>
                   ข้อมูลสุขภาพ
                 </CardTitle>
@@ -616,432 +610,401 @@ export default function Profile() {
                   ข้อมูลสุขภาพและร่างกายของคุณ
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-                  <div className="space-y-3">
-                    <Label htmlFor="weight" className="text-sm font-semibold text-gray-700">น้ำหนัก (กก.)</Label>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="weight" className="text-sm font-semibold text-foreground">น้ำหนัก (กก.)</Label>
                     <Input
                       id="weight"
                       type="number"
                       value={profileData.weight}
                       onChange={(e) => handleInputChange("weight", e.target.value)}
                       disabled={!isEditing}
-                      className="rounded-xl border-2 border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200"
+                      className="h-9"
                     />
                   </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="height" className="text-sm font-semibold text-gray-700">ส่วนสูง (ซม.)</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="height" className="text-sm font-semibold text-foreground">ส่วนสูง (ซม.)</Label>
                     <Input
                       id="height"
                       type="number"
                       value={profileData.height}
                       onChange={(e) => handleInputChange("height", e.target.value)}
                       disabled={!isEditing}
-                      className="rounded-xl border-2 border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200"
-                    />
-                  </div>
-                  <div className="space-y-3">
-                    <Label className="text-sm font-semibold text-gray-700">รอบเอว (ซม.)</Label>
-                    <Input
-                      type="number"
-                      value={onboardingData.waist || ""}
-                      disabled={!isEditing}
-                      className="rounded-xl border-2 border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200"
-                      placeholder="ไม่ระบุ"
+                      className="h-9"
                     />
                   </div>
                 </div>
 
                 {/* BMI Display */}
                 {bmi > 0 && (
-                  <div className="p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-2xl border border-green-200">
-                    <div className="flex items-center justify-between mb-3">
-                      <Label className="text-base font-semibold text-green-800">ดัชนีมวลกาย (BMI)</Label>
-                      <Badge className="bg-green-500 text-white px-3 py-1 rounded-full text-lg font-bold">{bmi}</Badge>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className={`w-4 h-4 rounded-full ${bmiInfo.color} shadow-sm`}></div>
-                      <span className="text-sm font-medium text-green-700">{bmiInfo.category}</span>
+                  <div className="p-3 bg-muted/30 rounded-lg border">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-semibold text-foreground">ดัชนีมวลกาย (BMI)</Label>
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-primary text-primary-foreground px-2 py-1 rounded-full text-sm font-bold">{bmi}</Badge>
+                        <div className={`w-3 h-3 rounded-full ${bmiInfo.color}`}></div>
+                        <span className="text-xs text-foreground">{bmiInfo.category}</span>
+                      </div>
                     </div>
                   </div>
                 )}
 
-                <Separator />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                  <div className="space-y-3">
-                    <Label className="text-sm font-semibold text-gray-700">ความดันโลหิต</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-foreground">ความดันโลหิต</Label>
                     <Input
                       value={onboardingData.bloodPressure || ""}
                       disabled={!isEditing}
-                      className="rounded-xl border-2 border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200"
                       placeholder="ไม่ระบุ"
+                      className="h-9"
                     />
                   </div>
-                  <div className="space-y-3">
-                    <Label className="text-sm font-semibold text-gray-700">น้ำตาลในเลือด (mg/dL)</Label>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-foreground">น้ำตาลในเลือด</Label>
                     <Input
                       value={onboardingData.bloodSugar || ""}
                       disabled={!isEditing}
-                      className="rounded-xl border-2 border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200"
                       placeholder="ไม่ระบุ"
+                      className="h-9"
                     />
                   </div>
                 </div>
               </CardContent>
             </Card>
+          </div>
 
-                         {/* Health Goals Card */}
-             <Card className="border-0 rounded-3xl bg-gradient-to-br from-white via-orange-50/40 to-orange-50/20 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] backdrop-blur-sm">
-               <CardHeader className="pb-4">
-                 <CardTitle className="flex items-center gap-3 text-xl">
-                   <div className="p-2 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg">
-                     <Target className="h-5 w-5 text-white" />
-                   </div>
-                   เป้าหมายสุขภาพ
-                 </CardTitle>
-                 <CardDescription className="text-base">
-                   เป้าหมายและแรงจูงใจของคุณ
-                 </CardDescription>
-               </CardHeader>
-               <CardContent className="space-y-6">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                   <div className="space-y-3">
-                     <Label className="text-sm font-semibold text-gray-700">เป้าหมายหลัก</Label>
-                     <div className="p-4 bg-gradient-to-r from-orange-50 to-orange-100 rounded-2xl border border-orange-200">
-                       <span className="text-base font-medium text-orange-800">
-                         {onboardingData.healthGoal ? healthGoals[onboardingData.healthGoal as keyof typeof healthGoals] : "ไม่ระบุ"}
-                       </span>
-                     </div>
-                   </div>
-                   <div className="space-y-3">
-                     <Label className="text-sm font-semibold text-gray-700">ระยะเวลาเป้าหมาย</Label>
-                     <div className="p-4 bg-gradient-to-r from-orange-50 to-orange-100 rounded-2xl border border-orange-200">
-                       <span className="text-base font-medium text-orange-800">{onboardingData.timeline} เดือน</span>
-                     </div>
-                   </div>
-                 </div>
-
-                 {onboardingData.motivation && (
-                   <div className="space-y-3">
-                     <Label className="text-sm font-semibold text-gray-700">แรงจูงใจ</Label>
-                     <div className="p-4 bg-gradient-to-r from-orange-50 to-orange-100 rounded-2xl border border-orange-200">
-                       <span className="text-base font-medium text-orange-800">{onboardingData.motivation}</span>
-                     </div>
-                   </div>
-                 )}
-
-                 <Separator />
-
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-                   <div className="space-y-3">
-                     <Label htmlFor="waterGoal" className="text-sm font-semibold text-gray-700">เป้าหมายน้ำ (ลิตร)</Label>
-                     <Input
-                       id="waterGoal"
-                       type="number"
-                       step="0.1"
-                       value={profileData.waterGoal}
-                       onChange={(e) => handleInputChange("waterGoal", e.target.value)}
-                       disabled={!isEditing}
-                       className="rounded-xl border-2 border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all duration-200"
-                     />
-                   </div>
-                   <div className="space-y-3">
-                     <Label htmlFor="sleepGoal" className="text-sm font-semibold text-gray-700">เป้าหมายการนอน (ชั่วโมง)</Label>
-                     <Input
-                       id="sleepGoal"
-                       type="number"
-                       value={profileData.sleepGoal}
-                       onChange={(e) => handleInputChange("sleepGoal", e.target.value)}
-                       disabled={!isEditing}
-                       className="rounded-xl border-2 border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all duration-200"
-                     />
-                   </div>
-                   <div className="space-y-3">
-                     <Label htmlFor="exerciseGoal" className="text-sm font-semibold text-gray-700">เป้าหมายออกกำลังกาย (นาที/วัน)</Label>
-                     <Input
-                       id="exerciseGoal"
-                       type="number"
-                       value={profileData.exerciseGoal}
-                       onChange={(e) => handleInputChange("exerciseGoal", e.target.value)}
-                       disabled={!isEditing}
-                       className="rounded-xl border-2 border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all duration-200"
-                     />
-                   </div>
-                 </div>
-               </CardContent>
-             </Card>
-
-             {/* Nutrition Goals Card */}
-             <Card className="border-0 rounded-3xl bg-gradient-to-br from-white via-purple-50/40 to-purple-50/20 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] backdrop-blur-sm">
-               <CardHeader className="pb-4">
-                 <CardTitle className="flex items-center gap-3 text-xl">
-                   <div className="p-2 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg">
-                     <Utensils className="h-5 w-5 text-white" />
-                   </div>
-                   เป้าหมายโภชนาการ
-                 </CardTitle>
-                 <CardDescription className="text-base">
-                   เป้าหมายการรับประทานอาหารและสารอาหาร
-                 </CardDescription>
-               </CardHeader>
-               <CardContent className="space-y-6">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                   <div className="space-y-3">
-                     <Label htmlFor="calorieGoal" className="text-sm font-semibold text-gray-700">เป้าหมายแคลอรี่ (kcal/วัน)</Label>
-                     <Input
-                       id="calorieGoal"
-                       type="number"
-                       value={profileData.calorieGoal || "2000"}
-                       onChange={(e) => handleInputChange("calorieGoal", e.target.value)}
-                       disabled={!isEditing}
-                       className="rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-200"
-                     />
-                   </div>
-                   <div className="space-y-3">
-                     <Label htmlFor="proteinGoal" className="text-sm font-semibold text-gray-700">เป้าหมายโปรตีน (กรัม/วัน)</Label>
-                     <Input
-                       id="proteinGoal"
-                       type="number"
-                       value={profileData.proteinGoal || "60"}
-                       onChange={(e) => handleInputChange("proteinGoal", e.target.value)}
-                       disabled={!isEditing}
-                       className="rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-200"
-                     />
-                   </div>
-                   <div className="space-y-3">
-                     <Label htmlFor="carbGoal" className="text-sm font-semibold text-gray-700">เป้าหมายคาร์โบไฮเดรต (กรัม/วัน)</Label>
-                     <Input
-                       id="carbGoal"
-                       type="number"
-                       value={profileData.carbGoal || "250"}
-                       onChange={(e) => handleInputChange("carbGoal", e.target.value)}
-                       disabled={!isEditing}
-                       className="rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-200"
-                     />
-                   </div>
-                   <div className="space-y-3">
-                     <Label htmlFor="fatGoal" className="text-sm font-semibold text-gray-700">เป้าหมายไขมัน (กรัม/วัน)</Label>
-                     <Input
-                       id="fatGoal"
-                       type="number"
-                       value={profileData.fatGoal || "65"}
-                       onChange={(e) => handleInputChange("fatGoal", e.target.value)}
-                       disabled={!isEditing}
-                       className="rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-200"
-                     />
-                   </div>
-                   <div className="space-y-3">
-                     <Label htmlFor="fiberGoal" className="text-sm font-semibold text-gray-700">เป้าหมายไฟเบอร์ (กรัม/วัน)</Label>
-                     <Input
-                       id="fiberGoal"
-                       type="number"
-                       value={profileData.fiberGoal || "25"}
-                       onChange={(e) => handleInputChange("fiberGoal", e.target.value)}
-                       disabled={!isEditing}
-                       className="rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-200"
-                     />
-                   </div>
-                   <div className="space-y-3">
-                     <Label htmlFor="sodiumGoal" className="text-sm font-semibold text-gray-700">เป้าหมายโซเดียม (มก./วัน)</Label>
-                     <Input
-                       id="sodiumGoal"
-                       type="number"
-                       value={profileData.sodiumGoal || "2300"}
-                       onChange={(e) => handleInputChange("sodiumGoal", e.target.value)}
-                       disabled={!isEditing}
-                       className="rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-200"
-                     />
-                   </div>
-                 </div>
-
-                 <Separator />
-
-                 <div className="space-y-4">
-                   <Label className="text-base font-semibold text-gray-700">ข้อจำกัดอาหาร</Label>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <div className="flex items-center space-x-3 p-3 bg-purple-50 rounded-xl border border-purple-200">
-                       <Checkbox
-                         id="gluten-free"
-                         checked={profileData.dietaryRestrictions?.includes("gluten-free") || false}
-                         onCheckedChange={(checked) => {
-                           const restrictions = profileData.dietaryRestrictions || [];
-                           if (checked) {
-                             handleInputChange("dietaryRestrictions", [...restrictions, "gluten-free"]);
-                           } else {
-                             handleInputChange("dietaryRestrictions", restrictions.filter(r => r !== "gluten-free"));
-                           }
-                         }}
-                         disabled={!isEditing}
-                         className="border-purple-300"
-                       />
-                       <Label htmlFor="gluten-free" className="text-sm font-medium text-purple-800">ปราศจากกลูเตน</Label>
-                     </div>
-                     <div className="flex items-center space-x-3 p-3 bg-purple-50 rounded-xl border border-purple-200">
-                       <Checkbox
-                         id="lactose-free"
-                         checked={profileData.dietaryRestrictions?.includes("lactose-free") || false}
-                         onCheckedChange={(checked) => {
-                           const restrictions = profileData.dietaryRestrictions || [];
-                           if (checked) {
-                             handleInputChange("dietaryRestrictions", [...restrictions, "lactose-free"]);
-                           } else {
-                             handleInputChange("dietaryRestrictions", restrictions.filter(r => r !== "lactose-free"));
-                           }
-                         }}
-                         disabled={!isEditing}
-                         className="border-purple-300"
-                       />
-                       <Label htmlFor="lactose-free" className="text-sm font-medium text-purple-800">ปราศจากแลคโตส</Label>
-                     </div>
-                     <div className="flex items-center space-x-3 p-3 bg-purple-50 rounded-xl border border-purple-200">
-                       <Checkbox
-                         id="vegetarian"
-                         checked={profileData.dietaryRestrictions?.includes("vegetarian") || false}
-                         onCheckedChange={(checked) => {
-                           const restrictions = profileData.dietaryRestrictions || [];
-                           if (checked) {
-                             handleInputChange("dietaryRestrictions", [...restrictions, "vegetarian"]);
-                           } else {
-                             handleInputChange("dietaryRestrictions", restrictions.filter(r => r !== "vegetarian"));
-                           }
-                         }}
-                         disabled={!isEditing}
-                         className="border-purple-300"
-                       />
-                       <Label htmlFor="vegetarian" className="text-sm font-medium text-purple-800">มังสวิรัติ</Label>
-                     </div>
-                     <div className="flex items-center space-x-3 p-3 bg-purple-50 rounded-xl border border-purple-200">
-                       <Checkbox
-                         id="vegan"
-                         checked={profileData.dietaryRestrictions?.includes("vegan") || false}
-                         onCheckedChange={(checked) => {
-                           const restrictions = profileData.dietaryRestrictions || [];
-                           if (checked) {
-                             handleInputChange("dietaryRestrictions", [...restrictions, "vegan"]);
-                           } else {
-                             handleInputChange("dietaryRestrictions", restrictions.filter(r => r !== "vegan"));
-                           }
-                         }}
-                         disabled={!isEditing}
-                         className="border-purple-300"
-                       />
-                       <Label htmlFor="vegan" className="text-sm font-medium text-purple-800">วีแกน</Label>
-                     </div>
-                   </div>
-                 </div>
-               </CardContent>
-             </Card>
-
-                         {/* Lifestyle Card */}
-             <Card className="border-0 rounded-3xl bg-gradient-to-br from-white via-cyan-50/40 to-cyan-50/20 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] backdrop-blur-sm">
-               <CardHeader className="pb-4">
-                 <CardTitle className="flex items-center gap-3 text-xl">
-                   <div className="p-2 bg-gradient-to-r from-cyan-500 to-cyan-600 rounded-lg">
-                     <Activity className="h-5 w-5 text-white" />
-                   </div>
-                   พฤติกรรมประจำวัน
-                 </CardTitle>
-                 <CardDescription className="text-base">
-                   ข้อมูลเกี่ยวกับไลฟ์สไตล์ของคุณ
-                 </CardDescription>
-               </CardHeader>
-               <CardContent className="space-y-6">
-                 {/* Basic Lifestyle Habits */}
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-                   <div className="space-y-3">
-                     <Label className="text-sm font-semibold text-gray-700">สูบบุหรี่</Label>
-                     <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-cyan-50 to-cyan-100 rounded-2xl border border-cyan-200">
-                       {onboardingData.smoking ? (
-                         <XCircle className="h-5 w-5 text-red-500" />
-                       ) : (
-                         <CheckCircle className="h-5 w-5 text-green-500" />
-                       )}
-                       <span className="text-base font-medium text-cyan-800">
-                         {onboardingData.smoking ? "สูบบุหรี่" : "ไม่สูบบุหรี่"}
-                       </span>
-                     </div>
-                   </div>
-                   
-                   <div className="space-y-3">
-                     <Label className="text-sm font-semibold text-gray-700">การดื่มแอลกอฮอล์</Label>
-                     <div className="p-4 bg-gradient-to-r from-cyan-50 to-cyan-100 rounded-2xl border border-cyan-200">
-                       <span className="text-base font-medium text-cyan-800">
-                         {onboardingData.alcoholFrequency ? 
-                           alcoholFrequencyLabels[onboardingData.alcoholFrequency as keyof typeof alcoholFrequencyLabels] : 
-                           "ไม่ระบุ"
-                         }
-                       </span>
-                     </div>
-                   </div>
-                   
-                   <div className="space-y-3">
-                     <Label className="text-sm font-semibold text-gray-700">ความถี่การออกกำลังกาย</Label>
-                     <div className="p-4 bg-gradient-to-r from-cyan-50 to-cyan-100 rounded-2xl border border-cyan-200">
-                       <span className="text-base font-medium text-cyan-800">
-                         {onboardingData.exerciseFrequency ? 
-                           exerciseFrequencyLabels[onboardingData.exerciseFrequency as keyof typeof exerciseFrequencyLabels] : 
-                           "ไม่ระบุ"
-                         }
-                       </span>
-                     </div>
-                   </div>
-                 </div>
-
-                 {/* Sleep and Meals */}
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                   <div className="space-y-3">
-                     <Label className="text-sm font-semibold text-gray-700">ชั่วโมงการนอนต่อวัน</Label>
-                     <div className="p-4 bg-gradient-to-r from-cyan-50 to-cyan-100 rounded-2xl border border-cyan-200">
-                       <span className="text-base font-medium text-cyan-800">
-                         {onboardingData.sleepHours ? `${onboardingData.sleepHours} ชั่วโมง` : "ไม่ระบุ"}
-                       </span>
-                     </div>
-                   </div>
-                   <div className="space-y-3">
-                     <Label className="text-sm font-semibold text-gray-700">มื้ออาหารต่อวัน</Label>
-                     <div className="p-4 bg-gradient-to-r from-cyan-50 to-cyan-100 rounded-2xl border border-cyan-200">
-                       <span className="text-base font-medium text-cyan-800">
-                         {onboardingData.mealsPerDay ? `${onboardingData.mealsPerDay} มื้อ` : "ไม่ระบุ"}
-                       </span>
-                     </div>
-                   </div>
-                 </div>
-
-                 {/* Activity Level and Water Intake */}
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                   <div className="space-y-3">
-                     <Label className="text-sm font-semibold text-gray-700">ระดับกิจกรรม (TDEE)</Label>
-                     <div className="p-4 bg-gradient-to-r from-cyan-50 to-cyan-100 rounded-2xl border border-cyan-200">
-                       <span className="text-base font-medium text-cyan-800">
-                         {onboardingData.activityLevel ? 
-                           activityLevelLabels[onboardingData.activityLevel] : 
-                           "ไม่ระบุ"
-                         }
-                       </span>
-                     </div>
-                   </div>
-                   <div className="space-y-3">
-                     <Label className="text-sm font-semibold text-gray-700">การดื่มน้ำต่อวัน</Label>
-                     <div className="p-4 bg-gradient-to-r from-cyan-50 to-cyan-100 rounded-2xl border border-cyan-200">
-                       <span className="text-base font-medium text-cyan-800">
-                         {onboardingData.waterIntakeGlasses ? 
-                           `${onboardingData.waterIntakeGlasses} แก้ว` : 
-                           "ไม่ระบุ"
-                         }
-                       </span>
-                     </div>
-                   </div>
-                 </div>
-               </CardContent>
-             </Card>
-
-            {/* Medical History Card */}
-            <Card className="border-0 rounded-3xl bg-gradient-to-br from-white via-red-50/40 to-red-50/20 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] backdrop-blur-sm">
+          {/* Second Row - Goals and Nutrition */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            {/* Health Goals Card */}
+            <Card className="border border-border hover:shadow-md transition-shadow duration-200">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-3 text-xl">
-                  <div className="p-2 bg-gradient-to-r from-red-500 to-red-600 rounded-lg">
-                    <AlertTriangle className="h-5 w-5 text-white" />
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <Target className="h-5 w-5 text-primary" />
+                  </div>
+                  เป้าหมายสุขภาพ
+                </CardTitle>
+                <CardDescription className="text-base">
+                  เป้าหมายและแรงจูงใจของคุณ
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-foreground">เป้าหมายหลัก</Label>
+                    <div className="p-3 bg-muted/30 rounded-lg border">
+                      <span className="text-sm font-medium text-foreground">
+                        {onboardingData.healthGoal ? healthGoals[onboardingData.healthGoal as keyof typeof healthGoals] : "ไม่ระบุ"}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-foreground">ระยะเวลา</Label>
+                    <div className="p-3 bg-muted/30 rounded-lg border">
+                      <span className="text-sm font-medium text-foreground">{onboardingData.timeline} เดือน</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="waterGoal" className="text-sm font-semibold text-foreground">น้ำ (ลิตร)</Label>
+                    <Input
+                      id="waterGoal"
+                      type="number"
+                      step="0.1"
+                      value={profileData.waterGoal}
+                      onChange={(e) => handleInputChange("waterGoal", e.target.value)}
+                      disabled={!isEditing}
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="sleepGoal" className="text-sm font-semibold text-foreground">นอน (ชม.)</Label>
+                    <Input
+                      id="sleepGoal"
+                      type="number"
+                      value={profileData.sleepGoal}
+                      onChange={(e) => handleInputChange("sleepGoal", e.target.value)}
+                      disabled={!isEditing}
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="exerciseGoal" className="text-sm font-semibold text-foreground">ออกกำลัง (นาที)</Label>
+                    <Input
+                      id="exerciseGoal"
+                      type="number"
+                      value={profileData.exerciseGoal}
+                      onChange={(e) => handleInputChange("exerciseGoal", e.target.value)}
+                      disabled={!isEditing}
+                      className="h-9"
+                    />
+                  </div>
+                </div>
+
+                {onboardingData.motivation && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-foreground">แรงจูงใจ</Label>
+                    <div className="p-3 bg-muted/30 rounded-lg border">
+                      <span className="text-sm font-medium text-foreground">{onboardingData.motivation}</span>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Nutrition Goals Card */}
+            <Card className="border border-border hover:shadow-md transition-shadow duration-200">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-3 text-xl">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <Utensils className="h-5 w-5 text-primary" />
+                  </div>
+                  เป้าหมายโภชนาการ
+                </CardTitle>
+                <CardDescription className="text-base">
+                  เป้าหมายการรับประทานอาหารและสารอาหาร
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="calorieGoal" className="text-sm font-semibold text-foreground">แคลอรี่ (kcal)</Label>
+                    <Input
+                      id="calorieGoal"
+                      type="number"
+                      value={profileData.calorieGoal || "2000"}
+                      onChange={(e) => handleInputChange("calorieGoal", e.target.value)}
+                      disabled={!isEditing}
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="proteinGoal" className="text-sm font-semibold text-foreground">โปรตีน (g)</Label>
+                    <Input
+                      id="proteinGoal"
+                      type="number"
+                      value={profileData.proteinGoal || "60"}
+                      onChange={(e) => handleInputChange("proteinGoal", e.target.value)}
+                      disabled={!isEditing}
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="carbGoal" className="text-sm font-semibold text-foreground">คาร์โบ (g)</Label>
+                    <Input
+                      id="carbGoal"
+                      type="number"
+                      value={profileData.carbGoal || "250"}
+                      onChange={(e) => handleInputChange("carbGoal", e.target.value)}
+                      disabled={!isEditing}
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fatGoal" className="text-sm font-semibold text-foreground">ไขมัน (g)</Label>
+                    <Input
+                      id="fatGoal"
+                      type="number"
+                      value={profileData.fatGoal || "65"}
+                      onChange={(e) => handleInputChange("fatGoal", e.target.value)}
+                      disabled={!isEditing}
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fiberGoal" className="text-sm font-semibold text-foreground">ไฟเบอร์ (g)</Label>
+                    <Input
+                      id="fiberGoal"
+                      type="number"
+                      value={profileData.fiberGoal || "25"}
+                      onChange={(e) => handleInputChange("fiberGoal", e.target.value)}
+                      disabled={!isEditing}
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="sodiumGoal" className="text-sm font-semibold text-foreground">โซเดียม (mg)</Label>
+                    <Input
+                      id="sodiumGoal"
+                      type="number"
+                      value={profileData.sodiumGoal || "2300"}
+                      onChange={(e) => handleInputChange("sodiumGoal", e.target.value)}
+                      disabled={!isEditing}
+                      className="h-9"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Label className="text-sm font-semibold text-foreground">ข้อจำกัดอาหาร</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex items-center space-x-2 p-2 bg-muted/30 rounded-lg border">
+                      <Checkbox
+                        id="gluten-free"
+                        checked={profileData.dietaryRestrictions?.includes("gluten-free") || false}
+                        onCheckedChange={(checked) => {
+                          const restrictions = profileData.dietaryRestrictions || [];
+                          if (checked) {
+                            handleInputChange("dietaryRestrictions", [...restrictions, "gluten-free"]);
+                          } else {
+                            handleInputChange("dietaryRestrictions", restrictions.filter(r => r !== "gluten-free"));
+                          }
+                        }}
+                        disabled={!isEditing}
+                      />
+                      <Label htmlFor="gluten-free" className="text-xs font-medium text-foreground">ปราศจากกลูเตน</Label>
+                    </div>
+                    <div className="flex items-center space-x-2 p-2 bg-muted/30 rounded-lg border">
+                      <Checkbox
+                        id="lactose-free"
+                        checked={profileData.dietaryRestrictions?.includes("lactose-free") || false}
+                        onCheckedChange={(checked) => {
+                          const restrictions = profileData.dietaryRestrictions || [];
+                          if (checked) {
+                            handleInputChange("dietaryRestrictions", [...restrictions, "lactose-free"]);
+                          } else {
+                            handleInputChange("dietaryRestrictions", restrictions.filter(r => r !== "lactose-free"));
+                          }
+                        }}
+                        disabled={!isEditing}
+                      />
+                      <Label htmlFor="lactose-free" className="text-xs font-medium text-foreground">ปราศจากแลคโตส</Label>
+                    </div>
+                    <div className="flex items-center space-x-2 p-2 bg-muted/30 rounded-lg border">
+                      <Checkbox
+                        id="vegetarian"
+                        checked={profileData.dietaryRestrictions?.includes("vegetarian") || false}
+                        onCheckedChange={(checked) => {
+                          const restrictions = profileData.dietaryRestrictions || [];
+                          if (checked) {
+                            handleInputChange("dietaryRestrictions", [...restrictions, "vegetarian"]);
+                          } else {
+                            handleInputChange("dietaryRestrictions", restrictions.filter(r => r !== "vegetarian"));
+                          }
+                        }}
+                        disabled={!isEditing}
+                      />
+                      <Label htmlFor="vegetarian" className="text-xs font-medium text-foreground">มังสวิรัติ</Label>
+                    </div>
+                    <div className="flex items-center space-x-2 p-2 bg-muted/30 rounded-lg border">
+                      <Checkbox
+                        id="vegan"
+                        checked={profileData.dietaryRestrictions?.includes("vegan") || false}
+                        onCheckedChange={(checked) => {
+                          const restrictions = profileData.dietaryRestrictions || [];
+                          if (checked) {
+                            handleInputChange("dietaryRestrictions", [...restrictions, "vegan"]);
+                          } else {
+                            handleInputChange("dietaryRestrictions", restrictions.filter(r => r !== "vegan"));
+                          }
+                        }}
+                        disabled={!isEditing}
+                      />
+                      <Label htmlFor="vegan" className="text-xs font-medium text-foreground">วีแกน</Label>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Third Row - Lifestyle and Medical */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            {/* Lifestyle Card */}
+            <Card className="border border-border hover:shadow-md transition-shadow duration-200">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-3 text-xl">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <Activity className="h-5 w-5 text-primary" />
+                  </div>
+                  พฤติกรรมประจำวัน
+                </CardTitle>
+                <CardDescription className="text-base">
+                  ข้อมูลเกี่ยวกับไลฟ์สไตล์ของคุณ
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-foreground">สูบบุหรี่</Label>
+                    <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg border">
+                      {onboardingData.smoking ? (
+                        <XCircle className="h-4 w-4 text-red-500" />
+                      ) : (
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                      )}
+                      <span className="text-sm font-medium text-foreground">
+                        {onboardingData.smoking ? "สูบบุหรี่" : "ไม่สูบบุหรี่"}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-foreground">แอลกอฮอล์</Label>
+                    <div className="p-3 bg-muted/30 rounded-lg border">
+                      <span className="text-sm font-medium text-foreground">
+                        {onboardingData.alcoholFrequency ? 
+                          alcoholFrequencyLabels[onboardingData.alcoholFrequency as keyof typeof alcoholFrequencyLabels] : 
+                          "ไม่ระบุ"
+                        }
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-foreground">ออกกำลังกาย</Label>
+                    <div className="p-3 bg-muted/30 rounded-lg border">
+                      <span className="text-sm font-medium text-foreground">
+                        {onboardingData.exerciseFrequency ? 
+                          exerciseFrequencyLabels[onboardingData.exerciseFrequency as keyof typeof exerciseFrequencyLabels] : 
+                          "ไม่ระบุ"
+                        }
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-foreground">การนอน</Label>
+                    <div className="p-3 bg-muted/30 rounded-lg border">
+                      <span className="text-sm font-medium text-foreground">
+                        {onboardingData.sleepHours ? `${onboardingData.sleepHours} ชม.` : "ไม่ระบุ"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-foreground">มื้ออาหาร</Label>
+                    <div className="p-3 bg-muted/30 rounded-lg border">
+                      <span className="text-sm font-medium text-foreground">
+                        {onboardingData.mealsPerDay ? `${onboardingData.mealsPerDay} มื้อ` : "ไม่ระบุ"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-foreground">ดื่มน้ำ</Label>
+                    <div className="p-3 bg-muted/30 rounded-lg border">
+                      <span className="text-sm font-medium text-foreground">
+                        {onboardingData.waterIntakeGlasses ? 
+                          `${onboardingData.waterIntakeGlasses} แก้ว` : 
+                          "ไม่ระบุ"
+                        }
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Medical History Card */}
+            <Card className="border border-border hover:shadow-md transition-shadow duration-200">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-3 text-xl">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <AlertTriangle className="h-5 w-5 text-primary" />
                   </div>
                   ประวัติสุขภาพ
                 </CardTitle>
@@ -1049,58 +1012,41 @@ export default function Profile() {
                   ข้อมูลทางการแพทย์ที่สำคัญ
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                {onboardingData.medicalConditions.length > 0 ? (
-                  <div className="space-y-3">
-                    <Label className="text-base font-semibold text-gray-700">โรคประจำตัว</Label>
-                    <div className="flex flex-wrap gap-3">
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <Label className="text-sm font-semibold text-foreground">โรคประจำตัว</Label>
+                  {onboardingData.medicalConditions.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
                       {onboardingData.medicalConditions.map((condition) => (
-                        <Badge key={condition} className="bg-red-100 text-red-800 border-red-200 px-3 py-1 rounded-full text-sm font-medium">
+                        <Badge key={condition} className="bg-muted/30 text-foreground border px-2 py-1 rounded-full text-xs font-medium">
                           {medicalConditionsLabels[condition as keyof typeof medicalConditionsLabels] || condition}
                         </Badge>
                       ))}
                     </div>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <Label className="text-base font-semibold text-gray-700">โรคประจำตัว</Label>
-                    <div className="p-4 bg-gradient-to-r from-red-50 to-red-100 rounded-2xl border border-red-200">
-                      <span className="text-base font-medium text-red-800">ไม่ระบุ</span>
+                  ) : (
+                    <div className="p-3 bg-muted/30 rounded-lg border">
+                      <span className="text-sm font-medium text-foreground">ไม่ระบุ</span>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
 
-                {onboardingData.surgeries ? (
-                  <div className="space-y-3">
-                    <Label className="text-base font-semibold text-gray-700">ประวัติการผ่าตัด</Label>
-                    <div className="p-4 bg-gradient-to-r from-red-50 to-red-100 rounded-2xl border border-red-200">
-                      <span className="text-base font-medium text-red-800">{onboardingData.surgeries}</span>
-                    </div>
+                <div className="space-y-3">
+                  <Label className="text-sm font-semibold text-foreground">ประวัติการผ่าตัด</Label>
+                  <div className="p-3 bg-muted/30 rounded-lg border">
+                    <span className="text-sm font-medium text-foreground">
+                      {onboardingData.surgeries || "ไม่ระบุ"}
+                    </span>
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    <Label className="text-base font-semibold text-gray-700">ประวัติการผ่าตัด</Label>
-                    <div className="p-4 bg-gradient-to-r from-red-50 to-red-100 rounded-2xl border border-red-200">
-                      <span className="text-base font-medium text-red-800">ไม่ระบุ</span>
-                    </div>
-                  </div>
-                )}
+                </div>
 
-                {onboardingData.allergies ? (
-                  <div className="space-y-3">
-                    <Label className="text-base font-semibold text-gray-700">ประวัติการแพ้</Label>
-                    <div className="p-4 bg-gradient-to-r from-red-50 to-red-100 rounded-2xl border border-red-200">
-                      <span className="text-base font-medium text-red-800">{onboardingData.allergies}</span>
-                    </div>
+                <div className="space-y-3">
+                  <Label className="text-sm font-semibold text-foreground">ประวัติการแพ้</Label>
+                  <div className="p-3 bg-muted/30 rounded-lg border">
+                    <span className="text-sm font-medium text-foreground">
+                      {onboardingData.allergies || "ไม่ระบุ"}
+                    </span>
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    <Label className="text-base font-semibold text-gray-700">ประวัติการแพ้</Label>
-                    <div className="p-4 bg-gradient-to-r from-red-50 to-red-100 rounded-2xl border border-red-200">
-                      <span className="text-base font-medium text-red-800">ไม่ระบุ</span>
-                    </div>
-                  </div>
-                )}
+                </div>
               </CardContent>
             </Card>
           </div>
