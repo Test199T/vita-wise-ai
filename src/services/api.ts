@@ -1,7 +1,6 @@
 // API service for user management
 import { tokenUtils } from '@/lib/utils';
-
-const API_BASE_URL = 'http://localhost:3000';
+import { apiConfig, authConfig, profileConfig, healthConfig, exerciseConfig, foodConfig, waterConfig, sleepConfig } from '@/config/env';
 
 // Health Data Interfaces
 export interface HealthData {
@@ -194,7 +193,7 @@ class APIService {
   private lastRequestTime: Map<string, number> = new Map(); // Rate limiting
   private readonly MIN_REQUEST_INTERVAL = 1000; // 1 second between requests
 
-  constructor(baseURL: string = API_BASE_URL) {
+  constructor(baseURL: string = apiConfig.baseUrl) {
     this.baseURL = baseURL;
     // Load cached endpoints from localStorage
     this.workingEndpoints = this.loadCachedEndpoints();
@@ -352,7 +351,7 @@ class APIService {
 
     // List of possible endpoints to try
     const endpoints = [
-      '/user/profile',     // Primary endpoint
+      profileConfig.getEndpoint,     // Primary endpoint
       '/users/profile',    // Alternative endpoint
       '/profile',          // Simple endpoint
       '/me',              // Common REST pattern
@@ -470,8 +469,8 @@ class APIService {
 
     // List of possible endpoints to try for updating
     const endpoints = [
-      { method: 'PUT', path: '/user/profile' },      // Primary endpoint (matches backend)
-      { method: 'PATCH', path: '/user/profile' },    // PATCH version
+      { method: 'PUT', path: profileConfig.updateEndpoint },      // Primary endpoint (matches backend)
+      { method: 'PATCH', path: profileConfig.updateEndpoint },    // PATCH version
       { method: 'PUT', path: '/profile' },           // Simple
       { method: 'PUT', path: '/me' },                // Common REST
       { method: 'PUT', path: '/users/profile' },     // Alternative (plural)
@@ -775,7 +774,7 @@ class APIService {
 
     // List of possible endpoints to try for creating
     const endpoints = [
-      { method: 'POST', path: '/users/profile' },      // Primary endpoint
+      { method: 'POST', path: profileConfig.createEndpoint },      // Primary endpoint
       { method: 'POST', path: '/user/profile' },       // Alternative
       { method: 'POST', path: '/profile' },            // Simple
       { method: 'PUT', path: '/users/profile' },       // Some APIs use PUT for create
@@ -829,7 +828,7 @@ class APIService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/user/health-data`, {
+      const response = await fetch(`${this.baseURL}${healthConfig.dataEndpoint}`, {
         method: 'GET',
         headers: this.getHeaders(),
       });
@@ -864,7 +863,7 @@ class APIService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/user/health-data`, {
+      const response = await fetch(`${this.baseURL}${healthConfig.dataEndpoint}`, {
         method: 'PUT',
         headers: this.getHeaders(),
         body: JSON.stringify(healthData),
@@ -1079,11 +1078,11 @@ class APIService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/exercise-log`, {
+      const response = await fetch(`${this.baseURL}${exerciseConfig.logEndpoint}`, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify(exerciseData),
-        signal: AbortSignal.timeout(10000) // 10 second timeout
+        signal: AbortSignal.timeout(apiConfig.timeout) // Use configured timeout
       });
 
       console.log('Exercise log API response:', {
@@ -1120,10 +1119,10 @@ class APIService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/exercise-log`, {
+      const response = await fetch(`${this.baseURL}${exerciseConfig.logEndpoint}`, {
         method: 'GET',
         headers: this.getHeaders(),
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(apiConfig.timeout)
       });
 
       console.log('Get exercise logs API response:', {
@@ -1164,10 +1163,10 @@ class APIService {
     console.log('🔑 Token found:', token.substring(0, 20) + '...');
 
     try {
-      const response = await fetch(`${this.baseURL}/exercise-log/${exerciseLogId}`, {
+      const response = await fetch(`${this.baseURL}${exerciseConfig.logEndpoint}/${exerciseLogId}`, {
         method: 'DELETE',
         headers: this.getHeaders(),
-        signal: AbortSignal.timeout(10000) // 10 second timeout
+        signal: AbortSignal.timeout(apiConfig.timeout) // Use configured timeout
       });
 
       console.log('📡 Delete exercise log API response:', {
@@ -1244,11 +1243,11 @@ class APIService {
     console.log('🔑 Token found:', token.substring(0, 20) + '...');
 
     try {
-      const response = await fetch(`${this.baseURL}/exercise-log/${exerciseLogId}`, {
+      const response = await fetch(`${this.baseURL}${exerciseConfig.logEndpoint}/${exerciseLogId}`, {
         method: 'PUT',
         headers: this.getHeaders(),
         body: JSON.stringify(updateData),
-        signal: AbortSignal.timeout(10000) // 10 second timeout
+        signal: AbortSignal.timeout(apiConfig.timeout) // Use configured timeout
       });
 
       console.log('📡 Update exercise log API response:', {
@@ -1323,13 +1322,13 @@ class APIService {
 
     try {
       const url = date 
-        ? `${this.baseURL}/exercise-log/stats?date=${date}`
-        : `${this.baseURL}/exercise-log/stats`;
+        ? `${this.baseURL}${exerciseConfig.statsEndpoint}?date=${date}`
+        : `${this.baseURL}${exerciseConfig.statsEndpoint}`;
         
       const response = await fetch(url, {
         method: 'GET',
         headers: this.getHeaders(),
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(apiConfig.timeout)
       });
 
       if (!response.ok) {
@@ -1370,7 +1369,7 @@ class APIService {
     }
 
     try {
-      let url = `${this.baseURL}/exercise-log/calories/summary`;
+      let url = `${this.baseURL}${exerciseConfig.caloriesEndpoint}`;
       const params = new URLSearchParams();
       
       if (startDate) params.append('startDate', startDate);
@@ -1383,7 +1382,7 @@ class APIService {
       const response = await fetch(url, {
         method: 'GET',
         headers: this.getHeaders(),
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(apiConfig.timeout)
       });
 
       if (!response.ok) {
@@ -1425,13 +1424,13 @@ class APIService {
 
     try {
       const url = date 
-        ? `${this.baseURL}/food-log/nutrition-analysis?date=${date}`
-        : `${this.baseURL}/food-log/nutrition-analysis`;
+        ? `${this.baseURL}${foodConfig.nutritionEndpoint}?date=${date}`
+        : `${this.baseURL}${foodConfig.nutritionEndpoint}`;
         
       const response = await fetch(url, {
         method: 'GET',
         headers: this.getHeaders(),
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(apiConfig.timeout)
       });
 
       if (!response.ok) {
@@ -1472,7 +1471,7 @@ class APIService {
     }
 
     try {
-      let url = `${this.baseURL}/food-log/summary?period=${period}`;
+      let url = `${this.baseURL}${foodConfig.summaryEndpoint}?period=${period}`;
       const params = new URLSearchParams();
       
       if (startDate) params.append('startDate', startDate);
@@ -1485,7 +1484,7 @@ class APIService {
       const response = await fetch(url, {
         method: 'GET',
         headers: this.getHeaders(),
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(apiConfig.timeout)
       });
 
       if (!response.ok) {
@@ -1526,12 +1525,12 @@ class APIService {
     }
 
     try {
-      const url = `${this.baseURL}/food-log/dashboard`;
+      const url = `${this.baseURL}${foodConfig.dashboardEndpoint}`;
         
       const response = await fetch(url, {
         method: 'GET',
         headers: this.getHeaders(),
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(apiConfig.timeout)
       });
 
       if (!response.ok) {
@@ -1572,10 +1571,10 @@ class APIService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/exercise-log/streak/current`, {
+      const response = await fetch(`${this.baseURL}${exerciseConfig.streakEndpoint}`, {
         method: 'GET',
         headers: this.getHeaders(),
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(apiConfig.timeout)
       });
 
       if (!response.ok) {
@@ -1616,11 +1615,11 @@ class APIService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/food-log`, {
+      const response = await fetch(`${this.baseURL}${foodConfig.logEndpoint}`, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify(foodLogData),
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(apiConfig.timeout)
       });
 
       if (!response.ok) {
@@ -1663,10 +1662,10 @@ class APIService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/food-log`, {
+      const response = await fetch(`${this.baseURL}${foodConfig.logEndpoint}`, {
         method: 'GET',
         headers: this.getHeaders(),
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(apiConfig.timeout)
       });
 
       if (!response.ok) {
@@ -1750,10 +1749,10 @@ class APIService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/food-log/${foodLogId}`, {
+      const response = await fetch(`${this.baseURL}${foodConfig.logEndpoint}/${foodLogId}`, {
         method: 'DELETE',
         headers: this.getHeaders(),
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(apiConfig.timeout)
       });
 
       console.log('🔍 Delete API response status:', { status: response.status, statusText: response.statusText, ok: response.ok });
@@ -1802,11 +1801,11 @@ class APIService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/food-log/${foodLogId}`, {
+      const response = await fetch(`${this.baseURL}${foodConfig.logEndpoint}/${foodLogId}`, {
         method: 'PUT',
         headers: this.getHeaders(),
         body: JSON.stringify(foodLogData),
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(apiConfig.timeout)
       });
 
       console.log('🔍 Update API response status:', { status: response.status, statusText: response.statusText, ok: response.ok });
@@ -1854,11 +1853,11 @@ class APIService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/health-goals`, {
+      const response = await fetch(`${this.baseURL}${healthConfig.goalsEndpoint}`, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify(healthGoalData),
-        signal: AbortSignal.timeout(10000) // 10 second timeout
+        signal: AbortSignal.timeout(apiConfig.timeout) // Use configured timeout
       });
 
       console.log('Health goal API response:', {
@@ -1895,10 +1894,10 @@ class APIService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/health-goals`, {
+      const response = await fetch(`${this.baseURL}${healthConfig.goalsEndpoint}`, {
         method: 'GET',
         headers: this.getHeaders(),
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(apiConfig.timeout)
       });
 
       console.log('Get health goals API response:', {
@@ -1968,11 +1967,11 @@ class APIService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/health-goals/${goalId}`, {
+      const response = await fetch(`${this.baseURL}${healthConfig.goalsEndpoint}/${goalId}`, {
         method: 'PUT',
         headers: this.getHeaders(),
         body: JSON.stringify(updateData),
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(apiConfig.timeout)
       });
 
       console.log('Update health goal API response:', {
@@ -2032,10 +2031,10 @@ class APIService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/health-goals/${goalId}`, {
+      const response = await fetch(`${this.baseURL}${healthConfig.goalsEndpoint}/${goalId}`, {
         method: 'DELETE',
         headers: this.getHeaders(),
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(apiConfig.timeout)
       });
 
       console.log('Delete health goal API response:', {
@@ -2070,11 +2069,11 @@ class APIService {
     console.log('🔑 Token found:', token.substring(0, 20) + '...');
 
     try {
-      const response = await fetch(`${this.baseURL}/water-logs`, {
+      const response = await fetch(`${this.baseURL}${waterConfig.logEndpoint}`, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify(waterLogData),
-        signal: AbortSignal.timeout(10000) // 10 second timeout
+        signal: AbortSignal.timeout(apiConfig.timeout) // Use configured timeout
       });
 
       console.log('📡 Create water log API response:', {
@@ -2146,10 +2145,10 @@ class APIService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/water-logs`, {
+      const response = await fetch(`${this.baseURL}${waterConfig.logEndpoint}`, {
         method: 'GET',
         headers: this.getHeaders(),
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(apiConfig.timeout)
       });
 
       console.log('📡 Get water logs API response:', {
@@ -2198,11 +2197,11 @@ class APIService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/water-logs/${waterLogId}`, {
+      const response = await fetch(`${this.baseURL}${waterConfig.logEndpoint}/${waterLogId}`, {
         method: 'PUT',
         headers: this.getHeaders(),
         body: JSON.stringify(updateData),
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(apiConfig.timeout)
       });
 
       console.log('📡 Update water log API response:', {
@@ -2272,10 +2271,10 @@ class APIService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/water-logs/${waterLogId}`, {
+      const response = await fetch(`${this.baseURL}${waterConfig.logEndpoint}/${waterLogId}`, {
         method: 'DELETE',
         headers: this.getHeaders(),
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(apiConfig.timeout)
       });
 
       console.log('📡 Delete water log API response:', {
@@ -2337,10 +2336,10 @@ class APIService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/sleep-log`, {
+      const response = await fetch(`${this.baseURL}${sleepConfig.logEndpoint}`, {
         method: 'GET',
         headers: this.getHeaders(),
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(apiConfig.timeout)
       });
 
       console.log('📡 Get sleep logs API response:', {
@@ -2402,12 +2401,12 @@ class APIService {
     }
 
     try {
-      const url = `${this.baseURL}/sleep-log/stats?period=${period}`;
+      const url = `${this.baseURL}${sleepConfig.statsEndpoint}?period=${period}`;
         
       const response = await fetch(url, {
         method: 'GET',
         headers: this.getHeaders(),
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(apiConfig.timeout)
       });
 
       if (!response.ok) {
@@ -2448,13 +2447,13 @@ class APIService {
     }
 
     try {
-      const url = `${this.baseURL}/sleep-log/stats/overview?date=${date}`;
+      const url = `${this.baseURL}${sleepConfig.overviewEndpoint}?date=${date}`;
       console.log('🌐 API URL:', url);
         
       const response = await fetch(url, {
         method: 'GET',
         headers: this.getHeaders(),
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(apiConfig.timeout)
       });
 
       console.log('📡 Get sleep overview stats API response:', {
@@ -2502,13 +2501,13 @@ class APIService {
 
     try {
       // ใช้ API endpoint ที่มีอยู่จริง
-      const url = `${this.baseURL}/sleep-log/trends/fixed?days=7`;
+      const url = `${this.baseURL}${sleepConfig.trendsEndpoint}?days=7`;
       console.log('🌐 API URL:', url);
       
       const response = await fetch(url, {
         method: 'GET',
         headers: this.getHeaders(),
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(apiConfig.timeout)
       });
 
       console.log('📡 Get sleep logs API response:', {
@@ -2635,12 +2634,12 @@ class APIService {
     }
 
     try {
-      const url = `${this.baseURL}/water-logs/stats?period=${period}`;
+      const url = `${this.baseURL}${waterConfig.statsEndpoint}?period=${period}`;
         
       const response = await fetch(url, {
         method: 'GET',
         headers: this.getHeaders(),
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(apiConfig.timeout)
       });
 
       if (!response.ok) {

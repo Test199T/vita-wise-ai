@@ -24,6 +24,7 @@ import { tokenUtils } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { createClient } from '@supabase/supabase-js';
+import { apiConfig } from "@/config/env";
 
 interface Message {
   id: string;
@@ -100,7 +101,7 @@ export default function Chat() {
         return;
       }
 
-      const response = await fetch('http://localhost:3000/chat/sessions', {
+      const response = await fetch(`${apiConfig.baseUrl}/api/chat/sessions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -199,7 +200,7 @@ export default function Chat() {
       const token = tokenUtils.getValidToken();
       if (!token) return;
 
-      const response = await fetch('http://localhost:3000/chat/sessions', {
+      const response = await fetch(`${apiConfig.baseUrl}/api/chat/sessions`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -241,7 +242,7 @@ export default function Chat() {
       const token = tokenUtils.getValidToken();
       if (!token) return;
 
-      const response = await fetch(`http://localhost:3000/chat/sessions/${sessionId}/messages`, {
+      const response = await fetch(`${apiConfig.baseUrl}/api/chat/sessions/${sessionId}/messages`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -435,7 +436,7 @@ export default function Chat() {
         timestamp: new Date().toISOString()
       };
 
-      const response = await fetch(`http://localhost:3000/chat/sessions/${validSessionId}/messages`, {
+      const response = await fetch(`${apiConfig.baseUrl}/api/chat/sessions/${validSessionId}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -647,7 +648,7 @@ export default function Chat() {
       const token = tokenUtils.getValidToken();
       if (!token) return;
 
-      const response = await fetch(`http://localhost:3000/chat/sessions/${sessionId}`, {
+      const response = await fetch(`${apiConfig.baseUrl}/api/chat/sessions/${sessionId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
