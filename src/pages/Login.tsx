@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Activity, Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { tokenUtils } from "@/lib/utils";
+import { apiConfig, authConfig } from "@/config/env";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -32,7 +33,7 @@ export default function Login() {
     console.log('Login attempt:', { email, passwordLength: password.length });
 
     try {
-      const response = await fetch('http://localhost:3000/auth/login', {
+      const response = await fetch(`${apiConfig.baseUrl}${authConfig.loginEndpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

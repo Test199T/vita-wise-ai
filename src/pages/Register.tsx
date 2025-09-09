@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Activity, Eye, EyeOff, Mail, Lock, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { tokenUtils } from "@/lib/utils";
+import { apiConfig, authConfig } from "@/config/env";
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -59,7 +60,7 @@ export default function Register() {
     });
 
     try {
-      const response = await fetch('http://localhost:3000/auth/register', {
+      const response = await fetch(`${apiConfig.baseUrl}${authConfig.registerEndpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -94,7 +95,7 @@ export default function Register() {
           console.log('🔄 กำลังล็อกอินทันทีหลังสมัครสำเร็จ...');
           
           // ล็อกอินทันทีด้วยข้อมูลที่พึ่งสมัคร
-          const loginResponse = await fetch('http://localhost:3000/auth/login', {
+          const loginResponse = await fetch(`${apiConfig.baseUrl}${authConfig.loginEndpoint}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'

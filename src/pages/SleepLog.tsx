@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Moon, Calendar, Clock, RefreshCw, Pencil, Trash2, Plus, Activity } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { apiConfig } from "@/config/env";
 
 interface SleepLogItem {
   id: string;
@@ -41,7 +42,7 @@ export default function SleepLog() {
         return;
       }
 
-      const response = await fetch('http://localhost:3000/sleep-log', {
+      const response = await fetch(`${apiConfig.baseUrl}/api/sleep-log`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -250,7 +251,7 @@ export default function SleepLog() {
       throw new Error('ไม่พบ JWT Token');
     }
 
-    const response = await fetch('http://localhost:3000/sleep-log', {
+    const response = await fetch('${apiConfig.baseUrl}/sleep-log', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -274,7 +275,7 @@ export default function SleepLog() {
       throw new Error('ไม่พบ JWT Token');
     }
 
-    const response = await fetch(`http://localhost:3000/sleep-log/${id}`, {
+    const response = await fetch(`${apiConfig.baseUrl}/sleep-log/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -379,7 +380,7 @@ export default function SleepLog() {
       throw new Error('ไม่พบ JWT Token');
     }
 
-    const response = await fetch(`http://localhost:3000/sleep-log/${id}`, {
+    const response = await fetch(`${apiConfig.baseUrl}/sleep-log/${id}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -458,7 +459,7 @@ export default function SleepLog() {
         nightmares: false
       };
 
-      const response = await fetch('http://localhost:3000/sleep-log', {
+      const response = await fetch(`${apiConfig.baseUrl}/api/sleep-log`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
