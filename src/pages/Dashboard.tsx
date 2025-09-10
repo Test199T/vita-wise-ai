@@ -214,7 +214,25 @@ const generateWeeklySleepData = (sleepLogs?: any[]) => {
       
       // รวมชั่วโมงการนอนในสัปดาห์เดียวกัน
       const existingData = weekToDataMap.get(weekIndex) || { hours: 0, nights: 0 };
-      const sleepHours = log.sleep_hours || (log as any).hours || 0;
+      
+      // ใช้ field ที่ถูกต้องสำหรับชั่วโมงการนอน
+      let sleepHours = 0;
+      if (log.sleep_duration_hours) {
+        sleepHours = log.sleep_duration_hours;
+        console.log(`✅ Using sleep_duration_hours: ${sleepHours}`);
+      } else if (log.sleep_hours) {
+        sleepHours = log.sleep_hours;
+        console.log(`✅ Using sleep_hours: ${sleepHours}`);
+      } else if (log.bedtime && log.wake_time) {
+        // คำนวณจากเวลาเข้านอนและตื่นนอน
+        const [bedHour, bedMin] = log.bedtime.split(':').map(Number);
+        const [wakeHour, wakeMin] = log.wake_time.split(':').map(Number);
+        const bedTime = bedHour * 60 + bedMin;
+        const wakeTime = wakeHour * 60 + wakeMin;
+        const duration = wakeTime >= bedTime ? wakeTime - bedTime : (24 * 60 - bedTime) + wakeTime;
+        sleepHours = Math.round((duration / 60) * 10) / 10;
+        console.log(`✅ Calculated from bedtime: ${sleepHours}`);
+      }
       
       existingData.hours += sleepHours;
       existingData.nights += 1;
@@ -475,6 +493,47 @@ export default function Dashboard() {
   
   const { toast } = useToast();
 
+  // ฟังก์ชันสำหรับรีเฟรชข้อมูลการนอนและแคลอรี่
+  const refreshTodayData = async () => {
+    try {
+      const today = getLocalDateString();
+      
+      // รีเฟรชข้อมูล sleep logs ของวันนี้
+      const sleepLogsResponse = await apiService.getSleepLogs(today);
+      if (sleepLogsResponse) {
+        setSleepLogs(sleepLogsResponse);
+        console.log('🔄 รีเฟรช sleep logs ของวันนี้:', sleepLogsResponse.length, 'รายการ');
+      }
+      
+      // รีเฟรชข้อมูล food logs ของวันนี้
+      const foodLogsResponse = await apiService.getFoodLogs(today);
+      if (foodLogsResponse) {
+        setFoodLogs(foodLogsResponse);
+        console.log('🔄 รีเฟรช food logs ของวันนี้:', foodLogsResponse.length, 'รายการ');
+      }
+      
+      // รีเฟรชข้อมูล water logs ของวันนี้
+      const waterLogsResponse = await apiService.getWaterLogs(today);
+      if (waterLogsResponse) {
+        setWaterLogs(waterLogsResponse);
+        console.log('🔄 รีเฟรช water logs ของวันนี้:', waterLogsResponse.length, 'รายการ');
+      }
+      
+      toast({ 
+        title: 'รีเฟรชข้อมูลสำเร็จ', 
+        description: 'อัปเดตข้อมูลของวันนี้เรียบร้อยแล้ว' 
+      });
+      
+    } catch (error) {
+      console.error('❌ Error refreshing today data:', error);
+      toast({ 
+        title: 'รีเฟรชข้อมูลไม่สำเร็จ', 
+        description: 'เกิดข้อผิดพลาดในการอัปเดตข้อมูล',
+        variant: "destructive"
+      });
+    }
+  };
+
   // ฟังก์ชันคำนวณโภชนาการตามช่วงเวลาที่เลือก
   const calculateNutritionForPeriod = (period: 'today' | 'week' | 'month') => {
     const dateRange = getDateRange(period);
@@ -602,25 +661,31 @@ export default function Dashboard() {
         console.log('✅ โหลดสรุปอาหารประจำวันสำเร็จ:', summaryResponse.data);
       }
       
-      // 3. โหลด food logs ทั้งหมดสำหรับคำนวณตามช่วงเวลา
-      const foodLogsResponse = await apiService.getUserFoodLogs();
-      if (foodLogsResponse) {
-        setFoodLogs(foodLogsResponse);
-        console.log('✅ โหลด food logs สำเร็จ:', foodLogsResponse.length, 'รายการ');
-        console.log('📋 Food logs details:', foodLogsResponse.map(log => ({
-          food_name: log.food_name,
-          consumed_at: log.consumed_at,
-          calories_per_serving: log.calories_per_serving,
-          calories: (log as any).calories,
-          total_calories: (log as any).total_calories,
-          meal_type: log.meal_type,
-          all_keys: Object.keys(log)
-        })));
-        
-        // แสดงตัวอย่างข้อมูลเต็มของรายการแรก
-        if (foodLogsResponse.length > 0) {
-          console.log('🔍 Sample food log object (first item):', foodLogsResponse[0]);
+      // 3. โหลด food logs ของวันปัจจุบัน
+      const today = getLocalDateString();
+      try {
+        const foodLogsResponse = await apiService.getFoodLogs(today);
+        if (foodLogsResponse) {
+          setFoodLogs(foodLogsResponse);
+          console.log('✅ โหลด food logs ของวันนี้สำเร็จ:', foodLogsResponse.length, 'รายการ');
+          console.log('📋 Today food logs details:', foodLogsResponse.map(log => ({
+            food_name: log.food_name,
+            consumed_at: log.consumed_at,
+            calories_per_serving: log.calories_per_serving,
+            calories: (log as any).calories,
+            total_calories: (log as any).total_calories,
+            meal_type: log.meal_type,
+            all_keys: Object.keys(log)
+          })));
+          
+          // แสดงตัวอย่างข้อมูลเต็มของรายการแรก
+          if (foodLogsResponse.length > 0) {
+            console.log('🔍 Sample today food log object (first item):', foodLogsResponse[0]);
+          }
         }
+      } catch (foodLogsError) {
+        console.log('⚠️ ไม่สามารถโหลด food logs ได้:', foodLogsError);
+        setFoodLogs([]);
       }
       
       // 4. โหลดข้อมูล Dashboard (รวม weekly_trends สำหรับกราฟ)
@@ -784,22 +849,27 @@ export default function Dashboard() {
         setSleepWeeklyData([]);
       }
       
-      // โหลดข้อมูล sleep logs ทั้งหมดสำหรับคำนวณตามสัปดาห์
+      // โหลดข้อมูล sleep logs ของวันปัจจุบัน
       try {
-        const sleepLogsResponse = await apiService.getSleepLogs();
+        const today = getLocalDateString();
+        const sleepLogsResponse = await apiService.getSleepLogs(today);
         if (sleepLogsResponse) {
+          console.log('🔄 Setting sleepLogs state with:', sleepLogsResponse);
           setSleepLogs(sleepLogsResponse);
-          console.log('✅ โหลด sleep logs สำเร็จ:', sleepLogsResponse.length, 'รายการ');
-          console.log('📋 Sleep logs details:', sleepLogsResponse.map(log => ({
+          console.log('✅ โหลด sleep logs ของวันนี้สำเร็จ:', sleepLogsResponse.length, 'รายการ');
+          console.log('📋 Today sleep logs details:', sleepLogsResponse.map(log => ({
             sleep_date: log.sleep_date,
+            sleep_duration_hours: log.sleep_duration_hours,
             sleep_hours: log.sleep_hours,
+            bedtime: log.bedtime,
+            wake_time: log.wake_time,
             sleep_quality: log.sleep_quality,
             all_keys: Object.keys(log)
           })));
           
           // แสดงตัวอย่างข้อมูลเต็มของรายการแรก
           if (sleepLogsResponse.length > 0) {
-            console.log('🔍 Sample sleep log object (first item):', sleepLogsResponse[0]);
+            console.log('🔍 Sample today sleep log object (first item):', sleepLogsResponse[0]);
           }
         }
       } catch (sleepLogsError) {
@@ -845,18 +915,19 @@ export default function Dashboard() {
     try {
       console.log('💧 โหลดข้อมูลน้ำดื่มจาก Backend...');
       
-      // 1. โหลดสถิติน้ำดื่ม
+      // 1. โหลดสถิติน้ำดื่ม (week)
       const statsResponse = await apiService.getWaterStats('week');
       if (statsResponse?.data) {
         setWaterStats(statsResponse.data);
         console.log('✅ โหลดสถิติน้ำดื่มสำเร็จ:', statsResponse.data);
       }
       
-      // 2. โหลดรายการน้ำดื่ม
-      const logsResponse = await apiService.getWaterLogs();
-      if (logsResponse && logsResponse.length > 0) {
+      // 2. โหลดรายการน้ำดื่มเฉพาะวันปัจจุบัน
+      const today = getLocalDateString();
+      const logsResponse = await apiService.getWaterLogs(today);
+      if (logsResponse && logsResponse.length >= 0) {
         setWaterLogs(logsResponse);
-        console.log('✅ โหลดรายการน้ำดื่มสำเร็จ:', logsResponse.length, 'รายการ');
+        console.log('✅ โหลดรายการน้ำดื่มวันนี้สำเร็จ:', logsResponse.length, 'รายการ');
       }
       
       toast({ 
@@ -906,6 +977,21 @@ export default function Dashboard() {
   // โหลดข้อมูลน้ำดื่มเมื่อเปิดหน้า
   useEffect(() => {
     loadWaterData();
+  }, []);
+
+  // ฟังก์ชันสำหรับอัปเดตข้อมูลน้ำดื่มเมื่อมีการเปลี่ยนแปลง
+  const refreshWaterData = async () => {
+    console.log('🔄 อัปเดตข้อมูลน้ำดื่ม...');
+    await loadWaterData();
+  };
+
+  // ฟังก์ชันสำหรับอัปเดตข้อมูลน้ำดื่มทุก 30 วินาที (optional)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refreshWaterData();
+    }, 30000); // 30 วินาที
+
+    return () => clearInterval(interval);
   }, []);
 
   const { bmr, tdee } = useMemo(() => {
@@ -1339,31 +1425,139 @@ export default function Dashboard() {
     };
   };
 
-  // คำนวณชั่วโมงการนอนของวันนี้จากข้อมูลจริง (ใช้ average_sleep_duration_hours จาก API)
+  // คำนวณชั่วโมงการนอนของวันนี้จากข้อมูลจริง (ดึงจาก sleep logs ของวันปัจจุบัน)
   const getTodaySleepHours = () => {
-    if (!sleepStats || !sleepStats.average_sleep_duration_hours) {
+    if (!sleepLogs || sleepLogs.length === 0) {
+      console.log('❌ No sleep logs available');
       return 0;
     }
     
-    return sleepStats.average_sleep_duration_hours;
+    const today = getLocalDateString();
+    let totalSleepHours = 0;
+    
+    console.log(`🔍 Today's date: ${today}`);
+    console.log(`🔍 Available sleep logs:`, sleepLogs);
+    
+    // หาข้อมูลการนอนของวันปัจจุบัน
+    const todaySleepLogs = sleepLogs.filter(log => {
+      const logDate = log.sleep_date || log.date;
+      if (!logDate) return false;
+      
+      // แปลงวันที่จาก log เป็น local date string
+      const logDateObj = new Date(logDate);
+      const logDateString = getLocalDateString(logDateObj);
+      
+      console.log(`🔍 Comparing log date: ${logDateString} with today: ${today}`);
+      return logDateString === today;
+    });
+    
+    console.log(`📊 Today's sleep logs:`, todaySleepLogs);
+    
+    // คำนวณเวลานอนรวมของวันนี้
+    todaySleepLogs.forEach(log => {
+      if (log.sleep_duration_hours) {
+        totalSleepHours += log.sleep_duration_hours;
+        console.log(`✅ Added ${log.sleep_duration_hours} hours from sleep_duration_hours`);
+      } else if (log.sleep_hours) {
+        totalSleepHours += log.sleep_hours;
+        console.log(`✅ Added ${log.sleep_hours} hours from sleep_hours`);
+      } else if (log.bedtime && log.wake_time) {
+        // คำนวณจากเวลาเข้านอนและตื่นนอน
+        const [bedHour, bedMin] = log.bedtime.split(':').map(Number);
+        const [wakeHour, wakeMin] = log.wake_time.split(':').map(Number);
+        const bedTime = bedHour * 60 + bedMin;
+        const wakeTime = wakeHour * 60 + wakeMin;
+        const duration = wakeTime >= bedTime ? wakeTime - bedTime : (24 * 60 - bedTime) + wakeTime;
+        const calculatedHours = Math.round((duration / 60) * 10) / 10;
+        totalSleepHours += calculatedHours;
+        console.log(`✅ Added ${calculatedHours} hours from bedtime calculation`);
+      }
+    });
+    
+    console.log(`📊 Today's sleep calculation: ${totalSleepHours} hours from ${todaySleepLogs.length} sleep logs`);
+    return totalSleepHours;
   };
 
   // คำนวณลิตรน้ำดื่มของวันนี้จากข้อมูลจริง
   const getTodayWaterLiters = () => {
     if (!waterLogs || waterLogs.length === 0) return 0;
     
-    const today = getLocalDateString();
+    // waterLogs state มีเฉพาะข้อมูลของวันปัจจุบันแล้ว (จาก API)
     let totalWaterMl = 0;
     
     waterLogs.forEach(waterLog => {
-      const waterDate = getLocalDateString(waterLog.consumed_at);
-      if (waterDate === today) {
-        totalWaterMl += waterLog.amount_ml || 0;
-      }
+      totalWaterMl += waterLog.amount_ml || 0;
     });
     
     // แปลงจาก ml เป็นลิตร
     return totalWaterMl / 1000;
+  };
+
+  // คำนวณแคลอรี่ของวันนี้จากข้อมูลจริง (ดึงจาก food logs ของวันปัจจุบัน)
+  const getTodayCalories = () => {
+    if (!foodLogs || foodLogs.length === 0) {
+      return 0;
+    }
+    
+    const today = getLocalDateString();
+    let totalCalories = 0;
+    
+    // หาข้อมูลอาหารของวันปัจจุบัน
+    const todayFoodLogs = foodLogs.filter(log => {
+      const logDate = getLocalDateString(log.consumed_at);
+      return logDate === today;
+    });
+    
+    // คำนวณแคลอรี่รวมของวันนี้
+    todayFoodLogs.forEach(log => {
+      const calories = log.calories_per_serving || (log as any).calories || (log as any).total_calories || 0;
+      totalCalories += Number(calories);
+    });
+    
+    console.log(`📊 Today's calories calculation: ${totalCalories} kcal from ${todayFoodLogs.length} food logs`);
+    return totalCalories;
+  };
+
+  // คำนวณแคลอรี่เฉลี่ยต่อวันจากข้อมูล 7 วันล่าสุด
+  const getAverageDailyCalories = () => {
+    if (!foodLogs || foodLogs.length === 0) {
+      return 0;
+    }
+    
+    const today = new Date();
+    const last7Days = [];
+    
+    // สร้างรายการ 7 วันล่าสุด
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - i);
+      last7Days.push(getLocalDateString(date));
+    }
+    
+    let totalCalories = 0;
+    let daysWithData = 0;
+    
+    // คำนวณแคลอรี่ในแต่ละวัน
+    last7Days.forEach(date => {
+      const dayLogs = foodLogs.filter(log => {
+        const logDate = getLocalDateString(log.consumed_at);
+        return logDate === date;
+      });
+      
+      if (dayLogs.length > 0) {
+        const dayCalories = dayLogs.reduce((sum, log) => {
+          const calories = log.calories_per_serving || (log as any).calories || (log as any).total_calories || 0;
+          return sum + Number(calories);
+        }, 0);
+        
+        totalCalories += dayCalories;
+        daysWithData++;
+      }
+    });
+    
+    const average = daysWithData > 0 ? Math.round(totalCalories / daysWithData) : 0;
+    console.log(`📊 Average daily calories: ${average} kcal from ${daysWithData} days with data`);
+    return average;
   };
 
   const realExerciseData = generateExerciseChartData();
@@ -1378,6 +1572,8 @@ export default function Dashboard() {
   // คำนวณข้อมูลของวันนี้จากฐานข้อมูลจริง
   const todaySleepHours = getTodaySleepHours();
   const todayWaterLiters = getTodayWaterLiters();
+  const todayCalories = getTodayCalories();
+  const averageDailyCalories = getAverageDailyCalories();
 
   return (
     <MainLayout>
@@ -1392,6 +1588,16 @@ export default function Dashboard() {
             <p className="text-muted-foreground mt-2">
               ติดตามสุขภาพและสถิติของคุณประจำวัน
             </p>
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              onClick={refreshTodayData}
+              variant="outline"
+              className="gap-2 rounded-full border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all duration-200"
+            >
+              <RefreshCw className="h-4 w-4" />
+              รีเฟรชข้อมูลวันนี้
+            </Button>
           </div>
           
           <div className="flex gap-2">
@@ -1451,7 +1657,7 @@ export default function Dashboard() {
             <div>
               <div className="text-sm text-muted-foreground">โภชนาการ</div>
               <div className="font-semibold">
-                แคลอรี่{selectedNutritionPeriod === 'today' ? 'วันนี้' : selectedNutritionPeriod === 'week' ? 'สัปดาห์นี้' : 'เดือนนี้'} {currentNutritionData?.total_calories || 0} แคล
+                แคลอรี่{selectedNutritionPeriod === 'today' ? 'วันนี้' : selectedNutritionPeriod === 'week' ? 'สัปดาห์นี้' : 'เดือนนี้'} {selectedNutritionPeriod === 'today' ? todayCalories : currentNutritionData?.total_calories || 0} แคล
                 {nutritionAnalysis?.nutrition_score && (
                   <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
                     คะแนน: {nutritionAnalysis.nutrition_score}/100
@@ -1503,10 +1709,10 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {dashboardData?.today?.nutrition?.meals_logged || 0}
+                {foodLogs.length}
               </div>
               <p className="text-xs text-muted-foreground">
-                {dashboardData?.today?.nutrition?.meals_logged ? 'มื้ออาหารที่บันทึก' : 'รอข้อมูลมื้ออาหาร'}
+                {foodLogs.length > 0 ? 'มื้ออาหารที่บันทึกวันนี้' : 'ยังไม่มีข้อมูลมื้ออาหาร'}
               </p>
             </CardContent>
           </Card>
@@ -1518,11 +1724,10 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {dashboardData?.quick_stats?.average_daily_calories ? 
-                  Math.round(dashboardData.quick_stats.average_daily_calories) : 0}
+                {averageDailyCalories}
               </div>
               <p className="text-xs text-muted-foreground">
-                {dashboardData?.quick_stats?.average_daily_calories ? 'แคลอรี่เฉลี่ยต่อวัน' : 'รอข้อมูลแคลอรี่'}
+                {averageDailyCalories > 0 ? 'แคลอรี่เฉลี่ย 7 วัน' : 'รอข้อมูลแคลอรี่'}
               </p>
             </CardContent>
           </Card>
@@ -1559,9 +1764,9 @@ export default function Dashboard() {
         {/* Health Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <HealthCard
-            title="การนอนหลับ"
-            value={`${todaySleepHours.toFixed(1)} / 8 ชั่วโมง`}
-            description={`เป้าหมาย 8 ชั่วโมง ${sleepStats ? '(ข้อมูลจริง)' : '(รอข้อมูล)'}`}
+            title="การนอน"
+            value={`${todaySleepHours.toFixed(1)} / 8 ชม.`}
+            description={`เป้าหมาย 8 ชม. ${sleepLogs.length > 0 ? '(ข้อมูลจริง)' : '(รอข้อมูล)'}`}
             icon="lucide:moon"
             trend={todaySleepHours >= 7 ? "up" : todaySleepHours >= 6 ? "stable" : "down"}
             color="primary"
@@ -1577,10 +1782,10 @@ export default function Dashboard() {
           />
           <HealthCard
             title="แคลอรี่"
-            value={`${dashboardData?.today?.nutrition?.calories || 0} แคล`}
-            description={`เป้าหมาย ${tdee || 2000} แคล`}
+            value={`${todayCalories} / ${tdee || 2342} kcal`}
+            description={`เป้าหมาย ${tdee || 2342} kcal ${foodLogs.length > 0 ? '(ข้อมูลจริง)' : '(รอข้อมูล)'}`}
             icon="lucide:utensils"
-            trend={dashboardData?.today?.nutrition?.calories > 0 ? "up" : "stable" as "up" | "down" | "stable"}
+            trend={todayCalories > 0 ? "up" : "stable" as "up" | "down" | "stable"}
             color="warning"
           />
                      <HealthCard
@@ -2264,7 +2469,7 @@ export default function Dashboard() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-orange-600">
-                    {currentNutritionData?.total_calories || 0}
+                    {selectedNutritionPeriod === 'today' ? todayCalories : currentNutritionData?.total_calories || 0}
                   </div>
                   <div className="text-sm text-muted-foreground">
                     แคลอรี่{selectedNutritionPeriod === 'today' ? 'วันนี้' : selectedNutritionPeriod === 'week' ? 'สัปดาห์นี้' : 'เดือนนี้'}
@@ -2272,41 +2477,64 @@ export default function Dashboard() {
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-600">
-                    {currentNutritionData?.total_protein || 0}
+                    {selectedNutritionPeriod === 'today' ? 
+                      foodLogs.reduce((sum, log) => sum + (log.protein_g || 0), 0) : 
+                      currentNutritionData?.total_protein || 0}
                   </div>
                   <div className="text-sm text-muted-foreground">โปรตีน (g)</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-600">
-                    {currentNutritionData?.total_carbs || 0}
+                    {selectedNutritionPeriod === 'today' ? 
+                      foodLogs.reduce((sum, log) => sum + (log.carbs_g || 0), 0) : 
+                      currentNutritionData?.total_carbs || 0}
                   </div>
                   <div className="text-sm text-muted-foreground">คาร์โบไฮเดรต (g)</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-yellow-600">
-                    {currentNutritionData?.total_fat || 0}
+                    {selectedNutritionPeriod === 'today' ? 
+                      foodLogs.reduce((sum, log) => sum + (log.fat_g || 0), 0) : 
+                      currentNutritionData?.total_fat || 0}
                   </div>
                   <div className="text-sm text-muted-foreground">ไขมัน (g)</div>
                 </div>
               </div>
               
               {/* แสดงข้อมูลมื้ออาหาร */}
-              {dashboardData?.today?.meal_distribution && (
+              {foodLogs && foodLogs.length > 0 && (
                 <div className="mt-6">
                   <h4 className="font-semibold text-sm mb-3">แคลอรี่แยกตามมื้ออาหาร</h4>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {Object.entries(dashboardData.today.meal_distribution).map(([meal, calories]) => (
-                      <div key={meal} className="text-center p-3 bg-muted/30 rounded-lg">
-                        <div className="text-lg font-semibold text-primary">
-                          {calories as number} แคล
+                    {['breakfast', 'lunch', 'dinner', 'snack'].map((mealType) => {
+                      // กรองเฉพาะข้อมูลของวันนี้
+                      const today = getLocalDateString();
+                      const todayMealLogs = foodLogs.filter(log => {
+                        const logDate = log.consumed_at ? getLocalDateString(new Date(log.consumed_at)) : null;
+                        return log.meal_type === mealType && logDate === today;
+                      });
+                      
+                      const calories = todayMealLogs.reduce((sum, log) => {
+                        const logCalories = log.calories_per_serving || (log as any).calories || (log as any).total_calories || 0;
+                        console.log(`🍽️ ${mealType} (วันนี้): ${log.food_name} - calories_per_serving: ${log.calories_per_serving}, calories: ${(log as any).calories}, total_calories: ${(log as any).total_calories}, final: ${logCalories}`);
+                        return sum + Number(logCalories);
+                      }, 0);
+                      
+                      console.log(`📊 ${mealType} วันนี้: ${calories} calories from ${todayMealLogs.length} items`);
+                      
+                      return (
+                        <div key={mealType} className="text-center p-3 bg-muted/30 rounded-lg">
+                          <div className="text-lg font-semibold text-primary">
+                            {calories} แคล
+                          </div>
+                          <div className="text-sm text-muted-foreground capitalize">
+                            {mealType === 'breakfast' ? 'อาหารเช้า' : 
+                             mealType === 'lunch' ? 'อาหารกลางวัน' : 
+                             mealType === 'dinner' ? 'อาหารเย็น' : 'ของว่าง'}
+                          </div>
                         </div>
-                        <div className="text-sm text-muted-foreground capitalize">
-                          {meal === 'breakfast' ? 'อาหารเช้า' : 
-                           meal === 'lunch' ? 'อาหารกลางวัน' : 
-                           meal === 'dinner' ? 'อาหารเย็น' : 'ของว่าง'}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -2389,13 +2617,13 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">ความคืบหน้าแคลอรี่</span>
                   <span className="text-sm text-muted-foreground">
-                    {Math.round(((dashboardData?.today?.nutrition?.calories || 0) / (tdee || 2000)) * 100)}%
+                    {Math.round((todayCalories / (tdee || 2342)) * 100)}%
                   </span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2">
                   <div
                     className="bg-orange-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${Math.min(((dashboardData?.today?.nutrition?.calories || 0) / (tdee || 2000)) * 100, 100)}%` }}
+                    style={{ width: `${Math.min((todayCalories / (tdee || 2342)) * 100, 100)}%` }}
                   />
                 </div>
 

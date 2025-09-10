@@ -31,10 +31,11 @@ export default function WaterLog() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // ฟังก์ชันดึงข้อมูลจาก API
-  const fetchWaterLogs = async () => {
+  const fetchWaterLogs = async (date?: string) => {
     try {
       setIsLoading(true);
-      const apiLogs = await apiService.getWaterLogs();
+      const targetDate = date || new Date().toISOString().split('T')[0];
+      const apiLogs = await apiService.getWaterLogs(targetDate);
       
       // แปลงข้อมูลจาก API format เป็น local format
       const convertedLogs: WaterLogItem[] = apiLogs.map((apiLog: APIWaterLogItem) => ({
@@ -47,7 +48,7 @@ export default function WaterLog() {
       }));
       
       setLogs(convertedLogs);
-      console.log('✅ Water logs loaded from API:', convertedLogs);
+      console.log('✅ Water logs loaded from API for date:', targetDate, convertedLogs);
     } catch (error) {
       console.error('❌ Error loading water logs from API:', error);
       
@@ -55,7 +56,11 @@ export default function WaterLog() {
       const raw = localStorage.getItem('water_logs');
       if (raw) {
         try { 
-          setLogs(JSON.parse(raw)); 
+          const allLogs = JSON.parse(raw);
+          // กรองข้อมูลเฉพาะวันปัจจุบัน
+          const today = new Date().toISOString().split('T')[0];
+          const todayLogs = allLogs.filter((log: WaterLogItem) => log.date === today);
+          setLogs(todayLogs); 
           toast({ 
             title: "⚠️ ใช้ข้อมูลจากเครื่อง", 
             description: "ไม่สามารถเชื่อมต่อ API ได้ ใช้ข้อมูลที่บันทึกไว้ในเครื่อง" 
@@ -82,7 +87,6 @@ export default function WaterLog() {
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
-    time: "",
     amount_ml: "",
     drink_type: "water",
     notes: ""
@@ -93,8 +97,9 @@ export default function WaterLog() {
     setIsSubmitting(true);
 
     try {
-      // สร้าง consumed_at จาก date และ time
-      const consumedAt = new Date(`${formData.date}T${formData.time}:00`).toISOString();
+      // สร้าง consumed_at จาก date และเวลาปัจจุบัน
+      const now = new Date();
+      const consumedAt = new Date(`${formData.date}T${now.toTimeString().split(' ')[0]}`).toISOString();
       
       if (editingId) {
         // อัปเดตข้อมูล
@@ -126,7 +131,7 @@ export default function WaterLog() {
       // รีเซ็ตฟอร์ม
       setEditingId(null);
       setShowForm(false);
-      setFormData({ date: new Date().toISOString().split('T')[0], time: "", amount_ml: "", drink_type: "water", notes: "" });
+      setFormData({ date: new Date().toISOString().split('T')[0], amount_ml: "", drink_type: "water", notes: "" });
 
     } catch (error) {
       console.error('❌ Error saving water log:', error);
@@ -144,7 +149,6 @@ export default function WaterLog() {
     setEditingId(l.id);
     setFormData({ 
       date: l.date, 
-      time: l.time, 
       amount_ml: String(l.amount_ml||''), 
       drink_type: l.drink_type || "water",
       notes: l.notes || '' 
@@ -195,13 +199,30 @@ export default function WaterLog() {
 
   // ฟังก์ชันคำนวณสถิติการดื่มน้ำ
   const calculateWaterStats = (period: 'today' | 'week' | 'month') => {
+    // สำหรับวันนี้ ใช้ข้อมูลจาก logs state ที่มีเฉพาะวันปัจจุบันแล้ว
+    if (period === 'today') {
+      const totalAmount = logs.reduce((sum, log) => sum + log.amount_ml, 0);
+      const totalLogs = logs.length;
+      const averageAmount = totalLogs > 0 ? Math.round(totalAmount / totalLogs) : 0;
+      
+      // เป้าหมาย 2000ml ต่อวัน
+      const targetAmount = 2000;
+      const progressPercentage = Math.min((totalAmount / targetAmount) * 100, 100);
+      
+      return {
+        totalAmount,
+        totalLogs,
+        averageAmount,
+        targetAmount,
+        progressPercentage: Math.round(progressPercentage)
+      };
+    }
+    
+    // สำหรับ week และ month ยังคงใช้ logic เดิม (กรองจาก logs ทั้งหมด)
     const now = new Date();
     let startDate: Date;
     
     switch (period) {
-      case 'today':
-        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        break;
       case 'week':
         startDate = new Date(now);
         startDate.setDate(now.getDate() - 7);
@@ -210,6 +231,8 @@ export default function WaterLog() {
         startDate = new Date(now);
         startDate.setMonth(now.getMonth() - 1);
         break;
+      default:
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     }
     
     const filteredLogs = logs.filter(log => {
@@ -222,7 +245,7 @@ export default function WaterLog() {
     const averageAmount = totalLogs > 0 ? Math.round(totalAmount / totalLogs) : 0;
     
     // คำนวณเป้าหมาย (แนะนำ 8 แก้ว = 2000ml ต่อวัน)
-    const days = period === 'today' ? 1 : period === 'week' ? 7 : 30;
+    const days = period === 'week' ? 7 : 30;
     const targetAmount = days * 2000;
     const progressPercentage = Math.min((totalAmount / targetAmount) * 100, 100);
     
@@ -250,7 +273,7 @@ export default function WaterLog() {
           </div>
           <div className="flex gap-2">
             <Button 
-              onClick={fetchWaterLogs} 
+              onClick={() => fetchWaterLogs()} 
               disabled={isLoading}
               variant="outline"
               className="gap-2 rounded-full border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all duration-200"
@@ -380,7 +403,7 @@ export default function WaterLog() {
             </CardHeader>
             <CardContent className="pt-6">
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-3">
                     <Label htmlFor="date" className="flex items-center gap-2 text-sm font-medium">
                       <Calendar className="h-4 w-4 text-primary" />
@@ -391,20 +414,6 @@ export default function WaterLog() {
                       type="date" 
                       value={formData.date} 
                       onChange={(e) => setFormData({ ...formData, date: e.target.value })} 
-                      className="h-11 border-primary/20 focus:border-primary/40"
-                      required 
-                    />
-                  </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="time" className="flex items-center gap-2 text-sm font-medium">
-                      <Clock className="h-4 w-4 text-primary" />
-                      เวลาดื่ม
-                    </Label>
-                    <Input 
-                      id="time" 
-                      type="time" 
-                      value={formData.time} 
-                      onChange={(e) => setFormData({ ...formData, time: e.target.value })} 
                       className="h-11 border-primary/20 focus:border-primary/40"
                       required 
                     />
@@ -482,7 +491,7 @@ export default function WaterLog() {
                     onClick={() => {
                       setShowForm(false);
                       setEditingId(null);
-                      setFormData({ date: new Date().toISOString().split('T')[0], time: "", amount_ml: "", drink_type: "water", notes: "" });
+                      setFormData({ date: new Date().toISOString().split('T')[0], amount_ml: "", drink_type: "water", notes: "" });
                     }}
                     disabled={isSubmitting}
                     className="h-11 px-6 border-primary/20 hover:border-primary/40"
@@ -575,7 +584,7 @@ export default function WaterLog() {
                             </div>
                             <div className="flex items-center gap-1">
                               <Clock className="h-4 w-4" />
-                              {item.time}
+                              {editingId === item.id ? 'เวลาปัจจุบัน' : item.time}
                             </div>
                           </div>
                         </div>
