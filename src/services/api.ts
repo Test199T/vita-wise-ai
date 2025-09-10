@@ -1653,8 +1653,8 @@ class APIService {
   }
 
   // ฟังก์ชันสำหรับดึงข้อมูล Food Logs ทั้งหมด
-  async getFoodLogs(): Promise<FoodLogItem[]> {
-    console.log('📋 Fetching food logs...');
+  async getFoodLogs(date?: string): Promise<FoodLogItem[]> {
+    console.log('📋 Fetching food logs...', date ? `for date: ${date}` : 'for all dates');
     
     const token = tokenUtils.getValidToken();
     if (!token) {
@@ -1662,7 +1662,14 @@ class APIService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}${foodConfig.logEndpoint}`, {
+      // สร้าง URL พร้อม query parameter ถ้ามี date
+      let url = `${this.baseURL}${foodConfig.logEndpoint}`;
+      if (date) {
+        url += `?date=${date}`;
+      }
+      console.log('🌐 API URL:', url);
+
+      const response = await fetch(url, {
         method: 'GET',
         headers: this.getHeaders(),
         signal: AbortSignal.timeout(apiConfig.timeout)
@@ -2135,17 +2142,23 @@ class APIService {
   }
 
   // Get water logs for current user
-  async getWaterLogs(): Promise<WaterLogItem[]> {
-    console.log('💧 Fetching water logs...');
-    console.log('🌐 API URL:', `${this.baseURL}/water-logs`);
-
+  async getWaterLogs(date?: string): Promise<WaterLogItem[]> {
+    console.log('💧 Fetching water logs...', date ? `for date: ${date}` : 'for all dates');
+    
     const token = tokenUtils.getValidToken();
     if (!token) {
       throw new Error('No valid authentication token found');
     }
 
     try {
-      const response = await fetch(`${this.baseURL}${waterConfig.logEndpoint}`, {
+      // สร้าง URL พร้อม query parameter ถ้ามี date
+      let url = `${this.baseURL}${waterConfig.logEndpoint}`;
+      if (date) {
+        url += `?date=${date}`;
+      }
+      console.log('🌐 API URL:', url);
+
+      const response = await fetch(url, {
         method: 'GET',
         headers: this.getHeaders(),
         signal: AbortSignal.timeout(apiConfig.timeout)
@@ -2326,17 +2339,23 @@ class APIService {
   // ===== SLEEP LOG API FUNCTIONS =====
 
   // Get sleep logs for current user
-  async getSleepLogs(): Promise<any[]> {
-    console.log('😴 Fetching sleep logs...');
-    console.log('🌐 API URL:', `${this.baseURL}/sleep-log`);
-
+  async getSleepLogs(date?: string): Promise<any[]> {
+    console.log('😴 Fetching sleep logs...', date ? `for date: ${date}` : 'for all dates');
+    
     const token = tokenUtils.getValidToken();
     if (!token) {
       throw new Error('No valid authentication token found');
     }
 
     try {
-      const response = await fetch(`${this.baseURL}${sleepConfig.logEndpoint}`, {
+      // สร้าง URL พร้อม query parameter ถ้ามี date
+      let url = `${this.baseURL}${sleepConfig.logEndpoint}`;
+      if (date) {
+        url += `?date=${date}`;
+      }
+      console.log('🌐 API URL:', url);
+
+      const response = await fetch(url, {
         method: 'GET',
         headers: this.getHeaders(),
         signal: AbortSignal.timeout(apiConfig.timeout)
