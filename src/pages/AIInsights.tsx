@@ -227,6 +227,18 @@ export default function AIInsights() {
       const userId = tokenUtils.getUserId() || 1; // ใช้ fallback user ID ถ้าไม่พบ
       console.log('Using user ID:', userId);
       
+      // Step 1: Data Collection
+      setCurrentStep(1);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Step 2: Pattern Analysis
+      setCurrentStep(2);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Step 3: AI Processing
+      setCurrentStep(3);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       // ✅ ถูก - เรียก AI Service ครั้งเดียวเท่านั้น (บังคับวิเคราะห์ใหม่)
       const response = await aiService.analyzeHealth(userId, {
         analysisType: 'complete',
@@ -234,6 +246,10 @@ export default function AIInsights() {
         includeRecommendations: true,
         includeInsights: true
       } as any);
+      
+      // Step 4: Report Generation
+      setCurrentStep(4);
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       if (response.success && response.data) {
         // ✅ ถูก - ใช้ข้อมูลจาก AI Service จริงๆ
@@ -277,6 +293,9 @@ export default function AIInsights() {
 
     } catch (error) {
       console.error('AI Analysis Error:', error);
+      
+      // Reset current step on error
+      setCurrentStep(0);
       
       // ✅ ถูก - ตรวจสอบ authentication error
       if (error.message.includes('Authentication') || error.message.includes('login')) {
@@ -388,6 +407,7 @@ export default function AIInsights() {
     // ✅ ถูก - ปิด loading state และแสดงผลลัพธ์
     setIsAnalyzing(false);
     setAnalysisCompleted(true);
+    setCurrentStep(0); // Reset step for next analysis
   };
 
   const getHealthScoreColor = (score: number) => {
