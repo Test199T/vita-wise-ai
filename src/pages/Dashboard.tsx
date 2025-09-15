@@ -493,42 +493,43 @@ export default function Dashboard() {
   
   const { toast } = useToast();
 
-  // ฟังก์ชันสำหรับรีเฟรชข้อมูลการนอนและแคลอรี่
+  // ฟังก์ชันสำหรับรีเฟรชข้อมูลการนอน, อาหาร, และน้ำดื่มของวันนี้ (Manual Refresh Only)
   const refreshTodayData = async () => {
     try {
       const today = getLocalDateString();
+      console.log('🔄 Manual refresh: กำลังรีเฟรชข้อมูลของวันนี้...');
       
       // รีเฟรชข้อมูล sleep logs ของวันนี้
       const sleepLogsResponse = await apiService.getSleepLogs(today);
       if (sleepLogsResponse) {
         setSleepLogs(sleepLogsResponse);
-        console.log('🔄 รีเฟรช sleep logs ของวันนี้:', sleepLogsResponse.length, 'รายการ');
+        console.log('✅ รีเฟรช sleep logs ของวันนี้:', sleepLogsResponse.length, 'รายการ');
       }
       
       // รีเฟรชข้อมูล food logs ของวันนี้
       const foodLogsResponse = await apiService.getFoodLogs(today);
       if (foodLogsResponse) {
         setFoodLogs(foodLogsResponse);
-        console.log('🔄 รีเฟรช food logs ของวันนี้:', foodLogsResponse.length, 'รายการ');
+        console.log('✅ รีเฟรช food logs ของวันนี้:', foodLogsResponse.length, 'รายการ');
       }
       
       // รีเฟรชข้อมูล water logs ของวันนี้
       const waterLogsResponse = await apiService.getWaterLogs(today);
       if (waterLogsResponse) {
         setWaterLogs(waterLogsResponse);
-        console.log('🔄 รีเฟรช water logs ของวันนี้:', waterLogsResponse.length, 'รายการ');
+        console.log('✅ รีเฟรช water logs ของวันนี้:', waterLogsResponse.length, 'รายการ');
       }
       
       toast({ 
-        title: 'รีเฟรชข้อมูลสำเร็จ', 
-        description: 'อัปเดตข้อมูลของวันนี้เรียบร้อยแล้ว' 
+        title: '🔄 รีเฟรชข้อมูลสำเร็จ', 
+        description: 'อัปเดตข้อมูลการนอน, อาหาร, และน้ำดื่มของวันนี้เรียบร้อยแล้ว' 
       });
       
     } catch (error) {
       console.error('❌ Error refreshing today data:', error);
       toast({ 
-        title: 'รีเฟรชข้อมูลไม่สำเร็จ', 
-        description: 'เกิดข้อผิดพลาดในการอัปเดตข้อมูล',
+        title: '❌ รีเฟรชข้อมูลไม่สำเร็จ', 
+        description: 'เกิดข้อผิดพลาดในการอัปเดตข้อมูล กรุณาลองใหม่อีกครั้ง',
         variant: "destructive"
       });
     }
@@ -606,40 +607,20 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, [navigate]);
 
-  // Auto-refresh ข้อมูลทุก 30 วินาที
+  // โหลดข้อมูลครั้งแรกเมื่อ component mount
   useEffect(() => {
-    const autoRefreshInterval = setInterval(() => {
-      console.log('🔄 Auto-refreshing Dashboard data...');
-      loadFoodData();
-    }, 30000); // 30 วินาที
-
-    return () => clearInterval(autoRefreshInterval);
+    console.log('🔄 Loading Dashboard data on mount...');
+    loadFoodData();
   }, []);
 
-  // Refresh ข้อมูลเมื่อผู้ใช้กลับมาที่หน้า Dashboard
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        console.log('🔄 Page became visible, refreshing Dashboard data...');
-        loadFoodData();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, []);
-
-  // ฟังก์ชันโหลดข้อมูลอาหารและโภชนาการจาก Backend
+  // ฟังก์ชันโหลดข้อมูลอาหารและโภชนาการจาก Backend (Manual Refresh Only)
   const loadFoodData = async () => {
     if (isLoadingFoodData) return;
     
     setIsLoadingFoodData(true);
     
     try {
-      console.log('🍽️ โหลดข้อมูลอาหารและโภชนาการจาก Backend...');
+      console.log('🍽️ Manual refresh: โหลดข้อมูลอาหารและโภชนาการจาก Backend...');
       console.log('🕐 Timestamp:', new Date().toLocaleString('th-TH'));
       
       // 1. โหลดการวิเคราะห์โภชนาการ (ไม่บังคับ)
@@ -708,14 +689,14 @@ export default function Dashboard() {
       await loadSleepData();
       
       toast({ 
-        title: 'โหลดข้อมูลสำเร็จ', 
-        description: 'โหลดข้อมูลอาหารและโภชนาการเรียบร้อยแล้ว' 
+        title: '🔄 รีเฟรชข้อมูลโภชนาการสำเร็จ', 
+        description: 'อัปเดตข้อมูลอาหาร, การวิเคราะห์โภชนาการ, และสถิติเรียบร้อยแล้ว' 
       });
       
     } catch (error) {
       console.error('❌ Error loading food data:', error);
       
-      let errorMessage = 'ไม่สามารถโหลดข้อมูลอาหารและโภชนาการได้';
+      let errorMessage = 'ไม่สามารถรีเฟรชข้อมูลโภชนาการได้';
       if (error instanceof Error) {
         if (error.message.includes('401') || error.message.includes('Unauthorized')) {
           errorMessage = 'ไม่มีสิทธิ์ในการเข้าถึงข้อมูล กรุณาเข้าสู่ระบบใหม่';
@@ -727,7 +708,7 @@ export default function Dashboard() {
       }
       
       toast({ 
-        title: 'เกิดข้อผิดพลาด', 
+        title: '❌ รีเฟรชข้อมูลไม่สำเร็จ', 
         description: errorMessage,
         variant: 'destructive'
       });
@@ -964,10 +945,7 @@ export default function Dashboard() {
     loadExerciseData();
   }, []);
 
-  // โหลดข้อมูลอาหารและโภชนาการเมื่อเปิดหน้า
-  useEffect(() => {
-    loadFoodData();
-  }, []);
+  // ลบ useEffect ที่ซ้ำซ้อน - โหลดข้อมูลครั้งแรกใน useEffect ด้านบนแล้ว
 
   // โหลดข้อมูลการนอนเมื่อเปิดหน้า
   useEffect(() => {
@@ -985,14 +963,7 @@ export default function Dashboard() {
     await loadWaterData();
   };
 
-  // ฟังก์ชันสำหรับอัปเดตข้อมูลน้ำดื่มทุก 30 วินาที (optional)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      refreshWaterData();
-    }, 30000); // 30 วินาที
-
-    return () => clearInterval(interval);
-  }, []);
+  // ลบ auto-refresh สำหรับข้อมูลน้ำดื่ม - ให้ผู้ใช้กดปุ่ม refresh เอง
 
   const { bmr, tdee } = useMemo(() => {
     const height = onboardingData.height || 0; // cm
@@ -1586,7 +1557,7 @@ export default function Dashboard() {
               แดชบอร์ดสุขภาพ
             </h1>
             <p className="text-muted-foreground mt-2">
-              ติดตามสุขภาพและสถิติของคุณประจำวัน
+              ติดตามสุขภาพและสถิติของคุณประจำวัน • กดปุ่มรีเฟรชเพื่ออัปเดตข้อมูล
             </p>
           </div>
           <div className="flex gap-2">
@@ -1594,21 +1565,20 @@ export default function Dashboard() {
               onClick={refreshTodayData}
               variant="outline"
               className="gap-2 rounded-full border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all duration-200"
+              title="รีเฟรชข้อมูลการนอน, อาหาร, และน้ำดื่มของวันนี้"
             >
               <RefreshCw className="h-4 w-4" />
               รีเฟรชข้อมูลวันนี้
             </Button>
-          </div>
-          
-          <div className="flex gap-2">
             <Button 
               onClick={loadFoodData} 
               disabled={isLoadingFoodData}
               variant="outline"
               className="gap-2"
+              title="รีเฟรชข้อมูลโภชนาการและการวิเคราะห์"
             >
               <RefreshCw className={`h-4 w-4 ${isLoadingFoodData ? 'animate-spin' : ''}`} />
-              {isLoadingFoodData ? 'กำลังโหลด...' : 'รีเฟรชข้อมูล'}
+              {isLoadingFoodData ? 'กำลังโหลด...' : 'รีเฟรชโภชนาการ'}
             </Button>
           </div>
           
