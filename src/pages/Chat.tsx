@@ -25,6 +25,9 @@ import {
   BarChart3,
   Target,
   Clock,
+  ChevronRight,
+  PanelLeftClose,
+  PanelLeft,
 } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/hooks/use-toast";
@@ -96,6 +99,9 @@ export default function Chat() {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isAutoMode, setIsAutoMode] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isTodayExpanded, setIsTodayExpanded] = useState(true);
+  const [isPreviousExpanded, setIsPreviousExpanded] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -297,13 +303,8 @@ export default function Chat() {
 
           setChatSessions(sessions);
 
-          // ถ้ายังไม่มี session ที่เลือก ให้เลือก session แรก
-          if (
-            sessions.length > 0 &&
-            (!selectedSessionId || selectedSessionId === "1")
-          ) {
-            setSelectedSessionId(sessions[0].id);
-          }
+          // ไม่เลือก session โดยอัตโนมัติ
+          // ผู้ใช้จะต้องเลือก session เองหรือส่งข้อความเพื่อสร้าง session ใหม่
         }
       } else {
         console.warn("Failed to fetch chat sessions:", response.status);
@@ -380,19 +381,8 @@ export default function Chat() {
     }
   };
 
-  // สร้าง session เริ่มต้นเมื่อ component mount
-  useEffect(() => {
-    (async () => {
-      if (
-        !selectedSessionId ||
-        selectedSessionId === "undefined" ||
-        selectedSessionId === "null"
-      ) {
-        console.log("Initializing by creating backend session");
-        await createNewSession();
-      }
-    })();
-  }, []);
+  // ไม่สร้าง session เริ่มต้นเมื่อ component mount
+  // จะสร้าง session ใหม่เฉพาะเมื่อผู้ใช้ส่งข้อความเท่านั้น
 
   // ตรวจสอบ token และดึงข้อมูลเมื่อ component mount
   useEffect(() => {
@@ -464,6 +454,9 @@ export default function Chat() {
 
     // ถ้าไม่มี session ใดๆ เลย ให้สร้างใหม่
     if (!validSessionId) {
+      console.log(
+        "No valid session found, creating new session before sending message"
+      );
       validSessionId = await createNewSession();
       if (!validSessionId) {
         toast({
@@ -1033,52 +1026,62 @@ export default function Chat() {
               return sessionDate.toDateString() === today.toDateString();
             }).length > 0 && (
               <div className="mb-4">
-                <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide mb-3 px-2 font-semibold">
+                <button
+                  onClick={() => setIsTodayExpanded(!isTodayExpanded)}
+                  className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide mb-3 px-2 font-semibold hover:text-gray-700 transition-colors w-full text-left"
+                >
                   <Clock className="h-3 w-3" />
                   <span>วันนี้</span>
-                </div>
-                <div className="space-y-1">
-                  {chatSessions
-                    .filter((session) => {
-                      const today = new Date();
-                      const sessionDate = new Date(session.createdAt);
-                      return (
-                        sessionDate.toDateString() === today.toDateString()
-                      );
-                    })
-                    .map((session) => (
-                      <div
-                        key={session.id}
-                        className={`group px-3 py-3 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer ${
-                          selectedSessionId === session.id
-                            ? "bg-blue-100 border border-blue-200"
-                            : ""
-                        }`}
-                        onClick={() => setSelectedSessionId(session.id)}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm text-gray-800 font-medium truncate">
-                              {session.title}
+                  {isTodayExpanded ? (
+                    <ChevronDown className="h-3 w-3 ml-auto" />
+                  ) : (
+                    <ChevronRight className="h-3 w-3 ml-auto" />
+                  )}
+                </button>
+                {isTodayExpanded && (
+                  <div className="space-y-1">
+                    {chatSessions
+                      .filter((session) => {
+                        const today = new Date();
+                        const sessionDate = new Date(session.createdAt);
+                        return (
+                          sessionDate.toDateString() === today.toDateString()
+                        );
+                      })
+                      .map((session) => (
+                        <div
+                          key={session.id}
+                          className={`group px-3 py-3 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer ${
+                            selectedSessionId === session.id
+                              ? "bg-blue-100 border border-blue-200"
+                              : ""
+                          }`}
+                          onClick={() => setSelectedSessionId(session.id)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm text-gray-800 font-medium truncate">
+                                {session.title}
+                              </div>
+                              <div className="text-xs text-gray-500 truncate mt-1">
+                                {session.lastMessage}
+                              </div>
                             </div>
-                            <div className="text-xs text-gray-500 truncate mt-1">
-                              {session.lastMessage}
-                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteSession(session.id);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100 transition-all"
+                              title="ลบการสนทนา"
+                            >
+                              <X className="h-3 w-3 text-red-500" />
+                            </button>
                           </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteSession(session.id);
-                            }}
-                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100 transition-all"
-                            title="ลบการสนทนา"
-                          >
-                            <X className="h-3 w-3 text-red-500" />
-                          </button>
                         </div>
-                      </div>
-                    ))}
-                </div>
+                      ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -1089,56 +1092,89 @@ export default function Chat() {
               return sessionDate.toDateString() !== today.toDateString();
             }).length > 0 && (
               <div>
-                <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide mb-3 px-2 font-semibold">
+                <button
+                  onClick={() => setIsPreviousExpanded(!isPreviousExpanded)}
+                  className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide mb-3 px-2 font-semibold hover:text-gray-700 transition-colors w-full text-left"
+                >
                   <History className="h-3 w-3" />
                   <span>ก่อนหน้า</span>
-                </div>
-                <div className="space-y-1">
-                  {chatSessions
-                    .filter((session) => {
-                      const today = new Date();
-                      const sessionDate = new Date(session.createdAt);
-                      return (
-                        sessionDate.toDateString() !== today.toDateString()
-                      );
-                    })
-                    .map((session) => (
-                      <div
-                        key={session.id}
-                        className={`group px-3 py-3 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer ${
-                          selectedSessionId === session.id
-                            ? "bg-blue-100 border border-blue-200"
-                            : ""
-                        }`}
-                        onClick={() => setSelectedSessionId(session.id)}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm text-gray-800 font-medium truncate">
-                              {session.title}
+                  {isPreviousExpanded ? (
+                    <ChevronDown className="h-3 w-3 ml-auto" />
+                  ) : (
+                    <ChevronRight className="h-3 w-3 ml-auto" />
+                  )}
+                </button>
+                {isPreviousExpanded && (
+                  <div className="space-y-1">
+                    {chatSessions
+                      .filter((session) => {
+                        const today = new Date();
+                        const sessionDate = new Date(session.createdAt);
+                        return (
+                          sessionDate.toDateString() !== today.toDateString()
+                        );
+                      })
+                      .map((session) => (
+                        <div
+                          key={session.id}
+                          className={`group px-3 py-3 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer ${
+                            selectedSessionId === session.id
+                              ? "bg-blue-100 border border-blue-200"
+                              : ""
+                          }`}
+                          onClick={() => setSelectedSessionId(session.id)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm text-gray-800 font-medium truncate">
+                                {session.title}
+                              </div>
+                              <div className="text-xs text-gray-500 truncate mt-1">
+                                {session.lastMessage}
+                              </div>
                             </div>
-                            <div className="text-xs text-gray-500 truncate mt-1">
-                              {session.lastMessage}
-                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteSession(session.id);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100 transition-all"
+                              title="ลบการสนทนา"
+                            >
+                              <X className="h-3 w-3 text-red-500" />
+                            </button>
                           </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteSession(session.id);
-                            }}
-                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100 transition-all"
-                            title="ลบการสนทนา"
-                          >
-                            <X className="h-3 w-3 text-red-500" />
-                          </button>
                         </div>
-                      </div>
-                    ))}
-                </div>
+                      ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
         )}
+      </div>
+
+      {/* Sidebar Toggle Button - Bottom */}
+      <div className="p-4 border-t border-gray-200">
+        <button
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="w-full p-2 rounded-lg hover:bg-gray-100 transition-all duration-300 border border-gray-300 bg-white shadow-sm flex items-center justify-center gap-2 hover:scale-105 active:scale-95"
+          title={isSidebarOpen ? "ซ่อนแถบข้าง" : "แสดงแถบข้าง"}
+        >
+          <div className="flex items-center gap-2 transition-all duration-300">
+            {isSidebarOpen ? (
+              <>
+                <PanelLeftClose className="h-4 w-4 text-gray-700 transition-transform duration-300" />
+                <span className="text-sm text-gray-700">ซ่อนแถบข้าง</span>
+              </>
+            ) : (
+              <>
+                <Menu className="h-4 w-4 text-gray-700 transition-transform duration-300" />
+                <span className="text-sm text-gray-700">แสดงแถบข้าง</span>
+              </>
+            )}
+          </div>
+        </button>
       </div>
     </aside>
   );
@@ -1150,11 +1186,35 @@ export default function Chat() {
 
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Fixed */}
-        <div className="w-80 flex-shrink-0">{LeftSidebar}</div>
+        {/* Left Sidebar - Collapsible with Animation */}
+        <div
+          className={`transition-all duration-500 ease-in-out transform ${
+            isSidebarOpen
+              ? "w-80 flex-shrink-0 translate-x-0 opacity-100"
+              : "w-0 flex-shrink-0 -translate-x-full opacity-0 pointer-events-none overflow-hidden"
+          }`}
+        >
+          {LeftSidebar}
+        </div>
 
         {/* Main Chat Area */}
-        <main className="flex-1 flex flex-col bg-white">
+        <main className="flex-1 flex flex-col bg-white transition-all duration-300 ease-in-out relative">
+          {/* Floating Sidebar Toggle Button when sidebar is closed */}
+          <div
+            className={`fixed bottom-6 left-6 z-50 transition-all duration-500 ease-in-out transform ${
+              !isSidebarOpen
+                ? "translate-y-0 opacity-100 scale-100"
+                : "translate-y-4 opacity-0 scale-95"
+            }`}
+          >
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="p-3 rounded-lg hover:bg-gray-100 transition-all duration-200 border border-gray-300 bg-white shadow-lg flex items-center gap-2 hover:scale-105"
+            >
+              <Menu className="h-4 w-4 text-gray-700" />
+              <span className="text-sm text-gray-700">แสดงแถบข้าง</span>
+            </button>
+          </div>
           <div className="flex-1 flex flex-col min-h-0">
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto">
