@@ -22,6 +22,9 @@ import {
   User,
   Mic,
   MicOff,
+  BarChart3,
+  Target,
+  Clock,
 } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/hooks/use-toast";
@@ -43,6 +46,7 @@ interface ChatSession {
   title: string;
   lastMessage: string;
   timestamp: string;
+  createdAt: string;
 }
 
 const quickActions = [
@@ -96,7 +100,7 @@ export default function Chat() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // สร้าง session ใหม่ใน AI หลังบ้าน (ต้องสำเร็จฝั่ง backend เท่านั้น)
-  const createNewSession = async (): Promise<string | null> => {
+  const createNewSession = async (): Promise<number | null> => {
     try {
       const token = tokenUtils.getValidToken();
       if (!token) {
@@ -138,6 +142,7 @@ export default function Chat() {
               `AI สุขภาพ (${new Date().toLocaleDateString("th-TH")})`,
             lastMessage: "เริ่มการสนทนาใหม่",
             timestamp: "เมื่อสักครู่",
+            createdAt: data.data.created_at || new Date().toISOString(),
           };
 
           setChatSessions((prev) => {
@@ -162,7 +167,7 @@ export default function Chat() {
             description: "สร้างการสนทนาใหม่แล้ว",
           });
 
-          return newSession.id;
+          return parseInt(newSession.id);
         } else {
           console.error("Invalid response data:", data);
           toast({
@@ -223,22 +228,17 @@ export default function Chat() {
       selectedSessionId === "undefined" ||
       selectedSessionId === "null"
     ) {
-      console.warn(
-        "Invalid selectedSessionId, creating new session:",
-        selectedSessionId
-      );
-      const newSessionId = await createNewSession();
-      return newSessionId ? parseInt(newSessionId) : null;
+      console.warn("No selectedSessionId:", selectedSessionId);
+      return null;
     }
 
     const sessionIdNum = parseInt(selectedSessionId);
     if (isNaN(sessionIdNum) || sessionIdNum <= 0) {
-      console.warn("Invalid sessionId number, creating new session:", {
+      console.warn("Invalid sessionId number:", {
         selectedSessionId,
         parsed: sessionIdNum,
       });
-      const newSessionId = await createNewSession();
-      return newSessionId ? parseInt(newSessionId) : null;
+      return null;
     }
 
     // ตรวจสอบว่า sessionId นี้มีอยู่จริงใน state หรือไม่
@@ -258,9 +258,8 @@ export default function Chat() {
       return sessionIdNum;
     }
 
-    console.warn("Session not found on server, creating a new one.");
-    const newSessionId = await createNewSession();
-    return newSessionId ? parseInt(newSessionId) : null;
+    console.warn("Session not found on server:", { selectedSessionId });
+    return null;
   };
 
   // ดึงประวัติการพูดคุยจาก AI หลังบ้าน
@@ -293,6 +292,7 @@ export default function Chat() {
             timestamp: formatTimestamp(
               session.updated_at || session.created_at
             ),
+            createdAt: session.created_at || new Date().toISOString(),
           }));
 
           setChatSessions(sessions);
@@ -459,8 +459,23 @@ export default function Chat() {
       return;
     }
 
-    // รับ sessionId ที่ถูกต้อง
-    const validSessionId = await getValidSessionId();
+    // ถ้ายังไม่มี session ที่เลือก ให้สร้าง session ใหม่ก่อนส่งข้อความ
+    let validSessionId = await getValidSessionId();
+
+    // ถ้าไม่มี session ใดๆ เลย ให้สร้างใหม่
+    if (!validSessionId) {
+      validSessionId = await createNewSession();
+      if (!validSessionId) {
+        toast({
+          title: "ข้อผิดพลาด",
+          description: "ไม่สามารถสร้าง session ได้ กรุณาลองใหม่อีกครั้ง",
+          variant: "destructive",
+        });
+        return;
+      }
+      // อัปเดต selectedSessionId หลังจากสร้าง session ใหม่
+      setSelectedSessionId(validSessionId.toString());
+    }
 
     // ตรวจสอบเพิ่มเติมว่า sessionId ถูกต้อง
     if (!validSessionId || isNaN(validSessionId) || validSessionId <= 0) {
@@ -620,7 +635,7 @@ export default function Chat() {
           setMessages((prev) => [...prev, aiMessage]);
 
           // อัปเดต chat session
-          updateSessionAfterMessage(selectedSessionId, aiMessage.text);
+          updateSessionAfterMessage(validSessionId.toString(), aiMessage.text);
 
           console.log("AI message displayed successfully:", aiMessage.text);
 
@@ -900,7 +915,7 @@ export default function Chat() {
 
   // Top Navigation Header
   const TopHeader = (
-    <header className="bg-white border-b border-gray-200 px-6 py-4">
+    <header className="bg-white  px-6 py-4">
       <div className="flex items-center justify-between">
         {/* Logo and Brand */}
         <div className="flex items-center gap-3">
@@ -909,24 +924,6 @@ export default function Chat() {
           </div>
           <span className="text-xl font-medium text-gray-800">สุขภาพดี AI</span>
         </div>
-
-        {/* Navigation Links */}
-        <nav className="hidden md:flex items-center gap-8">
-          <Link
-            to="/dashboard"
-            className="text-gray-700 hover:text-blue-600 transition-colors"
-          >
-            แดชบอร์ด
-          </Link>
-          <div className="flex items-center gap-1 text-gray-700 hover:text-blue-600 transition-colors cursor-pointer">
-            <span>สุขภาพและการติดตาม</span>
-            <ChevronDown className="h-4 w-4" />
-          </div>
-          <div className="flex items-center gap-1 text-gray-700 hover:text-blue-600 transition-colors cursor-pointer">
-            <span>AI และการวิเคราะห์</span>
-            <ChevronDown className="h-4 w-4" />
-          </div>
-        </nav>
 
         {/* Right Side Actions */}
         <div className="flex items-center gap-4">
@@ -939,13 +936,16 @@ export default function Chat() {
           </div>
 
           {/* User Profile */}
-          <div className="flex items-center gap-2 cursor-pointer">
+          <Link
+            to="/profile"
+            className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded-lg px-2 py-1 transition-colors"
+          >
             <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center">
               <User className="h-4 w-4 text-white" />
             </div>
             <span className="text-sm text-gray-700">kassana phuwapor...</span>
             <ChevronDown className="h-4 w-4 text-gray-500" />
-          </div>
+          </Link>
         </div>
       </div>
     </header>
@@ -954,10 +954,49 @@ export default function Chat() {
   // Left Sidebar (Chat History)
   const LeftSidebar = (
     <aside className="bg-white border-r border-gray-200 h-full flex flex-col">
-      {/* New Chat Button */}
+      {/* Navigation Menu */}
       <div className="p-4 border-b border-gray-200">
+        <nav className="space-y-2">
+          <Link
+            to="/dashboard"
+            className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <BarChart3 className="h-4 w-4" />
+            <span>แดชบอร์ด</span>
+          </Link>
+          <Link
+            to="/ai-insights"
+            className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <Brain className="h-4 w-4" />
+            <span>AI Insights</span>
+          </Link>
+          <Link
+            to="/health-goals"
+            className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <Target className="h-4 w-4" />
+            <span>เป้าหมายสุขภาพ</span>
+          </Link>
+        </nav>
+      </div>
+
+      {/* New Chat Button */}
+      <div className="p-4 ">
         <button
-          onClick={createNewSession}
+          onClick={() => {
+            // รีเซ็ตข้อความและเริ่มต้นใหม่โดยไม่สร้าง session
+            setMessages([
+              {
+                id: "1",
+                text: "สวัสดี! ฉันคือ AI สุขภาพที่พร้อมให้คำแนะนำเกี่ยวกับสุขภาพของคุณ มีอะไรให้ช่วยไหม?",
+                isUser: false,
+                timestamp: "เมื่อสักครู่",
+              },
+            ]);
+            setSelectedSessionId("");
+            setInputMessage("");
+          }}
           className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-lg flex items-center gap-2 transition-colors font-medium"
         >
           <Plus className="h-4 w-4" />
@@ -987,44 +1026,117 @@ export default function Chat() {
           </div>
         ) : (
           <div className="p-2">
-            <div className="text-xs text-gray-500 uppercase tracking-wide mb-3 px-2 font-semibold">
-              Chats
-            </div>
-            {chatSessions.map((session) => (
-              <div
-                key={session.id}
-                className={`group px-3 py-3 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer mb-1 ${
-                  selectedSessionId === session.id
-                    ? "bg-blue-100 border border-blue-200"
-                    : ""
-                }`}
-                onClick={() => setSelectedSessionId(session.id)}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm text-gray-800 font-medium truncate">
-                      {session.title}
-                    </div>
-                    <div className="text-xs text-gray-500 truncate mt-1">
-                      {session.lastMessage}
-                    </div>
-                    <div className="text-xs text-gray-400 mt-1">
-                      {session.timestamp}
-                    </div>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteSession(session.id);
-                    }}
-                    className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100 transition-all"
-                    title="ลบการสนทนา"
-                  >
-                    <X className="h-3 w-3 text-red-500" />
-                  </button>
+            {/* Today Section */}
+            {chatSessions.filter((session) => {
+              const today = new Date();
+              const sessionDate = new Date(session.createdAt);
+              return sessionDate.toDateString() === today.toDateString();
+            }).length > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide mb-3 px-2 font-semibold">
+                  <Clock className="h-3 w-3" />
+                  <span>วันนี้</span>
+                </div>
+                <div className="space-y-1">
+                  {chatSessions
+                    .filter((session) => {
+                      const today = new Date();
+                      const sessionDate = new Date(session.createdAt);
+                      return (
+                        sessionDate.toDateString() === today.toDateString()
+                      );
+                    })
+                    .map((session) => (
+                      <div
+                        key={session.id}
+                        className={`group px-3 py-3 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer ${
+                          selectedSessionId === session.id
+                            ? "bg-blue-100 border border-blue-200"
+                            : ""
+                        }`}
+                        onClick={() => setSelectedSessionId(session.id)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm text-gray-800 font-medium truncate">
+                              {session.title}
+                            </div>
+                            <div className="text-xs text-gray-500 truncate mt-1">
+                              {session.lastMessage}
+                            </div>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteSession(session.id);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100 transition-all"
+                            title="ลบการสนทนา"
+                          >
+                            <X className="h-3 w-3 text-red-500" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                 </div>
               </div>
-            ))}
+            )}
+
+            {/* Previous Sessions */}
+            {chatSessions.filter((session) => {
+              const today = new Date();
+              const sessionDate = new Date(session.createdAt);
+              return sessionDate.toDateString() !== today.toDateString();
+            }).length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide mb-3 px-2 font-semibold">
+                  <History className="h-3 w-3" />
+                  <span>ก่อนหน้า</span>
+                </div>
+                <div className="space-y-1">
+                  {chatSessions
+                    .filter((session) => {
+                      const today = new Date();
+                      const sessionDate = new Date(session.createdAt);
+                      return (
+                        sessionDate.toDateString() !== today.toDateString()
+                      );
+                    })
+                    .map((session) => (
+                      <div
+                        key={session.id}
+                        className={`group px-3 py-3 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer ${
+                          selectedSessionId === session.id
+                            ? "bg-blue-100 border border-blue-200"
+                            : ""
+                        }`}
+                        onClick={() => setSelectedSessionId(session.id)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm text-gray-800 font-medium truncate">
+                              {session.title}
+                            </div>
+                            <div className="text-xs text-gray-500 truncate mt-1">
+                              {session.lastMessage}
+                            </div>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteSession(session.id);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100 transition-all"
+                            title="ลบการสนทนา"
+                          >
+                            <X className="h-3 w-3 text-red-500" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1046,7 +1158,7 @@ export default function Chat() {
           <div className="flex-1 flex flex-col min-h-0">
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto">
-              {messages.length === 1 ? (
+              {messages.length === 1 && !isTyping ? (
                 <div className="h-full flex items-center justify-center px-6 py-12">
                   <div className="text-center w-full max-w-2xl">
                     {/* Header */}
@@ -1148,7 +1260,7 @@ export default function Chat() {
                 </div>
               ) : (
                 <div className="w-full">
-                  {messages.slice(1).map((message) => (
+                  {messages.map((message) => (
                     <div
                       key={message.id}
                       className={`w-full ${
@@ -1156,23 +1268,24 @@ export default function Chat() {
                       }`}
                     >
                       {message.isUser ? (
-                        // User message - keep in bubble
-                        <div className="flex justify-end mb-6 px-8">
-                          <div className="max-w-[70%]">
-                            {/* Message Content */}
-                            <div className="rounded-2xl px-5 py-3 shadow-md bg-blue-500 text-white group hover:bg-blue-600 transition-colors duration-200">
-                              <p className="text-sm leading-relaxed">
-                                {message.text}
-                              </p>
-                              <p className="text-xs mt-2 text-blue-100 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                {message.timestamp}
-                              </p>
+                        // User message - align with AI message
+                        <div className="w-full  py-8 bg-white">
+                          <div className="max-w-4xl mx-auto px-8">
+                            <div className="flex justify-end">
+                              <div className="max-w-[70%]">
+                                {/* Message Content */}
+                                <div className="rounded-2xl px-5 py-3 shadow-md bg-blue-500 text-white group hover:bg-blue-600 transition-colors duration-200">
+                                  <p className="text-sm leading-relaxed">
+                                    {message.text}
+                                  </p>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
                       ) : (
                         // AI message - full width like ChatGPT
-                        <div className="w-full border-b border-gray-200 py-8 bg-white">
+                        <div className="w-full  py-8 bg-white">
                           <div className="max-w-4xl mx-auto px-8 group">
                             {/* Message Content - Full Width */}
                             <div className="w-full">
@@ -1182,7 +1295,7 @@ export default function Chat() {
                                   components={{
                                     // Headings with beautiful styling
                                     h1: ({ children }) => (
-                                      <h1 className="text-2xl font-bold text-gray-900 mb-6 mt-8 pb-3 border-b border-gray-200">
+                                      <h1 className="text-2xl font-bold text-gray-900 mb-6 mt-8 pb-3 ">
                                         {children}
                                       </h1>
                                     ),
@@ -1332,11 +1445,6 @@ export default function Chat() {
                                   {message.text}
                                 </ReactMarkdown>
                               </div>
-
-                              {/* Timestamp */}
-                              <p className="text-sm text-gray-400 mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                {message.timestamp}
-                              </p>
                             </div>
                           </div>
                         </div>
@@ -1345,18 +1453,23 @@ export default function Chat() {
                   ))}
 
                   {isTyping && (
-                    <div className="w-full border-b border-gray-200 py-6 bg-white">
+                    <div className="w-full py-6 bg-white">
                       <div className="max-w-4xl mx-auto px-8">
-                        <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                          <div
-                            className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                            style={{ animationDelay: "0.1s" }}
-                          />
-                          <div
-                            className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                            style={{ animationDelay: "0.2s" }}
-                          />
+                        <div className="flex items-center space-x-2">
+                          <div className="flex space-x-1">
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                            <div
+                              className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                              style={{ animationDelay: "0.1s" }}
+                            />
+                            <div
+                              className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                              style={{ animationDelay: "0.2s" }}
+                            />
+                          </div>
+                          <span className="text-sm text-gray-500 ml-2">
+                            AI กำลังพิมพ์...
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -1369,7 +1482,7 @@ export default function Chat() {
 
           {/* Input Area - Only show when in conversation */}
           {messages.length > 1 && (
-            <div className="p-6 bg-white border-t border-gray-200 flex-shrink-0">
+            <div className="p-6 bg-white flex-shrink-0">
               <div className="max-w-4xl mx-auto">
                 <div className="bg-white border border-gray-300 rounded-2xl px-4 py-3 shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all duration-200">
                   <div className="flex items-center gap-3">
