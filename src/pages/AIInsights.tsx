@@ -442,14 +442,7 @@ export default function AIInsights() {
               <h1 className="text-3xl font-bold text-foreground mb-2">Personal Health Analysis</h1>
               <p className="text-muted-foreground">AI-powered health insights and personalized recommendations</p>
             </div>
-            <div className="flex items-center space-x-2">
-              <Button variant="outline" size="sm" onClick={debugToken}>
-                Debug Token
-            </Button>
-              <Button variant="outline" size="sm" onClick={() => setTestToken(161)}>
-                Set Test Token
-            </Button>
-            </div>
+            
           </div>
         </div>
 

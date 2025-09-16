@@ -2,12 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Send,
-  Moon,
-  Utensils,
   Activity,
   Brain,
-  Sparkles,
-  MessageCircle,
   Plus,
   Menu,
   X,
@@ -16,7 +12,6 @@ import {
   BookOpen,
   Code2,
   Heart,
-  Bot,
   Bell,
   ChevronDown,
   User,
@@ -29,14 +24,14 @@ import {
   PanelLeftClose,
   PanelLeft,
   Trash2,
-  Settings,
   LogOut,
+  Paperclip,
 } from "lucide-react";
-import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/hooks/use-toast";
 import { tokenUtils } from "@/lib/utils";
 import { useProfilePicture } from "@/hooks/useProfilePicture";
 import { useProfile } from "@/hooks/useProfile";
+import { apiConfig } from "@/config/env";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,8 +40,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { createClient } from "@supabase/supabase-js";
-import { apiConfig } from "@/config/env";
 
 interface Message {
   id: string;
@@ -95,7 +88,6 @@ export default function Chat() {
   // Chat sessions - จะดึงข้อมูลจริงจาก AI หลังบ้าน
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string>("");
-  const [showSidebar, setShowSidebar] = useState(false);
 
   // Messages for selected session (mock, single session)
   const [messages, setMessages] = useState<Message[]>([
@@ -115,8 +107,74 @@ export default function Chat() {
   const [isTodayExpanded, setIsTodayExpanded] = useState(true);
   const [isPreviousExpanded, setIsPreviousExpanded] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // ฟังก์ชันวิเคราะห์ข้อมูลเฉพาะเจาะจงผ่าน API ใหม่
+  const analyzeSpecificData = async (query: string, sessionId: number) => {
+    if (isAnalyzing) return null;
+
+    setIsAnalyzing(true);
+    try {
+      const token = tokenUtils.getValidToken();
+      if (!token) {
+        toast({
+          title: "กรุณาเข้าสู่ระบบ",
+          description: "Token ไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่",
+          variant: "destructive",
+        });
+        navigate("/login");
+        return null;
+      }
+
+      const response = await fetch(
+        `${apiConfig.baseUrl}/api/chat/ai/analyze-specific`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            query: query,
+            session_id: sessionId,
+            analysis_type: "health_data",
+            include_recent_activities: true,
+            include_recommendations: true,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Analysis response:", data);
+
+        if (data.success && data.data) {
+          toast({
+            title: "วิเคราะห์ข้อมูลสำเร็จ",
+            description: "ได้ข้อมูลการวิเคราะห์จาก AI แล้ว",
+          });
+          return data.data;
+        } else {
+          throw new Error(data.message || "Analysis failed");
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+    } catch (error) {
+      console.error("Analysis error:", error);
+      toast({
+        title: "ข้อผิดพลาด",
+        description: "ไม่สามารถวิเคราะห์ข้อมูลได้",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   // สร้าง session ใหม่ใน AI หลังบ้าน (ต้องสำเร็จฝั่ง backend เท่านั้น)
   const createNewSession = async (): Promise<number | null> => {
@@ -462,6 +520,29 @@ export default function Chat() {
       return;
     }
 
+    // ตรวจสอบว่าผู้ใช้ต้องการวิเคราะห์ข้อมูลเฉพาะเจาะจง
+    const analysisKeywords = [
+      "วิเคราะห์",
+      "analysis",
+      "ข้อมูลสุขภาพ",
+      "health data",
+      "ดูข้อมูล",
+      "ฐานข้อมูล",
+      "database",
+      "insights",
+      "วิเคราะห์สุขภาพ",
+      "health analysis",
+      "ข้อมูลของฉัน",
+      "กิจกรรมล่าสุด",
+      "recent activities",
+      "สถิติ",
+      "statistics",
+    ];
+
+    const wantsAnalysis = analysisKeywords.some((keyword) =>
+      inputMessage.toLowerCase().includes(keyword.toLowerCase())
+    );
+
     // ถ้ายังไม่มี session ที่เลือก ให้สร้าง session ใหม่ก่อนส่งข้อความ
     let validSessionId = await getValidSessionId();
 
@@ -481,6 +562,52 @@ export default function Chat() {
       }
       // อัปเดต selectedSessionId หลังจากสร้าง session ใหม่
       setSelectedSessionId(validSessionId.toString());
+    }
+
+    // ถ้าต้องการวิเคราะห์ข้อมูลเฉพาะเจาะจง ให้เรียกใช้ API ใหม่
+    if (wantsAnalysis && validSessionId) {
+      // เพิ่มข้อความของผู้ใช้ก่อน
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        text: inputMessage.trim(),
+        isUser: true,
+        timestamp: new Date().toLocaleTimeString("th-TH", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      };
+      setMessages((prev) => [...prev, userMessage]);
+      setInputMessage("");
+
+      // แสดง loading state
+      setIsTyping(true);
+
+      const analysisResult = await analyzeSpecificData(
+        inputMessage.trim(),
+        validSessionId
+      );
+      if (analysisResult) {
+        // แสดงผลการวิเคราะห์จาก API ใหม่
+        const analysisMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text:
+            analysisResult.analysis_result ||
+            analysisResult.message ||
+            "ไม่พบข้อมูลการวิเคราะห์",
+          isUser: false,
+          timestamp: new Date().toLocaleTimeString("th-TH", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        };
+
+        setMessages((prev) => [...prev, analysisMessage]);
+        setIsTyping(false);
+        return; // ไม่ต้องส่งข้อความไปยัง chat API
+      } else {
+        setIsTyping(false);
+        // ถ้าวิเคราะห์ไม่สำเร็จ ให้ส่งข้อความไปยัง chat API แทน
+      }
     }
 
     // ตรวจสอบเพิ่มเติมว่า sessionId ถูกต้อง
@@ -1285,38 +1412,29 @@ export default function Chat() {
                       <div className="relative max-w-2xl mx-auto">
                         <div className="bg-white border border-gray-300 rounded-2xl px-4 py-3 shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all duration-200">
                           <div className="flex items-center gap-3">
-                            {/* Microphone Button */}
-                            <button
-                              onClick={() => setIsRecording(!isRecording)}
-                              className={`p-2 rounded-full transition-all duration-200 ${
-                                isRecording
-                                  ? "bg-red-100 text-red-600 hover:bg-red-200"
-                                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                              }`}
-                              title={
-                                isRecording
-                                  ? "หยุดการบันทึกเสียง"
-                                  : "เริ่มการบันทึกเสียง"
-                              }
+                            {/* File Upload Button */}
+                            <label
+                              className="p-2 rounded-full transition-all duration-200 bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer flex items-center"
+                              title="เพิ่มไฟล์รูปภาพเพื่อวิเคราะห์อาหาร"
                             >
-                              {isRecording ? (
-                                <MicOff className="h-4 w-4" />
-                              ) : (
-                                <Mic className="h-4 w-4" />
-                              )}
-                            </button>
-
-                            {/* Auto Mode Toggle */}
-                            <button
-                              onClick={() => setIsAutoMode(!isAutoMode)}
-                              className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
-                                isAutoMode
-                                  ? "bg-blue-100 text-blue-700"
-                                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                              }`}
-                            >
-                              Auto
-                            </button>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  // TODO: handle file upload for food analysis
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    // ตัวอย่าง: แสดงชื่อไฟล์หรืออัปโหลด
+                                    toast({
+                                      title: "เพิ่มไฟล์สำเร็จ",
+                                      description: `ไฟล์: ${file.name}`,
+                                    });
+                                  }
+                                }}
+                              />
+                              <Paperclip className="h-4 w-4" />
+                            </label>
 
                             {/* Input Field */}
                             <textarea
