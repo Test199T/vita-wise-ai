@@ -28,10 +28,21 @@ import {
   ChevronRight,
   PanelLeftClose,
   PanelLeft,
+  Trash2,
+  Settings,
+  LogOut,
 } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/hooks/use-toast";
 import { tokenUtils } from "@/lib/utils";
+import { useProfilePicture } from "@/hooks/useProfilePicture";
+import { useProfile } from "@/hooks/useProfile";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { createClient } from "@supabase/supabase-js";
@@ -78,6 +89,8 @@ const quickActions = [
 export default function Chat() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { profilePicture } = useProfilePicture();
+  const { profile, loading, isLoggedIn } = useProfile();
 
   // Chat sessions - จะดึงข้อมูลจริงจาก AI หลังบ้าน
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
@@ -906,39 +919,76 @@ export default function Chat() {
     );
   };
 
+  // Get user name from profile data or use fallback
+  const userName = profile
+    ? `${profile.first_name} ${profile.last_name}`
+    : "ผู้ใช้";
+  const userInitial = userName.charAt(0);
+
   // Top Navigation Header
   const TopHeader = (
-    <header className="bg-white  px-6 py-4">
+    <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
         {/* Logo and Brand */}
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-            <Heart className="h-4 w-4 text-white" />
+          <div className="bg-gradient-primary p-2 rounded-lg">
+            <Activity className="h-6 w-6 text-primary-foreground" />
           </div>
-          <span className="text-xl font-medium text-gray-800">สุขภาพดี AI</span>
+          <span className="text-xl font-semibold text-foreground">
+            สุขภาพดี AI
+          </span>
         </div>
 
         {/* Right Side Actions */}
         <div className="flex items-center gap-4">
           {/* Notifications */}
-          <div className="relative">
-            <Bell className="h-5 w-5 text-gray-600 cursor-pointer hover:text-blue-600 transition-colors" />
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full flex items-center justify-center">
+          <Link
+            to="/notifications"
+            className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <Bell className="h-5 w-5 text-gray-600 hover:text-blue-600 transition-colors" />
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center">
               <span className="text-xs text-white font-medium">3</span>
             </div>
-          </div>
-
-          {/* User Profile */}
-          <Link
-            to="/profile"
-            className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded-lg px-2 py-1 transition-colors"
-          >
-            <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center">
-              <User className="h-4 w-4 text-white" />
-            </div>
-            <span className="text-sm text-gray-700">kassana phuwapor...</span>
-            <ChevronDown className="h-4 w-4 text-gray-500" />
           </Link>
+
+          {/* User Profile Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded-lg px-2 py-1 transition-colors">
+                {profilePicture ? (
+                  <img
+                    src={profilePicture}
+                    alt="avatar"
+                    className="w-8 h-8 rounded-full object-cover border-2 border-gray-200"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center text-sm font-medium">
+                    {userInitial}
+                  </div>
+                )}
+                <span className="text-sm text-gray-700 max-w-[140px] truncate">
+                  {loading ? "กำลังโหลด..." : userName}
+                </span>
+                <ChevronDown className="h-4 w-4 text-gray-500" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem asChild>
+                <Link to="/profile" className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  โปรไฟล์
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => tokenUtils.logout()}
+                className="flex items-center gap-2 text-red-600 cursor-pointer"
+              >
+                <LogOut className="h-4 w-4" />
+                ออกจากระบบ
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>
@@ -1031,7 +1081,7 @@ export default function Chat() {
                   className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide mb-3 px-2 font-semibold hover:text-gray-700 transition-colors w-full text-left"
                 >
                   <Clock className="h-3 w-3" />
-                  <span>วันนี้</span>
+                  <span>ประวัติการสนทนา</span>
                   {isTodayExpanded ? (
                     <ChevronDown className="h-3 w-3 ml-auto" />
                   ) : (
@@ -1075,7 +1125,7 @@ export default function Chat() {
                               className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100 transition-all"
                               title="ลบการสนทนา"
                             >
-                              <X className="h-3 w-3 text-red-500" />
+                              <Trash2 className="h-3 w-3 text-gray-500" />
                             </button>
                           </div>
                         </div>
@@ -1141,7 +1191,7 @@ export default function Chat() {
                               className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100 transition-all"
                               title="ลบการสนทนา"
                             >
-                              <X className="h-3 w-3 text-red-500" />
+                              <Trash2 className="h-3 w-3 text-gray-500" />
                             </button>
                           </div>
                         </div>
@@ -1190,7 +1240,7 @@ export default function Chat() {
         <div
           className={`transition-all duration-500 ease-in-out transform ${
             isSidebarOpen
-              ? "w-80 flex-shrink-0 translate-x-0 opacity-100"
+              ? "w-64 flex-shrink-0 translate-x-0 opacity-100"
               : "w-0 flex-shrink-0 -translate-x-full opacity-0 pointer-events-none overflow-hidden"
           }`}
         >
@@ -1223,11 +1273,8 @@ export default function Chat() {
                   <div className="text-center w-full max-w-2xl">
                     {/* Header */}
                     <div className="mb-12">
-                      <div className="inline-flex items-center gap-3 mb-6">
-                        <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                          <Bot className="h-5 w-5 text-white" />
-                        </div>
-                        <h1 className="text-3xl text-gray-800 font-medium">
+                      <div className="mb-6">
+                        <h1 className="text-4xl text-gray-800 font-semibold">
                           สวัสดี มีอะไรให้ช่วยไหม?
                         </h1>
                       </div>
