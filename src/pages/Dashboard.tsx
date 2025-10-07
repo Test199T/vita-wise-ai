@@ -1557,31 +1557,11 @@ export default function Dashboard() {
               แดชบอร์ดสุขภาพ
             </h1>
             <p className="text-muted-foreground mt-2">
-              ติดตามสุขภาพและสถิติของคุณประจำวัน • กดปุ่มรีเฟรชเพื่ออัปเดตข้อมูล
+              ติดตามสุขภาพและสถิติของคุณประจำวัน
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button 
-              onClick={refreshTodayData}
-              variant="outline"
-              className="gap-2 rounded-full border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all duration-200"
-              title="รีเฟรชข้อมูลการนอน, อาหาร, และน้ำดื่มของวันนี้"
-            >
-              <RefreshCw className="h-4 w-4" />
-              รีเฟรชข้อมูลวันนี้
-            </Button>
-            <Button 
-              onClick={loadFoodData} 
-              disabled={isLoadingFoodData}
-              variant="outline"
-              className="gap-2"
-              title="รีเฟรชข้อมูลโภชนาการและการวิเคราะห์"
-            >
-              <RefreshCw className={`h-4 w-4 ${isLoadingFoodData ? 'animate-spin' : ''}`} />
-              {isLoadingFoodData ? 'กำลังโหลด...' : 'รีเฟรชโภชนาการ'}
-            </Button>
-          </div>
-          
+         
+      
           <div className="flex gap-2 items-center">
             <Button asChild variant="outline">
               <Link to="/health-goals">

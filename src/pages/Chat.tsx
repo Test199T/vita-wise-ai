@@ -108,6 +108,8 @@ export default function Chat() {
   const [isPreviousExpanded, setIsPreviousExpanded] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -753,11 +755,14 @@ export default function Chat() {
         if (
           aiResponseText &&
           typeof aiResponseText === "string" &&
-          aiResponseText.trim()
+          (aiResponseText as string).trim() !== ""
         ) {
           const aiMessage: Message = {
             id: (Date.now() + 1).toString(),
-            text: aiResponseText.trim(),
+            text: (typeof aiResponseText === "string"
+              ? aiResponseText
+              : ""
+            ).trim(),
             isUser: false,
             timestamp: new Date().toLocaleTimeString("th-TH", {
               hour: "2-digit",
@@ -1413,28 +1418,84 @@ export default function Chat() {
                         <div className="bg-white border border-gray-300 rounded-2xl px-4 py-3 shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all duration-200">
                           <div className="flex items-center gap-3">
                             {/* File Upload Button */}
-                            <label
-                              className="p-2 rounded-full transition-all duration-200 bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer flex items-center"
-                              title="เพิ่มไฟล์รูปภาพเพื่อวิเคราะห์อาหาร"
-                            >
-                              <input
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={(e) => {
-                                  // TODO: handle file upload for food analysis
-                                  const file = e.target.files?.[0];
-                                  if (file) {
-                                    // ตัวอย่าง: แสดงชื่อไฟล์หรืออัปโหลด
-                                    toast({
-                                      title: "เพิ่มไฟล์สำเร็จ",
-                                      description: `ไฟล์: ${file.name}`,
-                                    });
-                                  }
-                                }}
-                              />
-                              <Paperclip className="h-4 w-4" />
-                            </label>
+                            {uploadedImage ? (
+                              <div className="relative mr-2">
+                                <img
+                                  src={uploadedImage}
+                                  alt="preview"
+                                  className="w-20 h-20 object-cover rounded-xl border border-gray-300"
+                                />
+                                <div className="absolute top-1 right-1 flex gap-1">
+                                  <button
+                                    type="button"
+                                    className="bg-white/80 hover:bg-white text-gray-700 rounded-full p-1 border border-gray-300 shadow"
+                                    title="ลบรูป"
+                                    onClick={() => {
+                                      setUploadedImage(null);
+                                      setUploadedFile(null);
+                                    }}
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      className="h-4 w-4"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M6 18L18 6M6 6l12 12"
+                                      />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <label
+                                className="p-2 rounded-full transition-all duration-200 bg-blue-50 text-blue-600 hover:bg-blue-100 cursor-pointer flex items-center"
+                                title="เพิ่มรูปภาพเพื่อวิเคราะห์อาหาร"
+                              >
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const reader = new FileReader();
+                                      reader.onload = (ev) => {
+                                        setUploadedImage(
+                                          ev.target?.result as string
+                                        );
+                                        setUploadedFile(file);
+                                      };
+                                      reader.readAsDataURL(file);
+                                      toast({
+                                        title: "เพิ่มรูปภาพสำเร็จ",
+                                        description: `รูปภาพ: ${file.name}`,
+                                      });
+                                    }
+                                  }}
+                                />
+                                {/* ใช้ icon บวก (+) */}
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="h-5 w-5"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M12 4v16m8-8H4"
+                                  />
+                                </svg>
+                              </label>
+                            )}
 
                             {/* Input Field */}
                             <textarea
