@@ -41,11 +41,18 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+export default function Chat() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { profilePicture } = useProfilePicture();
+  const { profile, loading, isLoggedIn } = useProfile();
+
 interface Message {
   id: string;
   text: string;
   isUser: boolean;
   timestamp: string;
+  image?: string | null;
 }
 
 interface ChatSession {
@@ -55,35 +62,6 @@ interface ChatSession {
   timestamp: string;
   createdAt: string;
 }
-
-const quickActions = [
-  {
-    icon: Edit3,
-    text: "วิเคราะห์สุขภาพ",
-    description: "วิเคราะห์ข้อมูลสุขภาพของฉัน",
-  },
-  {
-    icon: BookOpen,
-    text: "ให้คำแนะนำ",
-    description: "แนะนำการดูแลสุขภาพ",
-  },
-  {
-    icon: Code2,
-    text: "แปลผลตรวจ",
-    description: "อธิบายผลการตรวจสุขภาพ",
-  },
-  {
-    icon: Heart,
-    text: "ปรึกษาสุขภาพ",
-    description: "คำปรึกษาเรื่องสุขภาพทั่วไป",
-  },
-];
-
-export default function Chat() {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const { profilePicture } = useProfilePicture();
-  const { profile, loading, isLoggedIn } = useProfile();
 
   // Chat sessions - จะดึงข้อมูลจริงจาก AI หลังบ้าน
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
@@ -112,6 +90,127 @@ export default function Chat() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+const quickActions = [
+  {
+    icon: Edit3,
+    text: "วิเคราะห์สุขภาพ",
+    description: "วิเคราะห์ข้อมูลสุขภาพของฉัน",
+  },
+  {
+    icon: BookOpen,
+    text: "ให้คำแนะนำ",
+    description: "แนะนำการดูแลสุขภาพ",
+  },
+  {
+    icon: Code2,
+    text: "แปลผลตรวจ",
+    description: "อธิบายผลการตรวจสุขภาพ",
+  },
+  {
+    icon: Heart,
+    text: "ปรึกษาสุขภาพ",
+    description: "คำปรึกษาเรื่องสุขภาพทั่วไป",
+  },
+];
+
+  // อัปโหลดและวิเคราะห์รูปภาพอาหาร (แนบใน Chat component)
+  const handleImageUpload = async (file: File) => {
+    const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "ไฟล์ไม่รองรับ",
+        description: "รองรับเฉพาะ png, jpg, jpeg, webp",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "ไฟล์ใหญ่เกินไป",
+        description: "ขนาดไฟล์สูงสุด 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // ต้องมี sessionId ที่ถูกต้อง
+    let validSessionId = await getValidSessionId();
+    if (!validSessionId) {
+      validSessionId = await createNewSession();
+      if (!validSessionId) {
+        toast({
+          title: "ข้อผิดพลาด",
+          description: "ไม่สามารถสร้าง session ได้ กรุณาลองใหม่อีกครั้ง",
+          variant: "destructive",
+        });
+        return;
+      }
+      setSelectedSessionId(validSessionId.toString());
+    }
+
+    const token = tokenUtils.getValidToken();
+    if (!token) {
+      toast({
+        title: "กรุณาเข้าสู่ระบบ",
+        description: "Token ไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    setIsTyping(true);
+    try {
+      const response = await fetch(
+        `${apiConfig.baseUrl}/api/chat/sessions/${validSessionId}/image-analyze`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            text: data.data?.analysis_result || "วิเคราะห์สำเร็จ",
+            isUser: false,
+            timestamp: new Date().toLocaleTimeString("th-TH", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            image: null,
+          },
+        ]);
+        toast({
+          title: "วิเคราะห์สำเร็จ",
+          description: "AI วิเคราะห์อาหารจากภาพแล้ว",
+        });
+      } else {
+        toast({
+          title: "วิเคราะห์ไม่สำเร็จ",
+          description: data.message || "เกิดข้อผิดพลาดในการวิเคราะห์ภาพ",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "ข้อผิดพลาด",
+        description: "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTyping(false);
+    }
+  };
 
   // ฟังก์ชันวิเคราะห์ข้อมูลเฉพาะเจาะจงผ่าน API ใหม่
   const analyzeSpecificData = async (query: string, sessionId: number) => {
@@ -459,7 +558,26 @@ export default function Chat() {
 
   // ตรวจสอบ token และดึงข้อมูลเมื่อ component mount
   useEffect(() => {
+    console.log("🚀 Chat component mounting...");
+
+    // Debug JWT status
+    const rawToken = localStorage.getItem('token');
+    const token = tokenUtils.getValidToken();
+    const isLoggedIn = tokenUtils.isLoggedIn();
+
+    console.log("🔐 JWT Debug Info:", {
+      hasRawToken: !!rawToken,
+      rawTokenLength: rawToken?.length || 0,
+      rawTokenPreview: rawToken ? `${rawToken.substring(0, 20)}...` : "null",
+      validToken: !!token,
+      tokenLength: token?.length || 0,
+      tokenPreview: token ? `${token.substring(0, 20)}...` : "null",
+      isLoggedIn: isLoggedIn,
+      localStorageKeys: Object.keys(localStorage),
+    });
+
     if (!tokenUtils.isLoggedIn()) {
+      console.warn("❌ User not logged in - redirecting to login");
       toast({
         title: "กรุณาเข้าสู่ระบบ",
         description: "คุณต้องเข้าสู่ระบบก่อนใช้งาน Chat AI",
@@ -469,10 +587,12 @@ export default function Chat() {
       return;
     }
 
-    const token = tokenUtils.getValidToken();
     if (token) {
+      console.log("✅ Token found, fetching chat sessions...");
       // ดึงประวัติการพูดคุย
       fetchChatSessions();
+    } else {
+      console.error("❌ No valid token found!");
     }
 
     console.log("Token validation passed:", {
@@ -508,7 +628,7 @@ export default function Chat() {
   };
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim() && !uploadedFile) return;
 
     // ตรวจสอบ token อีกครั้งก่อนส่งข้อความ
     const token = tokenUtils.getValidToken();
@@ -522,37 +642,9 @@ export default function Chat() {
       return;
     }
 
-    // ตรวจสอบว่าผู้ใช้ต้องการวิเคราะห์ข้อมูลเฉพาะเจาะจง
-    const analysisKeywords = [
-      "วิเคราะห์",
-      "analysis",
-      "ข้อมูลสุขภาพ",
-      "health data",
-      "ดูข้อมูล",
-      "ฐานข้อมูล",
-      "database",
-      "insights",
-      "วิเคราะห์สุขภาพ",
-      "health analysis",
-      "ข้อมูลของฉัน",
-      "กิจกรรมล่าสุด",
-      "recent activities",
-      "สถิติ",
-      "statistics",
-    ];
-
-    const wantsAnalysis = analysisKeywords.some((keyword) =>
-      inputMessage.toLowerCase().includes(keyword.toLowerCase())
-    );
-
     // ถ้ายังไม่มี session ที่เลือก ให้สร้าง session ใหม่ก่อนส่งข้อความ
     let validSessionId = await getValidSessionId();
-
-    // ถ้าไม่มี session ใดๆ เลย ให้สร้างใหม่
     if (!validSessionId) {
-      console.log(
-        "No valid session found, creating new session before sending message"
-      );
       validSessionId = await createNewSession();
       if (!validSessionId) {
         toast({
@@ -562,337 +654,128 @@ export default function Chat() {
         });
         return;
       }
-      // อัปเดต selectedSessionId หลังจากสร้าง session ใหม่
       setSelectedSessionId(validSessionId.toString());
     }
 
-    // ถ้าต้องการวิเคราะห์ข้อมูลเฉพาะเจาะจง ให้เรียกใช้ API ใหม่
-    if (wantsAnalysis && validSessionId) {
-      // เพิ่มข้อความของผู้ใช้ก่อน
-      const userMessage: Message = {
-        id: Date.now().toString(),
-        text: inputMessage.trim(),
-        isUser: true,
-        timestamp: new Date().toLocaleTimeString("th-TH", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      };
-      setMessages((prev) => [...prev, userMessage]);
-      setInputMessage("");
-
-      // แสดง loading state
-      setIsTyping(true);
-
-      const analysisResult = await analyzeSpecificData(
-        inputMessage.trim(),
-        validSessionId
-      );
-      if (analysisResult) {
-        // แสดงผลการวิเคราะห์จาก API ใหม่
-        const analysisMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          text:
-            analysisResult.analysis_result ||
-            analysisResult.message ||
-            "ไม่พบข้อมูลการวิเคราะห์",
-          isUser: false,
-          timestamp: new Date().toLocaleTimeString("th-TH", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        };
-
-        setMessages((prev) => [...prev, analysisMessage]);
-        setIsTyping(false);
-        return; // ไม่ต้องส่งข้อความไปยัง chat API
-      } else {
-        setIsTyping(false);
-        // ถ้าวิเคราะห์ไม่สำเร็จ ให้ส่งข้อความไปยัง chat API แทน
-      }
-    }
-
-    // ตรวจสอบเพิ่มเติมว่า sessionId ถูกต้อง
-    if (!validSessionId || isNaN(validSessionId) || validSessionId <= 0) {
-      console.error("Invalid sessionId after validation:", {
-        validSessionId,
-        type: typeof validSessionId,
-      });
-      toast({
-        title: "ข้อผิดพลาด",
-        description: "ไม่สามารถสร้าง session ได้ กรุณาลองใหม่อีกครั้ง",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    console.log("Preparing to send message with sessionId:", {
-      validSessionId,
-      type: typeof validSessionId,
-      selectedSessionId,
-      inputMessage: inputMessage.substring(0, 50) + "...",
-    });
-
-    // สร้างข้อความของผู้ใช้จาก inputMessage ที่แท้จริง
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      text: inputMessage.trim(), // ใช้ข้อความที่ผู้ใช้พิมพ์จริง
-      isUser: true,
-      timestamp: new Date().toLocaleTimeString("th-TH", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    const currentInput = inputMessage;
-    setInputMessage("");
     setIsTyping(true);
 
-    if (inputRef.current) {
-      inputRef.current.style.height = "auto";
-    }
-
     try {
-      // Log การส่งข้อความไปยัง AI
-      console.log("Sending message to AI:", {
-        message: currentInput,
-        timestamp: new Date().toISOString(),
-        hasToken: !!token,
-        tokenPreview: token ? `${token.substring(0, 20)}...` : "null",
-        tokenValid: tokenUtils.isValidToken(token),
-        session_id: validSessionId,
-        sessionIdType: typeof validSessionId,
-        requestBody: {
-          message: currentInput,
-          session_id: validSessionId,
-          timestamp: new Date().toISOString(),
-        },
+      // สร้าง formData สำหรับ multipart/form-data
+      const formData = new FormData();
+      formData.append("message", inputMessage.trim());
+      formData.append("session_id", validSessionId.toString());
+      formData.append("timestamp", new Date().toISOString());
+      if (uploadedFile) {
+        formData.append("image", uploadedFile);
+      }
+
+      console.log("📤 Sending message:", {
+        message: inputMessage.trim(),
+        sessionId: validSessionId,
+        hasImage: !!uploadedFile,
+        imageName: uploadedFile?.name,
+        formDataEntries: Array.from(formData.entries()).map(([key, value]) => [key, value instanceof File ? `File: ${value.name}` : value]),
+        requestURL: `${apiConfig.baseUrl}/api/chat/sessions/${validSessionId}/messages/multipart`,
+        headers: {
+          Authorization: `Bearer ${token.substring(0, 20)}...`,
+        }
       });
 
-      const requestBody = {
-        message: currentInput,
-        session_id: validSessionId,
-        timestamp: new Date().toISOString(),
-      };
-
       const response = await fetch(
-        `${apiConfig.baseUrl}/api/chat/sessions/${validSessionId}/messages`,
+        `${apiConfig.baseUrl}/api/chat/sessions/${validSessionId}/messages/multipart`,
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify(requestBody),
+          body: formData,
         }
       );
-
       const data = await response.json();
 
-      // Log response จาก AI backend
-      console.log("AI response:", {
+      console.log("📥 Response received:", {
         status: response.status,
         statusText: response.statusText,
+        ok: response.ok,
+        success: data.success,
         data: data,
-        session_id: validSessionId,
       });
 
-      if (response.ok) {
-        // ตรวจสอบว่ามีข้อความจาก AI หลังบ้านหรือไม่
-        console.log("AI response data structure:", data);
-
-        // ดึงข้อความจาก AI หลังบ้าน - ให้ความสำคัญกับ data.data.aiMessage.message_text ก่อน
-        let aiResponseText = null;
-
-        // ตรวจสอบ data.data.aiMessage.message_text ก่อน (รูปแบบที่ AI หลังบ้านส่งมา)
-        if (
-          data.data &&
-          data.data.aiMessage &&
-          data.data.aiMessage.message_text
-        ) {
-          aiResponseText = data.data.aiMessage.message_text;
-          console.log(
-            "Found AI response in data.data.aiMessage.message_text:",
-            aiResponseText
-          );
-        }
-
-        // ถ้าไม่มีใน aiMessage ลองหาจาก field อื่นๆ
-        if (!aiResponseText) {
-          aiResponseText =
-            data.message ||
-            data.response ||
-            data.ai_message ||
-            data.content ||
-            data.text ||
-            data.answer ||
-            data.reply;
-
-          // ถ้าไม่มีใน field หลัก ลองดูใน choices
-          if (!aiResponseText && data.choices && data.choices.length > 0) {
-            aiResponseText = data.choices[0].message?.content;
-          }
-
-          // ถ้าไม่มีใน choices ลองดูใน data field อื่นๆ
-          if (!aiResponseText && data.data) {
-            aiResponseText =
-              data.data.message || data.data.response || data.data.content;
-          }
-
-          // ลองดูใน response field
-          if (!aiResponseText && data.response) {
-            aiResponseText =
-              data.response.message ||
-              data.response.content ||
-              data.response.text;
-          }
-        }
-
-        console.log("Extracted AI response text:", aiResponseText);
-        console.log("Full data object:", JSON.stringify(data, null, 2));
-
-        if (
-          aiResponseText &&
-          typeof aiResponseText === "string" &&
-          (aiResponseText as string).trim() !== ""
-        ) {
-          const aiMessage: Message = {
-            id: (Date.now() + 1).toString(),
-            text: (typeof aiResponseText === "string"
-              ? aiResponseText
-              : ""
-            ).trim(),
-            isUser: false,
-            timestamp: new Date().toLocaleTimeString("th-TH", {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-          };
-
-          setMessages((prev) => [...prev, aiMessage]);
-
-          // อัปเดต chat session
-          updateSessionAfterMessage(validSessionId.toString(), aiMessage.text);
-
-          console.log("AI message displayed successfully:", aiMessage.text);
-
-          // อัปเดตข้อความของผู้ใช้ให้แสดงข้อความจริงจาก AI หลังบ้าน
-          if (
-            data.data &&
-            data.data.userMessage &&
-            data.data.userMessage.message_text
-          ) {
-            const actualUserMessage = data.data.userMessage.message_text;
-            setMessages((prev) =>
-              prev.map((msg) =>
-                msg.isUser && msg.text === inputMessage.trim()
-                  ? { ...msg, text: actualUserMessage }
-                  : msg
-              )
-            );
-            console.log(
-              "Updated user message with actual text:",
-              actualUserMessage
-            );
-          }
-        } else {
-          // ถ้าไม่มีข้อความจาก AI ให้แสดงข้อความเริ่มต้น
-          console.warn("No AI response text found in data:", data);
-          const defaultMessage: Message = {
-            id: (Date.now() + 1).toString(),
-            text: "ขออภัย ไม่สามารถประมวลผลได้ กรุณาลองใหม่อีกครั้ง",
-            isUser: false,
-            timestamp: new Date().toLocaleTimeString("th-TH", {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-          };
-          setMessages((prev) => [...prev, defaultMessage]);
-        }
-      } else {
-        // จัดการ error cases ต่างๆ
-        let errorMessage = "ขออภัย เกิดข้อผิดพลาดในการประมวลผล";
-
-        if (response.status === 401) {
-          errorMessage = "Token ไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่";
-          console.warn("Authentication failed for AI chat:", {
-            status: response.status,
-            backendMessage: data.message,
-            tokenPreview: token ? `${token.substring(0, 20)}...` : "null",
-            tokenValid: tokenUtils.isValidToken(token),
-          });
-
-          // ลบ token ที่ไม่ถูกต้องและ redirect ไปหน้า login
-          tokenUtils.removeToken();
-
-          toast({
-            title: "Token ไม่ถูกต้อง",
-            description: "กรุณาเข้าสู่ระบบใหม่",
-            variant: "destructive",
-          });
-
-          setTimeout(() => {
-            navigate("/login");
-          }, 2000);
-        } else if (response.status === 400) {
-          errorMessage = "ข้อความไม่ถูกต้อง";
-          console.warn("Bad request to AI:", {
-            status: response.status,
-            backendMessage: data.message,
-            validationErrors: data.errors,
-          });
-        } else if (response.status === 429) {
-          errorMessage = "ส่งข้อความบ่อยเกินไป กรุณารอสักครู่";
-          console.warn("Rate limit exceeded:", {
-            status: response.status,
-            backendMessage: data.message,
-          });
-        } else if (response.status === 500) {
-          errorMessage = "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์";
-          console.error("AI server error:", {
-            status: response.status,
-            backendMessage: data.message,
-            error: data.error,
-          });
-        } else {
-          console.error("Unexpected AI response:", {
-            status: response.status,
-            statusText: response.statusText,
-            data: data,
-          });
-        }
-
-        const errorMessageObj: Message = {
-          id: (Date.now() + 1).toString(),
-          text: errorMessage,
-          isUser: false,
+      if (response.ok && data.success) {
+        // สร้าง message ฝั่ง user
+        const userMessage: Message = {
+          id: Date.now().toString(),
+          text: inputMessage.trim(),
+          isUser: true,
           timestamp: new Date().toLocaleTimeString("th-TH", {
             hour: "2-digit",
             minute: "2-digit",
           }),
+          image: data.data?.userMessage?.image_url ? (() => {
+            const imagePath = data.data.userMessage.image_url.replace(/\\/g, '/');
+            const fullUrl = imagePath.startsWith('http') ? imagePath : `${apiConfig.baseUrl}/${imagePath.startsWith('/') ? imagePath.slice(1) : imagePath}`;
+            console.log('User image URL constructed:', fullUrl);
+            return fullUrl;
+          })() : null,
         };
+        setMessages((prev) => [...prev, userMessage]);
 
-        setMessages((prev) => [...prev, errorMessageObj]);
+        // สร้าง message ฝั่ง AI (ตอบกลับ)
+        const aiText =
+          data.data?.aiMessage?.message_text ||
+          data.data?.aiMessage?.text ||
+          data.data?.aiMessage?.content ||
+          data.message ||
+          "";
+        const aiImage = data.data?.aiMessage?.image_url ? (() => {
+          const imagePath = data.data.aiMessage.image_url.replace(/\\/g, '/');
+          const fullUrl = imagePath.startsWith('http') ? imagePath : `${apiConfig.baseUrl}/${imagePath.startsWith('/') ? imagePath.slice(1) : imagePath}`;
+          console.log('AI image URL constructed:', fullUrl);
+          return fullUrl;
+        })() : null;
+        if (aiText || aiImage) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: (Date.now() + 1).toString(),
+              text: aiText,
+              isUser: false,
+              timestamp: new Date().toLocaleTimeString("th-TH", {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+              image: aiImage,
+            },
+          ]);
+        }
+
+        // อัปเดต chat session
+        updateSessionAfterMessage(validSessionId.toString(), aiText);
+
+        // รีเซ็ต input และรูป
+        setInputMessage("");
+        setUploadedImage(null);
+        setUploadedFile(null);
+      } else {
+        console.error("❌ Message sending failed:", {
+          responseStatus: response.status,
+          responseStatusText: response.statusText,
+          responseData: data,
+          responseHeaders: Object.fromEntries(response.headers.entries()),
+        });
+
+        toast({
+          title: "ส่งข้อความไม่สำเร็จ",
+          description: data.message || "เกิดข้อผิดพลาดในการส่งข้อความ",
+          variant: "destructive",
+        });
       }
     } catch (error) {
-      console.error("Network/Connection error with AI:", {
-        message: currentInput,
-        error: error instanceof Error ? error.message : "Unknown error",
-        stack: error instanceof Error ? error.stack : undefined,
+      toast({
+        title: "ข้อผิดพลาด",
+        description: "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้",
+        variant: "destructive",
       });
-
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: "ขออภัย ไม่สามารถเชื่อมต่อกับ AI ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต",
-        isUser: false,
-        timestamp: new Date().toLocaleTimeString("th-TH", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      };
-
-      setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsTyping(false);
     }
@@ -1367,6 +1250,7 @@ export default function Chat() {
       {TopHeader}
 
       {/* Main Content Area */}
+      <main className="flex-1 flex flex-col bg-white transition-all duration-300 ease-in-out relative">
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar - Collapsible with Animation */}
         <div
@@ -1380,7 +1264,7 @@ export default function Chat() {
         </div>
 
         {/* Main Chat Area */}
-        <main className="flex-1 flex flex-col bg-white transition-all duration-300 ease-in-out relative">
+        <div className="flex-1 flex flex-col bg-white transition-all duration-300 ease-in-out relative">
           {/* Floating Sidebar Toggle Button when sidebar is closed */}
           <div
             className={`fixed bottom-6 left-6 z-50 transition-all duration-500 ease-in-out transform ${
@@ -1558,13 +1442,31 @@ export default function Chat() {
                         <div className="w-full  py-8 bg-white">
                           <div className="max-w-4xl mx-auto px-8">
                             <div className="flex justify-end">
-                              <div className="max-w-[70%]">
+                              <div className="max-w-[70%] flex flex-col items-end">
                                 {/* Message Content */}
                                 <div className="rounded-2xl px-5 py-3 shadow-md bg-blue-500 text-white group hover:bg-blue-600 transition-colors duration-200">
                                   <p className="text-sm leading-relaxed">
                                     {message.text}
                                   </p>
                                 </div>
+                                {message.image && (
+                                  <div className="mt-2">
+                                    <img
+                                      src={message.image}
+                                      alt="รูปภาพที่ส่ง"
+                                      className="max-w-[180px] max-h-[180px] rounded-lg border border-gray-200 shadow-sm"
+                                      style={{ objectFit: "cover" }}
+                                      onError={(e) => {
+                                        console.error("Error loading user image:", message.image);
+                                        console.error("Image src:", e.currentTarget.src);
+                                        e.currentTarget.style.display = "none";
+                                      }}
+                                      onLoad={() => {
+                                        console.log("User image loaded successfully:", message.image);
+                                      }}
+                                    />
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -1731,6 +1633,26 @@ export default function Chat() {
                                   {message.text}
                                 </ReactMarkdown>
                               </div>
+
+                              {/* แสดงรูปภาพของ AI ถ้ามี */}
+                              {message.image && (
+                                <div className="mt-4">
+                                  <img
+                                    src={message.image}
+                                    alt="รูปภาพจาก AI"
+                                    className="max-w-[300px] max-h-[300px] rounded-lg border border-gray-200 shadow-sm"
+                                    style={{ objectFit: "cover" }}
+                                    onError={(e) => {
+                                      console.error("Error loading AI image:", message.image);
+                                      console.error("Image src:", e.currentTarget.src);
+                                      e.currentTarget.style.display = "none";
+                                    }}
+                                    onLoad={() => {
+                                      console.log("AI image loaded successfully:", message.image);
+                                    }}
+                                  />
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1772,38 +1694,71 @@ export default function Chat() {
               <div className="max-w-4xl mx-auto">
                 <div className="bg-white border border-gray-300 rounded-2xl px-4 py-3 shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all duration-200">
                   <div className="flex items-center gap-3">
-                    {/* Microphone Button */}
-                    <button
-                      onClick={() => setIsRecording(!isRecording)}
-                      className={`p-2 rounded-full transition-all duration-200 ${
-                        isRecording
-                          ? "bg-red-100 text-red-600 hover:bg-red-200"
-                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                      }`}
-                      title={
-                        isRecording
-                          ? "หยุดการบันทึกเสียง"
-                          : "เริ่มการบันทึกเสียง"
-                      }
+                    {/* ปุ่มเพิ่มรูป */}
+                    <label
+                      className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer transition-all duration-200 flex items-center justify-center"
+                      title="เพิ่มรูปภาพ"
                     >
-                      {isRecording ? (
-                        <MicOff className="h-4 w-4" />
-                      ) : (
-                        <Mic className="h-4 w-4" />
-                      )}
-                    </button>
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/jpg,image/webp"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files && e.target.files[0];
+                          if (file) {
+                            // ตรวจสอบประเภทไฟล์
+                            const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+                            if (!allowedTypes.includes(file.type)) {
+                              toast({
+                                title: "ไฟล์ไม่รองรับ",
+                                description: "รองรับเฉพาะ png, jpg, jpeg, webp",
+                                variant: "destructive",
+                              });
+                              return;
+                            }
 
-                    {/* Auto Mode Toggle */}
-                    <button
-                      onClick={() => setIsAutoMode(!isAutoMode)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
-                        isAutoMode
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                      }`}
-                    >
-                      Auto
-                    </button>
+                            // ตรวจสอบขนาดไฟล์
+                            if (file.size > 5 * 1024 * 1024) {
+                              toast({
+                                title: "ไฟล์ใหญ่เกินไป",
+                                description: "ขนาดไฟล์สูงสุด 5MB",
+                                variant: "destructive",
+                              });
+                              return;
+                            }
+
+                            // อ่านไฟล์และสร้าง preview
+                            const reader = new FileReader();
+                            reader.onload = (ev) => {
+                              const result = ev.target?.result;
+                              if (result && typeof result === 'string') {
+                                setUploadedImage(result);
+                                setUploadedFile(file);
+                                toast({
+                                  title: "เพิ่มรูปภาพสำเร็จ",
+                                  description: `รูปภาพ: ${file.name}`,
+                                });
+                              } else {
+                                toast({
+                                  title: "เกิดข้อผิดพลาด",
+                                  description: "ไม่สามารถอ่านไฟล์รูปภาพได้",
+                                  variant: "destructive",
+                                });
+                              }
+                            };
+                            reader.onerror = () => {
+                              toast({
+                                title: "เกิดข้อผิดพลาด",
+                                description: "ไม่สามารถอ่านไฟล์รูปภาพได้",
+                                variant: "destructive",
+                              });
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                      <Paperclip className="h-5 w-5" />
+                    </label>
 
                     {/* Input Field */}
                     <textarea
@@ -1838,8 +1793,9 @@ export default function Chat() {
               </div>
             </div>
           )}
-        </main>
+        </div>
       </div>
+      </main>
     </div>
   );
 }
