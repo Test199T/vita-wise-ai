@@ -114,7 +114,7 @@ const quickActions = [
   },
 ];
 
-  // อัปโหลดและวิเคราะห์รูปภาพอาหาร (แนบใน Chat component)
+  // อัปโหลดและแสดงรูปภาพ (ไม่วิเคราะห์ทันที)
   const handleImageUpload = async (file: File) => {
     const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
@@ -134,82 +134,33 @@ const quickActions = [
       return;
     }
 
-    // ต้องมี sessionId ที่ถูกต้อง
-    let validSessionId = await getValidSessionId();
-    if (!validSessionId) {
-      validSessionId = await createNewSession();
-      if (!validSessionId) {
+    // แปลงไฟล์เป็น base64 สำหรับแสดง preview
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const result = ev.target?.result;
+      if (result && typeof result === 'string') {
+        setUploadedImage(result);
+        setUploadedFile(file);
         toast({
-          title: "ข้อผิดพลาด",
-          description: "ไม่สามารถสร้าง session ได้ กรุณาลองใหม่อีกครั้ง",
-          variant: "destructive",
-        });
-        return;
-      }
-      setSelectedSessionId(validSessionId.toString());
-    }
-
-    const token = tokenUtils.getValidToken();
-    if (!token) {
-      toast({
-        title: "กรุณาเข้าสู่ระบบ",
-        description: "Token ไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่",
-        variant: "destructive",
-      });
-      navigate("/login");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("image", file);
-
-    setIsTyping(true);
-    try {
-      const response = await fetch(
-        `${apiConfig.baseUrl}/api/chat/sessions/${validSessionId}/image-analyze`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        }
-      );
-      const data = await response.json();
-      if (response.ok && data.success) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now().toString(),
-            text: data.data?.analysis_result || "วิเคราะห์สำเร็จ",
-            isUser: false,
-            timestamp: new Date().toLocaleTimeString("th-TH", {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-            image: null,
-          },
-        ]);
-        toast({
-          title: "วิเคราะห์สำเร็จ",
-          description: "AI วิเคราะห์อาหารจากภาพแล้ว",
+          title: "เพิ่มรูปภาพสำเร็จ",
+          description: `รูปภาพ: ${file.name} - กรุณาพิมพ์ข้อความแล้วส่งเพื่อวิเคราะห์`,
         });
       } else {
         toast({
-          title: "วิเคราะห์ไม่สำเร็จ",
-          description: data.message || "เกิดข้อผิดพลาดในการวิเคราะห์ภาพ",
+          title: "เกิดข้อผิดพลาด",
+          description: "ไม่สามารถอ่านไฟล์รูปภาพได้",
           variant: "destructive",
         });
       }
-    } catch (error) {
+    };
+    reader.onerror = () => {
       toast({
-        title: "ข้อผิดพลาด",
-        description: "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้",
+        title: "เกิดข้อผิดพลาด",
+        description: "ไม่สามารถอ่านไฟล์รูปภาพได้",
         variant: "destructive",
       });
-    } finally {
-      setIsTyping(false);
-    }
+    };
+    reader.readAsDataURL(file);
   };
 
   // ฟังก์ชันวิเคราะห์ข้อมูลเฉพาะเจาะจงผ่าน API ใหม่
@@ -337,6 +288,7 @@ const quickActions = [
               text: "สวัสดี! ฉันคือ AI สุขภาพที่พร้อมให้คำแนะนำเกี่ยวกับสุขภาพของคุณ มีอะไรให้ช่วยไหม?",
               isUser: false,
               timestamp: "เมื่อสักครู่",
+              image: null,
             },
           ]);
 
@@ -680,14 +632,62 @@ const quickActions = [
       formData.append("message", inputMessage.trim());
       formData.append("session_id", validSessionId.toString());
       formData.append("timestamp", new Date().toISOString());
+      
+      // ตรวจสอบว่าข้อความเกี่ยวข้องกับการวิเคราะห์รูปภาพหรือไม่
+      const analysisKeywords = [
+        "วิเคราะห์", "analyze", "นี่คืออะไร", "นี่คือ", "คืออะไร",
+        "ช่วยดู", "ช่วยวิเคราะห์", "ภาพนี้", "รูปนี้", "อาหาร",
+        "อาหารอะไร", "กินได้ไหม", "อันตรายไหม", "ดีไหม"
+      ];
+
+      const shouldAnalyzeImage = analysisKeywords.some(keyword =>
+        inputMessage.toLowerCase().includes(keyword.toLowerCase())
+      ) && uploadedFile;
+
+      // กำหนดประเภทของการวิเคราะห์
+      let analysisType = "general"; // ค่าเริ่มต้น: การสนทนาปกติ
+      let wantsDirectAnswer = false;
+
+      if (shouldAnalyzeImage) {
+        // ตรวจสอบคำถามที่ต้องการคำตอบตรงๆ
+        const directAnswerKeywords = ["คืออะไร", "นี่คืออะไร", "อะไร"];
+        wantsDirectAnswer = directAnswerKeywords.some(keyword =>
+          inputMessage.toLowerCase().includes(keyword.toLowerCase())
+        );
+
+        console.log("🔍 Analysis Check:", {
+          message: inputMessage,
+          shouldAnalyzeImage,
+          wantsDirectAnswer,
+          analysisType: wantsDirectAnswer ? "direct" : "analysis"
+        });
+
+        if (wantsDirectAnswer) {
+          analysisType = "direct"; // ต้องการคำตอบตรงๆ
+        } else {
+          analysisType = "analysis"; // ต้องการวิเคราะห์เชิงลึก
+        }
+      }
+
       if (uploadedFile) {
         formData.append("image", uploadedFile);
+        formData.append("analyze_image", shouldAnalyzeImage ? "true" : "false");
+        formData.append("analysis_type", analysisType);
+
+        // เพิ่มคำสั่งให้ AI เข้าใจประเภทการตอบที่ต้องการ
+        if (wantsDirectAnswer) {
+          formData.append("instruction", "ตอบเฉพาะสิ่งที่เห็นในรูปภาพโดยตรง ห้ามวิเคราะห์หรือให้คำแนะนำเพิ่มเติม");
+        } else if (shouldAnalyzeImage) {
+          formData.append("instruction", "วิเคราะห์รูปภาพและให้ข้อมูลเชิงลึกพร้อมคำแนะนำ");
+        }
       }
 
       console.log("📤 Sending message:", {
         message: inputMessage.trim(),
         sessionId: validSessionId,
         hasImage: !!uploadedFile,
+        shouldAnalyzeImage: shouldAnalyzeImage,
+        analysisType: analysisType,
         imageName: uploadedFile?.name,
         formDataEntries: Array.from(formData.entries()).map(([key, value]) => [key, value instanceof File ? `File: ${value.name}` : value]),
         requestURL: `${apiConfig.baseUrl}/api/chat/sessions/${validSessionId}/messages/multipart`,
@@ -767,10 +767,18 @@ const quickActions = [
         // อัปเดต chat session
         updateSessionAfterMessage(validSessionId.toString(), aiText);
 
-        // รีเซ็ต input และรูป
-        setInputMessage("");
-        setUploadedImage(null);
-        setUploadedFile(null);
+        // แสดงข้อความแจ้งเตือนให้ผู้ใช้ทราบประเภทการวิเคราะห์
+        if (shouldAnalyzeImage && wantsDirectAnswer) {
+          toast({
+            title: "🔍 ถามข้อมูลตรงๆ",
+            description: "AI จะตอบเฉพาะสิ่งที่เห็นในรูปภาพ",
+          });
+        } else if (shouldAnalyzeImage) {
+          toast({
+            title: "🔬 วิเคราะห์รูปภาพ",
+            description: "AI จะวิเคราะห์และให้คำแนะนำเชิงลึก",
+          });
+        }
       } else {
         console.error("❌ Message sending failed:", {
           responseStatus: response.status,
