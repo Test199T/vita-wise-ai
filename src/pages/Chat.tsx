@@ -633,69 +633,79 @@ const quickActions = [
       formData.append("session_id", validSessionId.toString());
       formData.append("timestamp", new Date().toISOString());
       
-      // ตรวจสอบว่าข้อความเกี่ยวข้องกับการวิเคราะห์รูปภาพหรือไม่
-      const analysisKeywords = [
-        "วิเคราะห์", "analyze", "นี่คืออะไร", "นี่คือ", "คืออะไร",
-        "ช่วยดู", "ช่วยวิเคราะห์", "ภาพนี้", "รูปนี้", "อาหาร",
-        "อาหารอะไร", "กินได้ไหม", "อันตรายไหม", "ดีไหม"
+      // กำหนดคำถามที่ต้องการคำตอบตรงๆ (ไม่วิเคราะห์)
+      const directAnswerKeywords = [
+        "นี่คืออะไร", "นี่คือ", "คืออะไร", "อะไร", "ภาพนี้คืออะไร", "รูปนี้คืออะไร",
+        "เห็นอะไร", "เห็นอะไรในรูป", "รูปนี้คือ", "ภาพนี้คือ", "รูปภาพนี้คืออะไร",
+        "ภาพนี้คือ", "อันนี้คืออะไร", "นี่คือภาพอะไร", "รูปนี้คืออะไร",
+        "คือ", "คืออะไรนะ", "คืออะไรครับ", "คืออะไรค่ะ"
       ];
 
-      const shouldAnalyzeImage = analysisKeywords.some(keyword =>
+      // กำหนดคำถามที่ต้องการวิเคราะห์รูปภาพ
+      const analysisKeywords = [
+        "วิเคราะห์", "analyze", "ช่วยดู", "ช่วยวิเคราะห์", "อาหาร", "กินได้ไหม",
+        "อันตรายไหม", "ดีไหม", "วิเคราะห์รูป", "วิเคราะห์ภาพ", "ช่วยวิเคราะห์รูปนี้",
+        "วิเคราะห์อาหาร", "วิเคราะห์รูปภาพ", "วิเคราะห์ภาพนี้", "ช่วยวิเคราะห์อาหาร",
+        "ช่วยวิเคราะห์ภาพ", "วิเคราะห์มื้อนี้", "วิเคราะห์อาหารนี้", "วิเคราะห์รูปอาหาร"
+      ];
+
+      // ตรวจสอบว่ามีรูปภาพแนบมาหรือไม่
+      const hasImage = !!uploadedFile;
+
+      // ตรวจสอบประเภทของคำถาม
+      const wantsDirectAnswer = hasImage && directAnswerKeywords.some(keyword =>
         inputMessage.toLowerCase().includes(keyword.toLowerCase())
-      ) && uploadedFile;
+      );
+
+      const wantsAnalysis = hasImage && analysisKeywords.some(keyword =>
+        inputMessage.toLowerCase().includes(keyword.toLowerCase())
+      );
+
+      const shouldAnalyzeImage = wantsAnalysis;
 
       // กำหนดประเภทของการวิเคราะห์
       let analysisType = "general"; // ค่าเริ่มต้น: การสนทนาปกติ
-      let wantsDirectAnswer = false;
 
       if (shouldAnalyzeImage) {
-        // ตรวจสอบคำถามที่ต้องการคำตอบตรงๆ
-        const directAnswerKeywords = ["คืออะไร", "นี่คืออะไร", "อะไร"];
-        wantsDirectAnswer = directAnswerKeywords.some(keyword =>
-          inputMessage.toLowerCase().includes(keyword.toLowerCase())
-        );
-
-        console.log("🔍 Analysis Check:", {
-          message: inputMessage,
-          shouldAnalyzeImage,
-          wantsDirectAnswer,
-          analysisType: wantsDirectAnswer ? "direct" : "analysis"
-        });
-
-        if (wantsDirectAnswer) {
-          analysisType = "direct"; // ต้องการคำตอบตรงๆ
-        } else {
-          analysisType = "analysis"; // ต้องการวิเคราะห์เชิงลึก
-        }
+        analysisType = "analysis"; // ต้องการวิเคราะห์เชิงลึก
+      } else if (wantsDirectAnswer) {
+        analysisType = "direct"; // ต้องการคำตอบตรงๆ
       }
+
+      // เพิ่ม fallback logic: ถ้ามีรูปภาพแต่ไม่มีคำถามเฉพาะเจาะจง ถือว่าเป็นการสนทนาปกติพร้อมรูปภาพประกอบ
+      if (hasImage && !wantsDirectAnswer && !wantsAnalysis) {
+        analysisType = "general_with_image"; // สนทนาปกติพร้อมรูปภาพประกอบ
+      }
+
+      console.log("🔍 Complete Image & Question Analysis Check:", {
+        message: inputMessage,
+        hasImage: hasImage,
+        wantsDirectAnswer: wantsDirectAnswer,
+        wantsAnalysis: wantsAnalysis,
+        shouldAnalyzeImage: shouldAnalyzeImage,
+        analysisType: analysisType,
+        logic: {
+          hasImageAndDirectQuestion: hasImage && inputMessage.toLowerCase().includes("นี่คืออะไร"),
+          hasImageAndAnalysisQuestion: hasImage && inputMessage.toLowerCase().includes("วิเคราะห์"),
+          shouldTriggerAnalysis: shouldAnalyzeImage,
+          shouldTriggerDirect: wantsDirectAnswer && !shouldAnalyzeImage
+        },
+        keywords: {
+          directFound: directAnswerKeywords.filter(k => inputMessage.toLowerCase().includes(k.toLowerCase())),
+          analysisFound: analysisKeywords.filter(k => inputMessage.toLowerCase().includes(k.toLowerCase()))
+        }
+      });
 
       if (uploadedFile) {
         formData.append("image", uploadedFile);
         formData.append("analyze_image", shouldAnalyzeImage ? "true" : "false");
         formData.append("analysis_type", analysisType);
 
-        // เพิ่มคำสั่งให้ AI เข้าใจประเภทการตอบที่ต้องการ
+        // เพิ่มคำสั่งให้ AI ตอบแบบชิวๆ สำหรับคำถามตรงๆ
         if (wantsDirectAnswer) {
-          formData.append("instruction", "ตอบเฉพาะสิ่งที่เห็นในรูปภาพโดยตรง ห้ามวิเคราะห์หรือให้คำแนะนำเพิ่มเติม");
-        } else if (shouldAnalyzeImage) {
-          formData.append("instruction", "วิเคราะห์รูปภาพและให้ข้อมูลเชิงลึกพร้อมคำแนะนำ");
+          formData.append("instruction", "ตอบแบบชิวๆ เหมือนเห็นรูปภาพจริงๆ บอกเฉพาะสิ่งที่เห็นในรูป ไม่วิเคราะห์หรือให้คำแนะนำเพิ่มเติม");
         }
       }
-
-      console.log("📤 Sending message:", {
-        message: inputMessage.trim(),
-        sessionId: validSessionId,
-        hasImage: !!uploadedFile,
-        shouldAnalyzeImage: shouldAnalyzeImage,
-        analysisType: analysisType,
-        imageName: uploadedFile?.name,
-        formDataEntries: Array.from(formData.entries()).map(([key, value]) => [key, value instanceof File ? `File: ${value.name}` : value]),
-        requestURL: `${apiConfig.baseUrl}/api/chat/sessions/${validSessionId}/messages/multipart`,
-        headers: {
-          Authorization: `Bearer ${token.substring(0, 20)}...`,
-        }
-      });
-
       const response = await fetch(
         `${apiConfig.baseUrl}/api/chat/sessions/${validSessionId}/messages/multipart`,
         {
@@ -735,6 +745,11 @@ const quickActions = [
         };
         setMessages((prev) => [...prev, userMessage]);
 
+        // เลื่อนแชทลงไปที่ข้อความล่าสุดทันที (หลังจากเพิ่มข้อความผู้ใช้)
+        setTimeout(() => {
+          scrollToBottom();
+        }, 50);
+
         // สร้าง message ฝั่ง AI (ตอบกลับ)
         const aiText =
           data.data?.aiMessage?.message_text ||
@@ -762,6 +777,11 @@ const quickActions = [
               image: aiImage,
             },
           ]);
+
+          // เลื่อนแชทลงไปที่ข้อความล่าสุด (หลังจากเพิ่มข้อความ AI)
+          setTimeout(() => {
+            scrollToBottom();
+          }, 200);
         }
 
         // อัปเดต chat session
@@ -779,6 +799,16 @@ const quickActions = [
             description: "AI จะวิเคราะห์และให้คำแนะนำเชิงลึก",
           });
         }
+
+        // รีเซ็ต input และรูปภาพหลังจากส่งข้อความสำเร็จ
+        setInputMessage("");
+        setUploadedImage(null);
+        setUploadedFile(null);
+
+        // เลื่อนแชทลงไปที่ข้อความล่าสุด (หลังจากได้รับการตอบกลับจาก AI)
+        setTimeout(() => {
+          scrollToBottom();
+        }, 100);
       } else {
         console.error("❌ Message sending failed:", {
           responseStatus: response.status,
