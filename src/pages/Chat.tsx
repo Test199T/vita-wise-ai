@@ -509,12 +509,26 @@ const quickActions = [
         console.log("Fetched session messages:", data);
 
         if (data.success && data.data) {
-          const messages = data.data.map((msg: any) => ({
-            id: msg.id.toString(),
-            text: msg.message_text,
-            isUser: msg.is_user_message,
-            timestamp: formatTimestamp(msg.timestamp),
-          }));
+          const messages = data.data.map((msg: any) => {
+            console.log('Processing message:', {
+              id: msg.id,
+              hasImageUrl: !!msg.image_url,
+              imageUrl: msg.image_url
+            });
+
+            return {
+              id: msg.id.toString(),
+              text: msg.message_text,
+              isUser: msg.is_user_message,
+              timestamp: formatTimestamp(msg.timestamp),
+              image: msg.image_url ? (() => {
+                const imagePath = msg.image_url.replace(/\\/g, '/');
+                const fullUrl = imagePath.startsWith('http') ? imagePath : `${apiConfig.baseUrl}/${imagePath.startsWith('/') ? imagePath.slice(1) : imagePath}`;
+                console.log('Message image URL constructed:', fullUrl);
+                return fullUrl;
+              })() : null,
+            };
+          });
 
           // เพิ่มข้อความเริ่มต้นถ้าไม่มีข้อความ
           if (messages.length === 0) {
@@ -523,6 +537,7 @@ const quickActions = [
               text: "สวัสดี! ฉันคือ AI สุขภาพที่พร้อมให้คำแนะนำเกี่ยวกับสุขภาพของคุณ มีอะไรให้ช่วยไหม?",
               isUser: false,
               timestamp: "เมื่อสักครู่",
+              image: null,
             });
           }
 
