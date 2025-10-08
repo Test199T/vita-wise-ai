@@ -1011,9 +1011,9 @@ const quickActions = [
 
   // Left Sidebar (Chat History)
   const LeftSidebar = (
-    <aside className="bg-white border-r border-gray-200 h-full flex flex-col">
+    <aside className="bg-white border-r border-gray-200 h-full flex flex-col flex-shrink-0">
       {/* Navigation Menu */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-gray-200 flex-shrink-0">
         <nav className="space-y-2">
           <Link
             to="/dashboard"
@@ -1040,7 +1040,7 @@ const quickActions = [
       </div>
 
       {/* New Chat Button */}
-      <div className="p-4 ">
+      <div className="p-4 flex-shrink-0">
         <button
           onClick={() => {
             // รีเซ็ตข้อความและเริ่มต้นใหม่โดยไม่สร้าง session
@@ -1062,8 +1062,8 @@ const quickActions = [
         </button>
       </div>
 
-      {/* Chat History */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Chat History - Scrollable only */}
+      <div className="flex-1 overflow-y-auto min-h-0">
         {isLoadingSessions ? (
           <div className="flex items-center justify-center p-4">
             <div className="flex space-x-1">
@@ -1245,14 +1245,14 @@ const quickActions = [
   );
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
-      {/* Top Header */}
+    <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+      {/* Top Header - Fixed */}
       {TopHeader}
 
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col bg-white transition-all duration-300 ease-in-out relative">
+      {/* Main Content Area - Scroll locked */}
+      <main className="flex-1 flex bg-white transition-all duration-300 ease-in-out relative overflow-hidden">
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Collapsible with Animation */}
+        {/* Left Sidebar - Collapsible with Animation - Fixed width */}
         <div
           className={`transition-all duration-500 ease-in-out transform ${
             isSidebarOpen
@@ -1263,8 +1263,8 @@ const quickActions = [
           {LeftSidebar}
         </div>
 
-        {/* Main Chat Area */}
-        <div className="flex-1 flex flex-col bg-white transition-all duration-300 ease-in-out relative">
+        {/* Main Chat Area - Flexible */}
+        <div className="flex-1 flex flex-col bg-white transition-all duration-300 ease-in-out relative min-w-0">
           {/* Floating Sidebar Toggle Button when sidebar is closed */}
           <div
             className={`fixed bottom-6 left-6 z-50 transition-all duration-500 ease-in-out transform ${
@@ -1282,8 +1282,8 @@ const quickActions = [
             </button>
           </div>
           <div className="flex-1 flex flex-col min-h-0">
-            {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto">
+            {/* Messages Area - Only this part scrolls */}
+            <div className="flex-1 overflow-y-auto min-h-0">
               {messages.length === 1 && !isTyping ? (
                 <div className="h-full flex items-center justify-center px-6 py-12">
                   <div className="text-center w-full max-w-2xl">
@@ -1694,71 +1694,121 @@ const quickActions = [
               <div className="max-w-4xl mx-auto">
                 <div className="bg-white border border-gray-300 rounded-2xl px-4 py-3 shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all duration-200">
                   <div className="flex items-center gap-3">
-                    {/* ปุ่มเพิ่มรูป */}
-                    <label
-                      className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer transition-all duration-200 flex items-center justify-center"
-                      title="เพิ่มรูปภาพ"
-                    >
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg,image/jpg,image/webp"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files && e.target.files[0];
-                          if (file) {
-                            // ตรวจสอบประเภทไฟล์
-                            const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
-                            if (!allowedTypes.includes(file.type)) {
-                              toast({
-                                title: "ไฟล์ไม่รองรับ",
-                                description: "รองรับเฉพาะ png, jpg, jpeg, webp",
-                                variant: "destructive",
-                              });
-                              return;
-                            }
-
-                            // ตรวจสอบขนาดไฟล์
-                            if (file.size > 5 * 1024 * 1024) {
-                              toast({
-                                title: "ไฟล์ใหญ่เกินไป",
-                                description: "ขนาดไฟล์สูงสุด 5MB",
-                                variant: "destructive",
-                              });
-                              return;
-                            }
-
-                            // อ่านไฟล์และสร้าง preview
-                            const reader = new FileReader();
-                            reader.onload = (ev) => {
-                              const result = ev.target?.result;
-                              if (result && typeof result === 'string') {
-                                setUploadedImage(result);
-                                setUploadedFile(file);
+                    {/* File Upload Button */}
+                    {uploadedImage ? (
+                      <div className="relative mr-2">
+                        <img
+                          src={uploadedImage}
+                          alt="preview"
+                          className="w-20 h-20 object-cover rounded-xl border border-gray-300"
+                        />
+                        <div className="absolute top-1 right-1 flex gap-1">
+                          <button
+                            type="button"
+                            className="bg-white/80 hover:bg-white text-gray-700 rounded-full p-1 border border-gray-300 shadow"
+                            title="ลบรูป"
+                            onClick={() => {
+                              setUploadedImage(null);
+                              setUploadedFile(null);
+                            }}
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M6 18L18 6M6 6l12 12"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <label
+                        className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer transition-all duration-200 flex items-center justify-center"
+                        title="เพิ่มรูปภาพ"
+                      >
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/jpg,image/webp"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files && e.target.files[0];
+                            if (file) {
+                              // ตรวจสอบประเภทไฟล์
+                              const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+                              if (!allowedTypes.includes(file.type)) {
                                 toast({
-                                  title: "เพิ่มรูปภาพสำเร็จ",
-                                  description: `รูปภาพ: ${file.name}`,
+                                  title: "ไฟล์ไม่รองรับ",
+                                  description: "รองรับเฉพาะ png, jpg, jpeg, webp",
+                                  variant: "destructive",
                                 });
-                              } else {
+                                return;
+                              }
+
+                              // ตรวจสอบขนาดไฟล์
+                              if (file.size > 5 * 1024 * 1024) {
+                                toast({
+                                  title: "ไฟล์ใหญ่เกินไป",
+                                  description: "ขนาดไฟล์สูงสุด 5MB",
+                                  variant: "destructive",
+                                });
+                                return;
+                              }
+
+                              // อ่านไฟล์และสร้าง preview
+                              const reader = new FileReader();
+                              reader.onload = (ev) => {
+                                const result = ev.target?.result;
+                                if (result && typeof result === 'string') {
+                                  setUploadedImage(result);
+                                  setUploadedFile(file);
+                                  toast({
+                                    title: "เพิ่มรูปภาพสำเร็จ",
+                                    description: `รูปภาพ: ${file.name}`,
+                                  });
+                                } else {
+                                  toast({
+                                    title: "เกิดข้อผิดพลาด",
+                                    description: "ไม่สามารถอ่านไฟล์รูปภาพได้",
+                                    variant: "destructive",
+                                  });
+                                }
+                              };
+                              reader.onerror = () => {
                                 toast({
                                   title: "เกิดข้อผิดพลาด",
                                   description: "ไม่สามารถอ่านไฟล์รูปภาพได้",
                                   variant: "destructive",
                                 });
-                              }
-                            };
-                            reader.onerror = () => {
-                              toast({
-                                title: "เกิดข้อผิดพลาด",
-                                description: "ไม่สามารถอ่านไฟล์รูปภาพได้",
-                                variant: "destructive",
-                              });
-                            };
-                            reader.readAsDataURL(file);
-                          }
-                        }}
-                      />
-                      <Paperclip className="h-5 w-5" />
-                    </label>
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                        {/* ไอคอนรูปภาพ */}
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          />
+                        </svg>
+                      </label>
+                    )}
 
                     {/* Input Field */}
                     <textarea
