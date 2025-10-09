@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -24,13 +25,15 @@ import {
   Edit,
   Trash2,
   Search,
-  Loader2
+  Loader2,
+  Camera
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useOnboarding } from "@/contexts/OnboardingContext";
 import { apiService, FoodLogItem } from "@/services/api";
+import { aiService } from "@/services/aiService";
 
 // ฟังก์ชันสำหรับจัดการวันที่โดยไม่ให้เลื่อนไป 1 วัน
 const getLocalDateString = (date?: Date | string) => {
@@ -182,6 +185,8 @@ export default function FoodLog() {
   const [deletingId, setDeletingId] = useState<string | null>(null); // Added deletingId state for delete loading
   const [updatingId, setUpdatingId] = useState<string | null>(null); // Added updatingId state for update loading
   const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month'>('today'); // เพิ่ม state สำหรับเลือกช่วงเวลา
+  const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     log_date: getLocalDateString(),
@@ -202,6 +207,60 @@ export default function FoodLog() {
     total_sodium: "",
     notes: ""
   });
+
+  const handleImageAnalyze = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsAnalyzingImage(true);
+    toast({ 
+      title: "กำลังวิเคราะห์รูปภาพ...",
+      description: "ระบบกำลังประมวลผลข้อมูลจากรูปภาพของคุณ",
+    });
+
+    try {
+      const response = await aiService.analyzeFoodImage(file);
+      if (response.success) {
+        const { data } = response;
+        setFormData(prev => ({
+          ...prev,
+          food_items: data.food_name,
+          total_calories: String(data.calories_per_serving || 0),
+          total_protein: String(data.protein_g || 0),
+          total_carbs: String(data.carbs_g || 0),
+          total_fats: String(data.fat_g || 0),
+          total_fiber: String(data.fiber_g || 0),
+          total_sugar: String(data.sugar_g || 0),
+          total_sodium: String(data.sodium_mg || 0),
+          total_potassium: String(data.potassium_mg || 0),
+          total_calcium: String(data.calcium_mg || 0),
+          total_iron: String(data.iron_mg || 0),
+          total_vitaminC: String(data.vitaminC_mg || 0),
+          total_vitaminD: String(data.vitaminD_mcg || 0),
+          notes: data.notes || prev.notes,
+        }));
+        toast({ 
+          title: "วิเคราะห์สำเร็จ",
+          description: "ข้อมูลอาหารถูกกรอกลงในฟอร์มแล้ว",
+        });
+      } else {
+        throw new Error(response.message || "การวิเคราะห์รูปภาพล้มเหลว");
+      }
+    } catch (error) {
+      console.error('❌ Error analyzing food image:', error);
+      toast({ 
+        title: "วิเคราะห์ล้มเหลว", 
+        description: error instanceof Error ? error.message : "เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAnalyzingImage(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
 
   const addSuggestedFood = (name: string) => {
     const prefix = formData.food_items ? formData.food_items + ", " : "";
@@ -759,275 +818,267 @@ export default function FoodLog() {
                 <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                 {isLoading ? 'กำลังโหลด...' : 'รีเฟรช'}
               </Button>
-              <Button 
-                onClick={() => setShowForm(!showForm)} 
-                className="gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                เพิ่มบันทึกอาหาร
-              </Button>
             </div>
           </div>
+
+        {/* New Entry Point */}
+        {!showForm && (
+          <Card>
+            <CardHeader>
+              <CardTitle>เพิ่มรายการอาหาร</CardTitle>
+              <CardDescription>เลือกวิธีที่คุณต้องการบันทึกมื้ออาหารของคุณ</CardDescription>
+            </CardHeader>
+            <CardContent className="grid md:grid-cols-2 gap-4">
+              <Button 
+                variant="outline"
+                className="h-24 flex-col gap-2"
+                onClick={() => setShowForm(true)}
+              >
+                <Plus className="h-6 w-6" />
+                <span className="text-base">กรอกข้อมูลเอง</span>
+              </Button>
+              
+              <Input 
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleImageAnalyze}
+              />
+              <Button 
+                variant="outline"
+                className="h-24 flex-col gap-2"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isAnalyzingImage}
+              >
+                {isAnalyzingImage ? (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                ) : (
+                  <Camera className="h-6 w-6" />
+                )}
+                <span className="text-base">
+                  {isAnalyzingImage ? 'กำลังวิเคราะห์...' : 'วิเคราะห์จากภาพ'}
+                </span>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {showForm && (
           <Card>
             <CardHeader>
-              <CardTitle>บันทึกอาหารใหม่</CardTitle>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>บันทึกอาหารใหม่</CardTitle>
+                  <CardDescription>กรอกรายละเอียดมื้ออาหารของคุณ</CardDescription>
+                </div>
+                <div>
+                  <Input 
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleImageAnalyze}
+                  />
+                  <Button 
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isAnalyzingImage}
+                    className="gap-2"
+                  >
+                    {isAnalyzingImage ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Camera className="h-4 w-4" />
+                    )}
+                    {isAnalyzingImage ? 'กำลังวิเคราะห์...' : 'วิเคราะห์จากภาพ'}
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="date">วันที่</Label>
-                    <Input
-                      id="date"
-                      type="date"
-                      value={formData.log_date}
-                      onChange={(e) => setFormData({...formData, log_date: e.target.value})}
-                      required
-                    />
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Left Column */}
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="date">วันที่</Label>
+                        <Input
+                          id="date"
+                          type="date"
+                          value={formData.log_date}
+                          onChange={(e) => setFormData({...formData, log_date: e.target.value})}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="meal_time">มื้ออาหาร</Label>
+                        <Select value={formData.meal_time} onValueChange={(value) => setFormData({...formData, meal_time: value})} required>
+                          <SelectTrigger>
+                            <SelectValue placeholder="เลือกมื้อ" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {mealTimes.map((time) => (
+                              <SelectItem key={time} value={time}>{time}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="meal_clock_time">เวลา</Label>
+                        <Input
+                          id="meal_clock_time"
+                          type="time"
+                          value={formData.meal_clock_time}
+                          onChange={(e) => setFormData({ ...formData, meal_clock_time: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="food_items">รายการอาหาร</Label>
+                      <Textarea
+                        id="food_items"
+                        placeholder="เช่น ข้าวผัด 1 จาน, น้ำส้ม 1 แก้ว (หรือใช้วิเคราะห์จากภาพ)"
+                        value={formData.food_items}
+                        onChange={(e) => setFormData({...formData, food_items: e.target.value})}
+                        required
+                        rows={3}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="food_search">ค้นหาเมนู (แนะนำ)</Label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input id="food_search" placeholder="พิมพ์ชื่อเมนู..." value={query} onChange={(e) => setQuery(e.target.value)} className="pl-10" />
+                      </div>
+                      {filteredFoods.length > 0 && (
+                        <div className="flex flex-wrap gap-2 pt-2">
+                          {filteredFoods.map((f) => (
+                            <Button key={f.name} type="button" variant="outline" size="sm" onClick={() => addSuggestedFood(f.name)}>
+                              <Plus className="h-3 w-3 mr-1" />
+                              {f.name}
+                            </Button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="meal_time">มื้ออาหาร</Label>
-                    <Select value={formData.meal_time} onValueChange={(value) => setFormData({...formData, meal_time: value})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="เลือกมื้อ" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {mealTimes.map((time) => (
-                          <SelectItem key={time} value={time}>{time}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="meal_clock_time">เวลา</Label>
-                    <Input
-                      id="meal_clock_time"
-                      type="time"
-                      value={formData.meal_clock_time}
-                      onChange={(e) => setFormData({ ...formData, meal_clock_time: e.target.value })}
-                    />
+                  {/* Right Column */}
+                  <div className="space-y-4">
+                    <Accordion type="single" collapsible defaultValue="macros" className="w-full">
+                      <AccordionItem value="macros">
+                        <AccordionTrigger className="text-base font-semibold">
+                          <div className="flex items-center gap-2">
+                            <Beef className="h-5 w-5" />
+                            สารอาหารหลัก (Macros)
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="pt-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2 col-span-2">
+                              <Label htmlFor="calories">แคลอรี</Label>
+                              <Input id="calories" type="number" placeholder="0" value={formData.total_calories} onChange={(e) => setFormData({...formData, total_calories: e.target.value})} />
+                              <p className="text-xs text-muted-foreground">คำนวณอัตโนมัติจากโปรตีน, คาร์โบ, และไขมัน</p>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="protein">โปรตีน (g)</Label>
+                              <Input id="protein" type="number" placeholder="0" value={formData.total_protein} onChange={(e) => {
+                                const newProtein = e.target.value;
+                                const calculatedCalories = updateCaloriesFromMacros(newProtein, formData.total_carbs, formData.total_fats);
+                                setFormData({...formData, total_protein: newProtein, total_calories: String(calculatedCalories)});
+                              }} />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="carbs">คาร์โบ (g)</Label>
+                              <Input id="carbs" type="number" placeholder="0" value={formData.total_carbs} onChange={(e) => {
+                                const newCarbs = e.target.value;
+                                const calculatedCalories = updateCaloriesFromMacros(formData.total_protein, newCarbs, formData.total_fats);
+                                setFormData({...formData, total_carbs: newCarbs, total_calories: String(calculatedCalories)});
+                              }} />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="fats">ไขมัน (g)</Label>
+                              <Input id="fats" type="number" placeholder="0" value={formData.total_fats} onChange={(e) => {
+                                const newFats = e.target.value;
+                                const calculatedCalories = updateCaloriesFromMacros(formData.total_protein, formData.total_carbs, newFats);
+                                setFormData({...formData, total_fats: newFats, total_calories: String(calculatedCalories)});
+                              }} />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="fiber">ไฟเบอร์ (g)</Label>
+                              <Input id="fiber" type="number" placeholder="0" value={formData.total_fiber} onChange={(e) => setFormData({...formData, total_fiber: e.target.value})} />
+                            </div>
+                             <div className="space-y-2 col-span-2">
+                              <Label htmlFor="sugar">น้ำตาล (g)</Label>
+                              <Input id="sugar" type="number" placeholder="0" value={formData.total_sugar} onChange={(e) => setFormData({...formData, total_sugar: e.target.value})} />
+                            </div>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                      
+                      <AccordionItem value="micros">
+                        <AccordionTrigger className="text-base font-semibold">
+                          <div className="flex items-center gap-2">
+                            <Pill className="h-5 w-5" />
+                            วิตามินและแร่ธาตุ (Micros)
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="pt-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="sodium">โซเดียม (mg)</Label>
+                              <Input id="sodium" type="number" placeholder="0" value={formData.total_sodium} onChange={(e) => setFormData({...formData, total_sodium: e.target.value})} />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="potassium">โพแทสเซียม (mg)</Label>
+                              <Input id="potassium" type="number" placeholder="0" value={formData.total_potassium} onChange={(e) => setFormData({...formData, total_potassium: e.target.value})} />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="calcium">แคลเซียม (mg)</Label>
+                              <Input id="calcium" type="number" placeholder="0" value={formData.total_calcium} onChange={(e) => setFormData({...formData, total_calcium: e.target.value})} />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="iron">เหล็ก (mg)</Label>
+                              <Input id="iron" type="number" placeholder="0" value={formData.total_iron} onChange={(e) => setFormData({...formData, total_iron: e.target.value})} />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="vitaminC">วิตามิน C (mg)</Label>
+                              <Input id="vitaminC" type="number" placeholder="0" value={formData.total_vitaminC} onChange={(e) => setFormData({...formData, total_vitaminC: e.target.value})} />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="vitaminD">วิตามิน D (mcg)</Label>
+                              <Input id="vitaminD" type="number" placeholder="0" value={formData.total_vitaminD} onChange={(e) => setFormData({...formData, total_vitaminD: e.target.value})} />
+                            </div>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="food_items">รายการอาหาร</Label>
+                  <Label htmlFor="notes">หมายเหตุ</Label>
                   <Textarea
-                    id="food_items"
-                    placeholder="เช่น ข้าวผัด 1 จาน, น้ำส้ม 1 แก้ว"
-                    value={formData.food_items}
-                    onChange={(e) => setFormData({...formData, food_items: e.target.value})}
-                    required
+                    id="notes"
+                    placeholder="เช่น รสชาติ, ความรู้สึกหลังกิน, ส่วนผสมที่ใช้..."
+                    value={formData.notes}
+                    onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                    rows={3}
                   />
-                  <div className="space-y-2">
-                    <Label htmlFor="food_search">ค้นหาเมนู (แนะนำ)</Label>
-                    <Input id="food_search" placeholder="พิมพ์ชื่อเมนู..." value={query} onChange={(e) => setQuery(e.target.value)} />
-                    {filteredFoods.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {filteredFoods.map((f) => (
-                          <Button key={f.name} type="button" variant="outline" size="sm" onClick={() => addSuggestedFood(f.name)}>
-                            {f.name}
-                          </Button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
                 </div>
 
-                <Tabs defaultValue="macros" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="macros">สารอาหารหลัก</TabsTrigger>
-                    <TabsTrigger value="micros">วิตามินและแร่ธาตุ</TabsTrigger>
-                    <TabsTrigger value="notes">หมายเหตุ</TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="macros" className="space-y-4">
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="calories">แคลอรี</Label>
-                        <Input
-                          id="calories"
-                          type="number"
-                          placeholder="450"
-                          value={formData.total_calories}
-                          onChange={(e) => setFormData({...formData, total_calories: e.target.value})}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          แคลอรี่จะถูกคำนวณอัตโนมัติจากโปรตีน คาร์โบ และไขมัน
-                        </p>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="protein">โปรตีน (g)</Label>
-                        <Input
-                          id="protein"
-                          type="number"
-                          placeholder="25"
-                          value={formData.total_protein}
-                          onChange={(e) => {
-                            const newProtein = e.target.value;
-                            const calculatedCalories = updateCaloriesFromMacros(newProtein, formData.total_carbs, formData.total_fats);
-                            setFormData({
-                              ...formData, 
-                              total_protein: newProtein,
-                              total_calories: String(calculatedCalories)
-                            });
-                          }}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="carbs">คาร์โบ (g)</Label>
-                        <Input
-                          id="carbs"
-                          type="number"
-                          placeholder="45"
-                          value={formData.total_carbs}
-                          onChange={(e) => {
-                            const newCarbs = e.target.value;
-                            const calculatedCalories = updateCaloriesFromMacros(formData.total_protein, newCarbs, formData.total_fats);
-                            setFormData({
-                              ...formData, 
-                              total_carbs: newCarbs,
-                              total_calories: String(calculatedCalories)
-                            });
-                          }}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="fats">ไขมัน (g)</Label>
-                        <Input
-                          id="fats"
-                          type="number"
-                          placeholder="12"
-                          value={formData.total_fats}
-                          onChange={(e) => {
-                            const newFats = e.target.value;
-                            const calculatedCalories = updateCaloriesFromMacros(formData.total_protein, formData.total_carbs, newFats);
-                            setFormData({
-                              ...formData, 
-                              total_fats: newFats,
-                              total_calories: String(calculatedCalories)
-                            });
-                          }}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="fiber">ไฟเบอร์ (g)</Label>
-                        <Input
-                          id="fiber"
-                          type="number"
-                          placeholder="8"
-                          value={formData.total_fiber}
-                          onChange={(e) => setFormData({...formData, total_fiber: e.target.value})}
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="sugar">น้ำตาล (g)</Label>
-                        <Input
-                          id="sugar"
-                          type="number"
-                          placeholder="12"
-                          value={formData.total_sugar}
-                          onChange={(e) => setFormData({...formData, total_sugar: e.target.value})}
-                        />
-                      </div>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="micros" className="space-y-4">
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="vitaminC">วิตามิน C (mg)</Label>
-                        <Input
-                          id="vitaminC"
-                          type="number"
-                          placeholder="45"
-                          value={formData.total_vitaminC}
-                          onChange={(e) => setFormData({...formData, total_vitaminC: e.target.value})}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="vitaminD">วิตามิน D (mcg)</Label>
-                        <Input
-                          id="vitaminD"
-                          type="number"
-                          placeholder="3"
-                          value={formData.total_vitaminD}
-                          onChange={(e) => setFormData({...formData, total_vitaminD: e.target.value})}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="calcium">แคลเซียม (mg)</Label>
-                        <Input
-                          id="calcium"
-                          type="number"
-                          placeholder="180"
-                          value={formData.total_calcium}
-                          onChange={(e) => setFormData({...formData, total_calcium: e.target.value})}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="iron">เหล็ก (mg)</Label>
-                        <Input
-                          id="iron"
-                          type="number"
-                          placeholder="4"
-                          value={formData.total_iron}
-                          onChange={(e) => setFormData({...formData, total_iron: e.target.value})}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="potassium">โพแทสเซียม (mg)</Label>
-                        <Input
-                          id="potassium"
-                          type="number"
-                          placeholder="600"
-                          value={formData.total_potassium}
-                          onChange={(e) => setFormData({...formData, total_potassium: e.target.value})}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="sodium">โซเดียม (mg)</Label>
-                        <Input
-                          id="sodium"
-                          type="number"
-                          placeholder="800"
-                          value={formData.total_sodium}
-                          onChange={(e) => setFormData({...formData, total_sodium: e.target.value})}
-                        />
-                      </div>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="notes" className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="notes">หมายเหตุ</Label>
-                      <Textarea
-                        id="notes"
-                        placeholder="รสชาติ, ความรู้สึกหลังกิน..."
-                        value={formData.notes}
-                        onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                      />
-                    </div>
-                  </TabsContent>
-                </Tabs>
-
-                <div className="flex gap-2">
-                  <Button type="submit">บันทึก</Button>
-                  <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                <div className="flex justify-end gap-4 pt-4">
+                  <Button type="button" variant="ghost" onClick={() => setShowForm(false)}>
                     ยกเลิก
+                  </Button>
+                  <Button type="submit" className="gap-2">
+                    <CheckCircle className="h-4 w-4" />
+                    บันทึกข้อมูล
                   </Button>
                 </div>
               </form>
