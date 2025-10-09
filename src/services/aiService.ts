@@ -30,6 +30,11 @@ export interface FoodAnalysisResponse {
     fiber_g?: number;
     sugar_g?: number;
     sodium_mg?: number;
+    potassium_mg?: number;
+    calcium_mg?: number;
+    iron_mg?: number;
+    vitaminC_mg?: number;
+    vitaminD_mcg?: number;
     notes?: string;
   };
   message?: string;
