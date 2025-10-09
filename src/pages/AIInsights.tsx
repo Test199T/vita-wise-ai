@@ -283,7 +283,7 @@ export default function AIInsights() {
 
         // Process AI analysis data
         const aiAnalysis = response.data.aiAnalysis;
-        let processedKeyFindings = [];
+        let processedKeyFindings: (string | AIFinding)[] = [];
 
         if (typeof aiAnalysis === "string" && aiAnalysis.trim().length > 0) {
           // Extract structured data from AI string response
@@ -423,8 +423,8 @@ export default function AIInsights() {
 
       // ✅ ถูก - ตรวจสอบ authentication error
       if (
-        error.message.includes("Authentication") ||
-        error.message.includes("login")
+        (error as Error).message.includes("Authentication") ||
+        (error as Error).message.includes("login")
       ) {
         toast({
           title: "Authentication Required",
@@ -589,8 +589,8 @@ export default function AIInsights() {
       const summary = sections[0] || aiResponse.substring(0, 200) + "...";
 
       // Extract recommendations from the text
-      const recommendations = [];
-      const insights = [];
+      const recommendations: string[] = [];
+      const insights: string[] = [];
 
       // Look for specific patterns in Thai text
       if (aiResponse.includes("คำแนะนำ")) {
@@ -697,11 +697,11 @@ export default function AIInsights() {
         summary: summary,
         recommendations: recommendations.slice(0, 10), // จำกัดจำนวนคำแนะนำ
         insights: insights.slice(0, 8), // จำกัดจำนวนข้อมูลเชิงลึก
-        healthScore: null,
         fullText: aiResponse, // เพิ่มข้อมูลเต็ม
-      };
+      } as AIFinding;
     }
 
+    // If aiResponse is not a string, return it as-is (shouldn't happen in practice)
     return aiResponse;
   };
 
