@@ -1304,7 +1304,7 @@ const quickActions = [
 
       {/* Main Content Area - Scroll locked */}
       <main className="flex-1 flex bg-white transition-all duration-300 ease-in-out relative overflow-hidden">
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex">
         {/* Left Sidebar - Collapsible with Animation - Fixed width */}
         <div
           className={`transition-all duration-500 ease-in-out transform ${
