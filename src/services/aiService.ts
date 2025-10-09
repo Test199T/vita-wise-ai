@@ -19,6 +19,22 @@ export interface HealthAnalysisResponse {
   message?: string;
 }
 
+export interface FoodAnalysisResponse {
+  success: boolean;
+  data: {
+    food_name: string;
+    calories_per_serving: number;
+    protein_g: number;
+    carbs_g: number;
+    fat_g: number;
+    fiber_g?: number;
+    sugar_g?: number;
+    sodium_mg?: number;
+    notes?: string;
+  };
+  message?: string;
+}
+
 export class AIService {
   private baseURL: string;
 
@@ -34,7 +50,6 @@ export class AIService {
       ...(options.headers as Record<string, string>),
     };
 
-    // Only add Authorization header if auth is required and token exists
     if (requireAuth) {
       if (!token) {
         throw new Error('Authentication required. Please login first.');
@@ -52,6 +67,35 @@ export class AIService {
         throw new Error('Authentication failed. Please login again.');
       }
       throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  }
+
+  private async makeFormDataRequest(endpoint: string, formData: FormData, requireAuth: boolean = true) {
+    const token = localStorage.getItem('token');
+    
+    const headers: Record<string, string> = {};
+
+    if (requireAuth) {
+      if (!token) {
+        throw new Error('Authentication required. Please login first.');
+      }
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await fetch(`${this.baseURL}${endpoint}`, {
+      method: 'POST',
+      body: formData,
+      headers,
+    });
+    
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Authentication failed. Please login again.');
+      }
+      const errorData = await response.json().catch(() => ({ message: 'An unknown error occurred' }));
+      throw new Error(errorData.message || `API Error: ${response.status} ${response.statusText}`);
     }
     
     return await response.json();
@@ -121,6 +165,13 @@ export class AIService {
         insightData,
       }),
     }, true); // requireAuth = true
+  }
+
+  // วิเคราะห์รูปภาพอาหาร - Protected endpoint
+  async analyzeFoodImage(imageFile: File): Promise<FoodAnalysisResponse> {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+    return this.makeFormDataRequest('/analyze-food-image', formData, true);
   }
 }
 
