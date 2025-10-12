@@ -329,7 +329,7 @@ export default function WaterLog() {
                       <div className="text-xl font-bold text-foreground">
                         {calculateWaterStats('today').progressPercentage}%
                       </div>
-                      <div className="text-xs text-muted-foreground">เป้าหมาย</div>
+                      <div className="text-xs text-muted-foreground">2,000 มล./วัน</div>
                     </div>
                   </div>
                 </div>
@@ -381,7 +381,7 @@ export default function WaterLog() {
                   className="h-3"
                 />
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>เป้าหมาย: 2,000 มล. ต่อวัน</span>
+                  <span>2,000 มล. ต่อวัน</span>
                   <span>{calculateWaterStats('today').progressPercentage}% สำเร็จ</span>
                 </div>
               </div>
