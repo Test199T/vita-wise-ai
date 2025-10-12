@@ -1823,12 +1823,7 @@ export default function Dashboard() {
 
               {/* Daily Trends Tab */}
               <TabsContent value="daily" className="space-y-6">
-                <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                  <h4 className="font-medium text-blue-900 mb-1">แนวโน้มรายวัน</h4>
-                  <p className="text-sm text-blue-700">
-                        ติดตามแนวโน้มและกิจกรรมสุขภาพในแต่ละวัน เพื่อให้เห็นรูปแบบและพฤติกรรมที่สม่ำเสมอ
-                      </p>
-                </div>
+                
                 <Tabs defaultValue="exercise" className="w-full">
                   <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="exercise" className="flex items-center gap-2">
