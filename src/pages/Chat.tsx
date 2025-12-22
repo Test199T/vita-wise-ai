@@ -47,21 +47,21 @@ export default function Chat() {
   const { profilePicture } = useProfilePicture();
   const { profile, loading, isLoggedIn } = useProfile();
 
-interface Message {
-  id: string;
-  text: string;
-  isUser: boolean;
-  timestamp: string;
-  image?: string | null;
-}
+  interface Message {
+    id: string;
+    text: string;
+    isUser: boolean;
+    timestamp: string;
+    image?: string | null;
+  }
 
-interface ChatSession {
-  id: string;
-  title: string;
-  lastMessage: string;
-  timestamp: string;
-  createdAt: string;
-}
+  interface ChatSession {
+    id: string;
+    title: string;
+    lastMessage: string;
+    timestamp: string;
+    createdAt: string;
+  }
 
   // Chat sessions - จะดึงข้อมูลจริงจาก AI หลังบ้าน
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
@@ -91,28 +91,28 @@ interface ChatSession {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-const quickActions = [
-  {
-    icon: Edit3,
-    text: "วิเคราะห์สุขภาพ",
-    description: "วิเคราะห์ข้อมูลสุขภาพของฉัน",
-  },
-  {
-    icon: BookOpen,
-    text: "ให้คำแนะนำ",
-    description: "แนะนำการดูแลสุขภาพ",
-  },
-  {
-    icon: Code2,
-    text: "แปลผลตรวจ",
-    description: "อธิบายผลการตรวจสุขภาพ",
-  },
-  {
-    icon: Heart,
-    text: "ปรึกษาสุขภาพ",
-    description: "คำปรึกษาเรื่องสุขภาพทั่วไป",
-  },
-];
+  const quickActions = [
+    {
+      icon: Edit3,
+      text: "วิเคราะห์สุขภาพ",
+      description: "วิเคราะห์ข้อมูลสุขภาพของฉัน",
+    },
+    {
+      icon: BookOpen,
+      text: "ให้คำแนะนำ",
+      description: "แนะนำการดูแลสุขภาพ",
+    },
+    {
+      icon: Code2,
+      text: "แปลผลตรวจ",
+      description: "อธิบายผลการตรวจสุขภาพ",
+    },
+    {
+      icon: Heart,
+      text: "ปรึกษาสุขภาพ",
+      description: "คำปรึกษาเรื่องสุขภาพทั่วไป",
+    },
+  ];
 
   // อัปโหลดและแสดงรูปภาพ (ไม่วิเคราะห์ทันที)
   const handleImageUpload = async (file: File) => {
@@ -138,7 +138,7 @@ const quickActions = [
     const reader = new FileReader();
     reader.onload = (ev) => {
       const result = ev.target?.result;
-      if (result && typeof result === 'string') {
+      if (result && typeof result === "string") {
         setUploadedImage(result);
         setUploadedFile(file);
         toast({
@@ -462,10 +462,10 @@ const quickActions = [
 
         if (data.success && data.data) {
           const messages = data.data.map((msg: any) => {
-            console.log('Processing message:', {
+            console.log("Processing message:", {
               id: msg.id,
               hasImageUrl: !!msg.image_url,
-              imageUrl: msg.image_url
+              imageUrl: msg.image_url,
             });
 
             return {
@@ -473,12 +473,20 @@ const quickActions = [
               text: msg.message_text,
               isUser: msg.is_user_message,
               timestamp: formatTimestamp(msg.timestamp),
-              image: msg.image_url ? (() => {
-                const imagePath = msg.image_url.replace(/\\/g, '/');
-                const fullUrl = imagePath.startsWith('http') ? imagePath : `${apiConfig.baseUrl}/${imagePath.startsWith('/') ? imagePath.slice(1) : imagePath}`;
-                console.log('Message image URL constructed:', fullUrl);
-                return fullUrl;
-              })() : null,
+              image: msg.image_url
+                ? (() => {
+                    const imagePath = msg.image_url.replace(/\\/g, "/");
+                    const fullUrl = imagePath.startsWith("http")
+                      ? imagePath
+                      : `${apiConfig.baseUrl}/${
+                          imagePath.startsWith("/")
+                            ? imagePath.slice(1)
+                            : imagePath
+                        }`;
+                    console.log("Message image URL constructed:", fullUrl);
+                    return fullUrl;
+                  })()
+                : null,
             };
           });
 
@@ -528,7 +536,7 @@ const quickActions = [
     console.log("🚀 Chat component mounting...");
 
     // Debug JWT status
-    const rawToken = localStorage.getItem('token');
+    const rawToken = localStorage.getItem("token");
     const token = tokenUtils.getValidToken();
     const isLoggedIn = tokenUtils.isLoggedIn();
 
@@ -632,34 +640,68 @@ const quickActions = [
       formData.append("message", inputMessage.trim());
       formData.append("session_id", validSessionId.toString());
       formData.append("timestamp", new Date().toISOString());
-      
+
       // กำหนดคำถามที่ต้องการคำตอบตรงๆ (ไม่วิเคราะห์)
       const directAnswerKeywords = [
-        "นี่คืออะไร", "นี่คือ", "คืออะไร", "อะไร", "ภาพนี้คืออะไร", "รูปนี้คืออะไร",
-        "เห็นอะไร", "เห็นอะไรในรูป", "รูปนี้คือ", "ภาพนี้คือ", "รูปภาพนี้คืออะไร",
-        "ภาพนี้คือ", "อันนี้คืออะไร", "นี่คือภาพอะไร", "รูปนี้คืออะไร",
-        "คือ", "คืออะไรนะ", "คืออะไรครับ", "คืออะไรค่ะ"
+        "นี่คืออะไร",
+        "นี่คือ",
+        "คืออะไร",
+        "อะไร",
+        "ภาพนี้คืออะไร",
+        "รูปนี้คืออะไร",
+        "เห็นอะไร",
+        "เห็นอะไรในรูป",
+        "รูปนี้คือ",
+        "ภาพนี้คือ",
+        "รูปภาพนี้คืออะไร",
+        "ภาพนี้คือ",
+        "อันนี้คืออะไร",
+        "นี่คือภาพอะไร",
+        "รูปนี้คืออะไร",
+        "คือ",
+        "คืออะไรนะ",
+        "คืออะไรครับ",
+        "คืออะไรค่ะ",
       ];
 
       // กำหนดคำถามที่ต้องการวิเคราะห์รูปภาพ
       const analysisKeywords = [
-        "วิเคราะห์", "analyze", "ช่วยดู", "ช่วยวิเคราะห์", "อาหาร", "กินได้ไหม",
-        "อันตรายไหม", "ดีไหม", "วิเคราะห์รูป", "วิเคราะห์ภาพ", "ช่วยวิเคราะห์รูปนี้",
-        "วิเคราะห์อาหาร", "วิเคราะห์รูปภาพ", "วิเคราะห์ภาพนี้", "ช่วยวิเคราะห์อาหาร",
-        "ช่วยวิเคราะห์ภาพ", "วิเคราะห์มื้อนี้", "วิเคราะห์อาหารนี้", "วิเคราะห์รูปอาหาร"
+        "วิเคราะห์",
+        "analyze",
+        "ช่วยดู",
+        "ช่วยวิเคราะห์",
+        "อาหาร",
+        "กินได้ไหม",
+        "อันตรายไหม",
+        "ดีไหม",
+        "วิเคราะห์รูป",
+        "วิเคราะห์ภาพ",
+        "ช่วยวิเคราะห์รูปนี้",
+        "วิเคราะห์อาหาร",
+        "วิเคราะห์รูปภาพ",
+        "วิเคราะห์ภาพนี้",
+        "ช่วยวิเคราะห์อาหาร",
+        "ช่วยวิเคราะห์ภาพ",
+        "วิเคราะห์มื้อนี้",
+        "วิเคราะห์อาหารนี้",
+        "วิเคราะห์รูปอาหาร",
       ];
 
       // ตรวจสอบว่ามีรูปภาพแนบมาหรือไม่
       const hasImage = !!uploadedFile;
 
       // ตรวจสอบประเภทของคำถาม
-      const wantsDirectAnswer = hasImage && directAnswerKeywords.some(keyword =>
-        inputMessage.toLowerCase().includes(keyword.toLowerCase())
-      );
+      const wantsDirectAnswer =
+        hasImage &&
+        directAnswerKeywords.some((keyword) =>
+          inputMessage.toLowerCase().includes(keyword.toLowerCase())
+        );
 
-      const wantsAnalysis = hasImage && analysisKeywords.some(keyword =>
-        inputMessage.toLowerCase().includes(keyword.toLowerCase())
-      );
+      const wantsAnalysis =
+        hasImage &&
+        analysisKeywords.some((keyword) =>
+          inputMessage.toLowerCase().includes(keyword.toLowerCase())
+        );
 
       const shouldAnalyzeImage = wantsAnalysis;
 
@@ -685,15 +727,21 @@ const quickActions = [
         shouldAnalyzeImage: shouldAnalyzeImage,
         analysisType: analysisType,
         logic: {
-          hasImageAndDirectQuestion: hasImage && inputMessage.toLowerCase().includes("นี่คืออะไร"),
-          hasImageAndAnalysisQuestion: hasImage && inputMessage.toLowerCase().includes("วิเคราะห์"),
+          hasImageAndDirectQuestion:
+            hasImage && inputMessage.toLowerCase().includes("นี่คืออะไร"),
+          hasImageAndAnalysisQuestion:
+            hasImage && inputMessage.toLowerCase().includes("วิเคราะห์"),
           shouldTriggerAnalysis: shouldAnalyzeImage,
-          shouldTriggerDirect: wantsDirectAnswer && !shouldAnalyzeImage
+          shouldTriggerDirect: wantsDirectAnswer && !shouldAnalyzeImage,
         },
         keywords: {
-          directFound: directAnswerKeywords.filter(k => inputMessage.toLowerCase().includes(k.toLowerCase())),
-          analysisFound: analysisKeywords.filter(k => inputMessage.toLowerCase().includes(k.toLowerCase()))
-        }
+          directFound: directAnswerKeywords.filter((k) =>
+            inputMessage.toLowerCase().includes(k.toLowerCase())
+          ),
+          analysisFound: analysisKeywords.filter((k) =>
+            inputMessage.toLowerCase().includes(k.toLowerCase())
+          ),
+        },
       });
 
       if (uploadedFile) {
@@ -703,11 +751,27 @@ const quickActions = [
 
         // เพิ่มคำสั่งให้ AI ตอบแบบชิวๆ สำหรับคำถามตรงๆ
         if (wantsDirectAnswer) {
-          formData.append("instruction", "ตอบแบบชิวๆ เหมือนเห็นรูปภาพจริงๆ บอกเฉพาะสิ่งที่เห็นในรูป ไม่วิเคราะห์หรือให้คำแนะนำเพิ่มเติม");
+          formData.append(
+            "instruction",
+            "ตอบแบบชิวๆ เหมือนเห็นรูปภาพจริงๆ บอกเฉพาะสิ่งที่เห็นในรูป ไม่วิเคราะห์หรือให้คำแนะนำเพิ่มเติม"
+          );
         }
       }
+      // Debug: log FormData entries to help backend debugging (won't show file content)
+      try {
+        const entries: Record<string, any> = {};
+        for (const [k, v] of (formData as any).entries()) {
+          // show filename for files
+          if (v instanceof File) entries[k] = v.name;
+          else entries[k] = v;
+        }
+        console.log("🔧 FormData entries:", entries);
+      } catch (e) {
+        console.warn("Could not inspect FormData entries", e);
+      }
+
       const response = await fetch(
-        `${apiConfig.baseUrl}/api/chat/sessions/${validSessionId}/messages/multipart`,
+        `${apiConfig.baseUrl}/api/chat/sessions/${validSessionId}/messages`,
         {
           method: "POST",
           headers: {
@@ -716,13 +780,22 @@ const quickActions = [
           body: formData,
         }
       );
-      const data = await response.json();
+
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch (err) {
+        // non-json response (could be HTML error page) — capture text for debugging
+        const text = await response.text().catch(() => "<no body>");
+        console.error("Failed to parse JSON response; response text:", text);
+        data = { success: false, message: `Non-JSON response: ${text}` };
+      }
 
       console.log("📥 Response received:", {
         status: response.status,
         statusText: response.statusText,
         ok: response.ok,
-        success: data.success,
+        success: data?.success,
         data: data,
       });
 
@@ -736,12 +809,21 @@ const quickActions = [
             hour: "2-digit",
             minute: "2-digit",
           }),
-          image: data.data?.userMessage?.image_url ? (() => {
-            const imagePath = data.data.userMessage.image_url.replace(/\\/g, '/');
-            const fullUrl = imagePath.startsWith('http') ? imagePath : `${apiConfig.baseUrl}/${imagePath.startsWith('/') ? imagePath.slice(1) : imagePath}`;
-            console.log('User image URL constructed:', fullUrl);
-            return fullUrl;
-          })() : null,
+          image: data.data?.userMessage?.image_url
+            ? (() => {
+                const imagePath = data.data.userMessage.image_url.replace(
+                  /\\/g,
+                  "/"
+                );
+                const fullUrl = imagePath.startsWith("http")
+                  ? imagePath
+                  : `${apiConfig.baseUrl}/${
+                      imagePath.startsWith("/") ? imagePath.slice(1) : imagePath
+                    }`;
+                console.log("User image URL constructed:", fullUrl);
+                return fullUrl;
+              })()
+            : null,
         };
         setMessages((prev) => [...prev, userMessage]);
 
@@ -757,12 +839,21 @@ const quickActions = [
           data.data?.aiMessage?.content ||
           data.message ||
           "";
-        const aiImage = data.data?.aiMessage?.image_url ? (() => {
-          const imagePath = data.data.aiMessage.image_url.replace(/\\/g, '/');
-          const fullUrl = imagePath.startsWith('http') ? imagePath : `${apiConfig.baseUrl}/${imagePath.startsWith('/') ? imagePath.slice(1) : imagePath}`;
-          console.log('AI image URL constructed:', fullUrl);
-          return fullUrl;
-        })() : null;
+        const aiImage = data.data?.aiMessage?.image_url
+          ? (() => {
+              const imagePath = data.data.aiMessage.image_url.replace(
+                /\\/g,
+                "/"
+              );
+              const fullUrl = imagePath.startsWith("http")
+                ? imagePath
+                : `${apiConfig.baseUrl}/${
+                    imagePath.startsWith("/") ? imagePath.slice(1) : imagePath
+                  }`;
+              console.log("AI image URL constructed:", fullUrl);
+              return fullUrl;
+            })()
+          : null;
         if (aiText || aiImage) {
           setMessages((prev) => [
             ...prev,
@@ -1304,218 +1395,425 @@ const quickActions = [
 
       {/* Main Content Area - Scroll locked */}
       <main className="flex-1 flex bg-white transition-all duration-300 ease-in-out relative overflow-hidden">
-      <div className="flex-1 flex">
-        {/* Left Sidebar - Collapsible with Animation - Fixed width */}
-        <div
-          className={`transition-all duration-500 ease-in-out transform ${
-            isSidebarOpen
-              ? "w-64 flex-shrink-0 translate-x-0 opacity-100"
-              : "w-0 flex-shrink-0 -translate-x-full opacity-0 pointer-events-none overflow-hidden"
-          }`}
-        >
-          {LeftSidebar}
-        </div>
-
-        {/* Main Chat Area - Flexible */}
-        <div className="flex-1 flex flex-col bg-white transition-all duration-300 ease-in-out relative min-w-0">
-          {/* Floating Sidebar Toggle Button when sidebar is closed */}
+        <div className="flex-1 flex">
+          {/* Left Sidebar - Collapsible with Animation - Fixed width */}
           <div
-            className={`fixed bottom-6 left-6 z-50 transition-all duration-500 ease-in-out transform ${
-              !isSidebarOpen
-                ? "translate-y-0 opacity-100 scale-100"
-                : "translate-y-4 opacity-0 scale-95"
+            className={`transition-all duration-500 ease-in-out transform ${
+              isSidebarOpen
+                ? "w-64 flex-shrink-0 translate-x-0 opacity-100"
+                : "w-0 flex-shrink-0 -translate-x-full opacity-0 pointer-events-none overflow-hidden"
             }`}
           >
-            <button
-              onClick={() => setIsSidebarOpen(true)}
-              className="p-3 rounded-lg hover:bg-gray-100 transition-all duration-200 border border-gray-300 bg-white shadow-lg flex items-center gap-2 hover:scale-105"
-            >
-              <Menu className="h-4 w-4 text-gray-700" />
-              <span className="text-sm text-gray-700">แสดงแถบข้าง</span>
-            </button>
+            {LeftSidebar}
           </div>
-          <div className="flex-1 flex flex-col min-h-0">
-            {/* Messages Area - Only this part scrolls */}
-            <div className="flex-1 overflow-y-auto min-h-0">
-              {messages.length === 1 && !isTyping ? (
-                <div className="h-full flex items-center justify-center px-6 py-12">
-                  <div className="text-center w-full max-w-2xl">
-                    {/* Header */}
-                    <div className="mb-12">
-                      <div className="mb-6">
-                        <h1 className="text-4xl text-gray-800 font-semibold">
-                          สวัสดี มีอะไรให้ช่วยไหม?
-                        </h1>
+
+          {/* Main Chat Area - Flexible */}
+          <div className="flex-1 flex flex-col bg-white transition-all duration-300 ease-in-out relative min-w-0">
+            {/* Floating Sidebar Toggle Button when sidebar is closed */}
+            <div
+              className={`fixed bottom-6 left-6 z-50 transition-all duration-500 ease-in-out transform ${
+                !isSidebarOpen
+                  ? "translate-y-0 opacity-100 scale-100"
+                  : "translate-y-4 opacity-0 scale-95"
+              }`}
+            >
+              <button
+                onClick={() => setIsSidebarOpen(true)}
+                className="p-3 rounded-lg hover:bg-gray-100 transition-all duration-200 border border-gray-300 bg-white shadow-lg flex items-center gap-2 hover:scale-105"
+              >
+                <Menu className="h-4 w-4 text-gray-700" />
+                <span className="text-sm text-gray-700">แสดงแถบข้าง</span>
+              </button>
+            </div>
+            <div className="flex-1 flex flex-col min-h-0">
+              {/* Messages Area - Only this part scrolls */}
+              <div className="flex-1 overflow-y-auto min-h-0">
+                {messages.length === 1 && !isTyping ? (
+                  <div className="h-full flex items-center justify-center px-6 py-12">
+                    <div className="text-center w-full max-w-2xl">
+                      {/* Header */}
+                      <div className="mb-12">
+                        <div className="mb-6">
+                          <h1 className="text-4xl text-gray-800 font-semibold">
+                            สวัสดี มีอะไรให้ช่วยไหม?
+                          </h1>
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Input Field */}
-                    <div className="mb-8">
-                      <div className="relative max-w-2xl mx-auto">
-                        <div className="bg-white border border-gray-300 rounded-2xl px-4 py-3 shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all duration-200">
-                          <div className="flex items-center gap-3">
-                            {/* File Upload Button */}
-                            {uploadedImage ? (
-                              <div className="relative mr-2">
-                                <img
-                                  src={uploadedImage}
-                                  alt="preview"
-                                  className="w-20 h-20 object-cover rounded-xl border border-gray-300"
-                                />
-                                <div className="absolute top-1 right-1 flex gap-1">
-                                  <button
-                                    type="button"
-                                    className="bg-white/80 hover:bg-white text-gray-700 rounded-full p-1 border border-gray-300 shadow"
-                                    title="ลบรูป"
-                                    onClick={() => {
-                                      setUploadedImage(null);
-                                      setUploadedFile(null);
-                                    }}
-                                  >
-                                    <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      className="h-4 w-4"
-                                      fill="none"
-                                      viewBox="0 0 24 24"
-                                      stroke="currentColor"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M6 18L18 6M6 6l12 12"
-                                      />
-                                    </svg>
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <label
-                                className="p-2 rounded-full transition-all duration-200 bg-blue-50 text-blue-600 hover:bg-blue-100 cursor-pointer flex items-center"
-                                title="เพิ่มรูปภาพเพื่อวิเคราะห์อาหาร"
-                              >
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                      const reader = new FileReader();
-                                      reader.onload = (ev) => {
-                                        setUploadedImage(
-                                          ev.target?.result as string
-                                        );
-                                        setUploadedFile(file);
-                                      };
-                                      reader.readAsDataURL(file);
-                                      toast({
-                                        title: "เพิ่มรูปภาพสำเร็จ",
-                                        description: `รูปภาพ: ${file.name}`,
-                                      });
-                                    }
-                                  }}
-                                />
-                                {/* ใช้ icon บวก (+) */}
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  className="h-5 w-5"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M12 4v16m8-8H4"
+                      {/* Input Field */}
+                      <div className="mb-8">
+                        <div className="relative max-w-2xl mx-auto">
+                          <div className="bg-white border border-gray-300 rounded-2xl px-4 py-3 shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all duration-200">
+                            <div className="flex items-center gap-3">
+                              {/* File Upload Button */}
+                              {uploadedImage ? (
+                                <div className="relative mr-2">
+                                  <img
+                                    src={uploadedImage}
+                                    alt="preview"
+                                    className="w-20 h-20 object-cover rounded-xl border border-gray-300"
                                   />
-                                </svg>
-                              </label>
-                            )}
+                                  <div className="absolute top-1 right-1 flex gap-1">
+                                    <button
+                                      type="button"
+                                      className="bg-white/80 hover:bg-white text-gray-700 rounded-full p-1 border border-gray-300 shadow"
+                                      title="ลบรูป"
+                                      onClick={() => {
+                                        setUploadedImage(null);
+                                        setUploadedFile(null);
+                                      }}
+                                    >
+                                      <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="h-4 w-4"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M6 18L18 6M6 6l12 12"
+                                        />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <label
+                                  className="p-2 rounded-full transition-all duration-200 bg-blue-50 text-blue-600 hover:bg-blue-100 cursor-pointer flex items-center"
+                                  title="เพิ่มรูปภาพเพื่อวิเคราะห์อาหาร"
+                                >
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        const reader = new FileReader();
+                                        reader.onload = (ev) => {
+                                          setUploadedImage(
+                                            ev.target?.result as string
+                                          );
+                                          setUploadedFile(file);
+                                        };
+                                        reader.readAsDataURL(file);
+                                        toast({
+                                          title: "เพิ่มรูปภาพสำเร็จ",
+                                          description: `รูปภาพ: ${file.name}`,
+                                        });
+                                      }
+                                    }}
+                                  />
+                                  {/* ใช้ icon บวก (+) */}
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-5 w-5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M12 4v16m8-8H4"
+                                    />
+                                  </svg>
+                                </label>
+                              )}
 
-                            {/* Input Field */}
-                            <textarea
-                              ref={inputRef}
-                              placeholder="พิมพ์คำถามของคุณที่นี่..."
-                              value={inputMessage}
-                              onChange={handleInputChange}
-                              onKeyPress={handleKeyPress}
-                              disabled={isTyping}
-                              rows={1}
-                              className="flex-1 resize-none bg-transparent text-base text-gray-800 placeholder:text-gray-500 focus:outline-none"
-                              style={{ minHeight: "24px" }}
-                            />
+                              {/* Input Field */}
+                              <textarea
+                                ref={inputRef}
+                                placeholder="พิมพ์คำถามของคุณที่นี่..."
+                                value={inputMessage}
+                                onChange={handleInputChange}
+                                onKeyPress={handleKeyPress}
+                                disabled={isTyping}
+                                rows={1}
+                                className="flex-1 resize-none bg-transparent text-base text-gray-800 placeholder:text-gray-500 focus:outline-none"
+                                style={{ minHeight: "24px" }}
+                              />
 
-                            {/* Send Button */}
-                            <button
-                              onClick={handleSendMessage}
-                              disabled={!inputMessage.trim() || isTyping}
-                              className={`p-2 rounded-full transition-all duration-200 ${
-                                inputMessage.trim() && !isTyping
-                                  ? "bg-blue-500 text-white hover:bg-blue-600"
-                                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                              }`}
-                            >
-                              <Send className="h-4 w-4" />
-                            </button>
+                              {/* Send Button */}
+                              <button
+                                onClick={handleSendMessage}
+                                disabled={!inputMessage.trim() || isTyping}
+                                className={`p-2 rounded-full transition-all duration-200 ${
+                                  inputMessage.trim() && !isTyping
+                                    ? "bg-blue-500 text-white hover:bg-blue-600"
+                                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                }`}
+                              >
+                                <Send className="h-4 w-4" />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Quick Action Buttons */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto">
-                      {quickActions.map((action, index) => (
-                        <button
-                          key={index}
-                          onClick={() => handleQuickAction(action.description)}
-                          className="flex flex-col items-center gap-2 bg-white border border-gray-200 rounded-lg px-4 py-4 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm"
-                        >
-                          <action.icon className="h-5 w-5 text-gray-600" />
-                          <span className="text-sm text-gray-700 font-medium">
-                            {action.text}
-                          </span>
-                        </button>
-                      ))}
+                      {/* Quick Action Buttons */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto">
+                        {quickActions.map((action, index) => (
+                          <button
+                            key={index}
+                            onClick={() =>
+                              handleQuickAction(action.description)
+                            }
+                            className="flex flex-col items-center gap-2 bg-white border border-gray-200 rounded-lg px-4 py-4 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm"
+                          >
+                            <action.icon className="h-5 w-5 text-gray-600" />
+                            <span className="text-sm text-gray-700 font-medium">
+                              {action.text}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ) : (
-                <div className="w-full">
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`w-full ${
-                        message.isUser ? "flex justify-end" : ""
-                      }`}
-                    >
-                      {message.isUser ? (
-                        // User message - align with AI message
-                        <div className="w-full  py-8 bg-white">
-                          <div className="max-w-4xl mx-auto px-8">
-                            <div className="flex justify-end">
-                              <div className="max-w-[70%] flex flex-col items-end">
-                                {/* Message Content */}
-                                <div className="rounded-2xl px-5 py-3 shadow-md bg-blue-500 text-white group hover:bg-blue-600 transition-colors duration-200">
-                                  <p className="text-sm leading-relaxed">
-                                    {message.text}
-                                  </p>
+                ) : (
+                  <div className="w-full">
+                    {messages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={`w-full ${
+                          message.isUser ? "flex justify-end" : ""
+                        }`}
+                      >
+                        {message.isUser ? (
+                          // User message - align with AI message
+                          <div className="w-full  py-8 bg-white">
+                            <div className="max-w-4xl mx-auto px-8">
+                              <div className="flex justify-end">
+                                <div className="max-w-[70%] flex flex-col items-end">
+                                  {/* Message Content */}
+                                  <div className="rounded-2xl px-5 py-3 shadow-md bg-blue-500 text-white group hover:bg-blue-600 transition-colors duration-200">
+                                    <p className="text-sm leading-relaxed">
+                                      {message.text}
+                                    </p>
+                                  </div>
+                                  {message.image && (
+                                    <div className="mt-2">
+                                      <img
+                                        src={message.image}
+                                        alt="รูปภาพที่ส่ง"
+                                        className="max-w-[180px] max-h-[180px] rounded-lg border border-gray-200 shadow-sm"
+                                        style={{ objectFit: "cover" }}
+                                        onError={(e) => {
+                                          console.error(
+                                            "Error loading user image:",
+                                            message.image
+                                          );
+                                          console.error(
+                                            "Image src:",
+                                            e.currentTarget.src
+                                          );
+                                          e.currentTarget.style.display =
+                                            "none";
+                                        }}
+                                        onLoad={() => {
+                                          console.log(
+                                            "User image loaded successfully:",
+                                            message.image
+                                          );
+                                        }}
+                                      />
+                                    </div>
+                                  )}
                                 </div>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          // AI message - full width like ChatGPT
+                          <div className="w-full  py-8 bg-white">
+                            <div className="max-w-4xl mx-auto px-8 group">
+                              {/* Message Content - Full Width */}
+                              <div className="w-full">
+                                <div className="prose prose-lg max-w-none">
+                                  <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                      // Headings with beautiful styling
+                                      h1: ({ children }) => (
+                                        <h1 className="text-2xl font-bold text-gray-900 mb-6 mt-8 pb-3 ">
+                                          {children}
+                                        </h1>
+                                      ),
+                                      h2: ({ children }) => (
+                                        <h2 className="text-xl font-semibold text-gray-900 mb-4 mt-6 flex items-center">
+                                          <span className="w-1 h-6 bg-blue-500 rounded-full mr-3"></span>
+                                          {children}
+                                        </h2>
+                                      ),
+                                      h3: ({ children }) => (
+                                        <h3 className="text-lg font-semibold text-gray-800 mb-3 mt-5 flex items-center">
+                                          <span className="w-1 h-4 bg-blue-400 rounded-full mr-2"></span>
+                                          {children}
+                                        </h3>
+                                      ),
+                                      h4: ({ children }) => (
+                                        <h4 className="text-base font-semibold text-gray-800 mb-2 mt-4">
+                                          {children}
+                                        </h4>
+                                      ),
+
+                                      // Paragraphs with better spacing
+                                      p: ({ children }) => (
+                                        <p className="mb-4 text-gray-700 leading-relaxed text-base">
+                                          {children}
+                                        </p>
+                                      ),
+
+                                      // Lists with beautiful styling
+                                      ul: ({ children }) => (
+                                        <ul className="list-none mb-6 space-y-3">
+                                          {children}
+                                        </ul>
+                                      ),
+                                      ol: ({ children }) => (
+                                        <ol className="list-none mb-6 space-y-3">
+                                          {children}
+                                        </ol>
+                                      ),
+                                      li: ({ children, ...props }) => {
+                                        const isOrdered =
+                                          props.className?.includes(
+                                            "task-list-item"
+                                          );
+                                        return (
+                                          <li className="flex items-start text-gray-700 leading-relaxed text-base mb-2">
+                                            {!isOrdered && (
+                                              <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                            )}
+                                            <div className="flex-1">
+                                              {children}
+                                            </div>
+                                          </li>
+                                        );
+                                      },
+
+                                      // Text formatting
+                                      strong: ({ children }) => (
+                                        <strong className="font-semibold text-gray-900 bg-blue-50 px-1.5 py-0.5 rounded">
+                                          {children}
+                                        </strong>
+                                      ),
+                                      em: ({ children }) => (
+                                        <em className="italic text-gray-600 bg-gray-50 px-1.5 py-0.5 rounded">
+                                          {children}
+                                        </em>
+                                      ),
+
+                                      // Code blocks
+                                      code: ({ children, className }) => {
+                                        const isInline = !className;
+                                        return isInline ? (
+                                          <code className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm font-mono border">
+                                            {children}
+                                          </code>
+                                        ) : (
+                                          <code className={className}>
+                                            {children}
+                                          </code>
+                                        );
+                                      },
+                                      pre: ({ children }) => (
+                                        <pre className="bg-gray-900 text-gray-100 p-6 rounded-lg overflow-x-auto text-sm font-mono my-6 border border-gray-700">
+                                          {children}
+                                        </pre>
+                                      ),
+
+                                      // Blockquotes
+                                      blockquote: ({ children }) => (
+                                        <blockquote className="border-l-4 border-blue-400 bg-blue-50 pl-6 py-4 my-6 text-gray-700 italic rounded-r-lg">
+                                          {children}
+                                        </blockquote>
+                                      ),
+
+                                      // Tables
+                                      table: ({ children }) => (
+                                        <div className="overflow-x-auto my-6 rounded-lg border border-gray-200">
+                                          <table className="min-w-full divide-y divide-gray-200">
+                                            {children}
+                                          </table>
+                                        </div>
+                                      ),
+                                      thead: ({ children }) => (
+                                        <thead className="bg-gray-50">
+                                          {children}
+                                        </thead>
+                                      ),
+                                      tbody: ({ children }) => (
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                          {children}
+                                        </tbody>
+                                      ),
+                                      tr: ({ children }) => (
+                                        <tr className="hover:bg-gray-50">
+                                          {children}
+                                        </tr>
+                                      ),
+                                      th: ({ children }) => (
+                                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                                          {children}
+                                        </th>
+                                      ),
+                                      td: ({ children }) => (
+                                        <td className="px-6 py-4 text-sm text-gray-700">
+                                          {children}
+                                        </td>
+                                      ),
+
+                                      // Horizontal rules
+                                      hr: () => (
+                                        <hr className="my-8 border-0 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
+                                      ),
+
+                                      // Links
+                                      a: ({ children, href }) => (
+                                        <a
+                                          href={href}
+                                          className="text-blue-600 hover:text-blue-800 underline decoration-blue-300 hover:decoration-blue-500 transition-colors"
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                        >
+                                          {children}
+                                        </a>
+                                      ),
+                                    }}
+                                  >
+                                    {message.text}
+                                  </ReactMarkdown>
+                                </div>
+
+                                {/* แสดงรูปภาพของ AI ถ้ามี */}
                                 {message.image && (
-                                  <div className="mt-2">
+                                  <div className="mt-4">
                                     <img
                                       src={message.image}
-                                      alt="รูปภาพที่ส่ง"
-                                      className="max-w-[180px] max-h-[180px] rounded-lg border border-gray-200 shadow-sm"
+                                      alt="รูปภาพจาก AI"
+                                      className="max-w-[300px] max-h-[300px] rounded-lg border border-gray-200 shadow-sm"
                                       style={{ objectFit: "cover" }}
                                       onError={(e) => {
-                                        console.error("Error loading user image:", message.image);
-                                        console.error("Image src:", e.currentTarget.src);
+                                        console.error(
+                                          "Error loading AI image:",
+                                          message.image
+                                        );
+                                        console.error(
+                                          "Image src:",
+                                          e.currentTarget.src
+                                        );
                                         e.currentTarget.style.display = "none";
                                       }}
                                       onLoad={() => {
-                                        console.log("User image loaded successfully:", message.image);
+                                        console.log(
+                                          "AI image loaded successfully:",
+                                          message.image
+                                        );
                                       }}
                                     />
                                   </div>
@@ -1523,381 +1821,201 @@ const quickActions = [
                               </div>
                             </div>
                           </div>
+                        )}
+                      </div>
+                    ))}
+
+                    {isTyping && (
+                      <div className="w-full py-6 bg-white">
+                        <div className="max-w-4xl mx-auto px-8">
+                          <div className="flex items-center space-x-2">
+                            <div className="flex space-x-1">
+                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                              <div
+                                className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                                style={{ animationDelay: "0.1s" }}
+                              />
+                              <div
+                                className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                                style={{ animationDelay: "0.2s" }}
+                              />
+                            </div>
+                            <span className="text-sm text-gray-500 ml-2">
+                              AI กำลังพิมพ์...
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <div ref={messagesEndRef} />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Input Area - Only show when in conversation */}
+            {messages.length > 1 && (
+              <div className="p-6 bg-white flex-shrink-0">
+                <div className="max-w-4xl mx-auto">
+                  <div className="bg-white border border-gray-300 rounded-2xl px-4 py-3 shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all duration-200">
+                    <div className="flex items-center gap-3">
+                      {/* File Upload Button */}
+                      {uploadedImage ? (
+                        <div className="relative mr-2">
+                          <img
+                            src={uploadedImage}
+                            alt="preview"
+                            className="w-20 h-20 object-cover rounded-xl border border-gray-300"
+                          />
+                          <div className="absolute top-1 right-1 flex gap-1">
+                            <button
+                              type="button"
+                              className="bg-white/80 hover:bg-white text-gray-700 rounded-full p-1 border border-gray-300 shadow"
+                              title="ลบรูป"
+                              onClick={() => {
+                                setUploadedImage(null);
+                                setUploadedFile(null);
+                              }}
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M6 18L18 6M6 6l12 12"
+                                />
+                              </svg>
+                            </button>
+                          </div>
                         </div>
                       ) : (
-                        // AI message - full width like ChatGPT
-                        <div className="w-full  py-8 bg-white">
-                          <div className="max-w-4xl mx-auto px-8 group">
-                            {/* Message Content - Full Width */}
-                            <div className="w-full">
-                              <div className="prose prose-lg max-w-none">
-                                <ReactMarkdown
-                                  remarkPlugins={[remarkGfm]}
-                                  components={{
-                                    // Headings with beautiful styling
-                                    h1: ({ children }) => (
-                                      <h1 className="text-2xl font-bold text-gray-900 mb-6 mt-8 pb-3 ">
-                                        {children}
-                                      </h1>
-                                    ),
-                                    h2: ({ children }) => (
-                                      <h2 className="text-xl font-semibold text-gray-900 mb-4 mt-6 flex items-center">
-                                        <span className="w-1 h-6 bg-blue-500 rounded-full mr-3"></span>
-                                        {children}
-                                      </h2>
-                                    ),
-                                    h3: ({ children }) => (
-                                      <h3 className="text-lg font-semibold text-gray-800 mb-3 mt-5 flex items-center">
-                                        <span className="w-1 h-4 bg-blue-400 rounded-full mr-2"></span>
-                                        {children}
-                                      </h3>
-                                    ),
-                                    h4: ({ children }) => (
-                                      <h4 className="text-base font-semibold text-gray-800 mb-2 mt-4">
-                                        {children}
-                                      </h4>
-                                    ),
-
-                                    // Paragraphs with better spacing
-                                    p: ({ children }) => (
-                                      <p className="mb-4 text-gray-700 leading-relaxed text-base">
-                                        {children}
-                                      </p>
-                                    ),
-
-                                    // Lists with beautiful styling
-                                    ul: ({ children }) => (
-                                      <ul className="list-none mb-6 space-y-3">
-                                        {children}
-                                      </ul>
-                                    ),
-                                    ol: ({ children }) => (
-                                      <ol className="list-none mb-6 space-y-3">
-                                        {children}
-                                      </ol>
-                                    ),
-                                    li: ({ children, ...props }) => {
-                                      const isOrdered =
-                                        props.className?.includes(
-                                          "task-list-item"
-                                        );
-                                      return (
-                                        <li className="flex items-start text-gray-700 leading-relaxed text-base mb-2">
-                                          {!isOrdered && (
-                                            <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                                          )}
-                                          <div className="flex-1">
-                                            {children}
-                                          </div>
-                                        </li>
-                                      );
-                                    },
-
-                                    // Text formatting
-                                    strong: ({ children }) => (
-                                      <strong className="font-semibold text-gray-900 bg-blue-50 px-1.5 py-0.5 rounded">
-                                        {children}
-                                      </strong>
-                                    ),
-                                    em: ({ children }) => (
-                                      <em className="italic text-gray-600 bg-gray-50 px-1.5 py-0.5 rounded">
-                                        {children}
-                                      </em>
-                                    ),
-
-                                    // Code blocks
-                                    code: ({ children, className }) => {
-                                      const isInline = !className;
-                                      return isInline ? (
-                                        <code className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm font-mono border">
-                                          {children}
-                                        </code>
-                                      ) : (
-                                        <code className={className}>
-                                          {children}
-                                        </code>
-                                      );
-                                    },
-                                    pre: ({ children }) => (
-                                      <pre className="bg-gray-900 text-gray-100 p-6 rounded-lg overflow-x-auto text-sm font-mono my-6 border border-gray-700">
-                                        {children}
-                                      </pre>
-                                    ),
-
-                                    // Blockquotes
-                                    blockquote: ({ children }) => (
-                                      <blockquote className="border-l-4 border-blue-400 bg-blue-50 pl-6 py-4 my-6 text-gray-700 italic rounded-r-lg">
-                                        {children}
-                                      </blockquote>
-                                    ),
-
-                                    // Tables
-                                    table: ({ children }) => (
-                                      <div className="overflow-x-auto my-6 rounded-lg border border-gray-200">
-                                        <table className="min-w-full divide-y divide-gray-200">
-                                          {children}
-                                        </table>
-                                      </div>
-                                    ),
-                                    thead: ({ children }) => (
-                                      <thead className="bg-gray-50">
-                                        {children}
-                                      </thead>
-                                    ),
-                                    tbody: ({ children }) => (
-                                      <tbody className="bg-white divide-y divide-gray-200">
-                                        {children}
-                                      </tbody>
-                                    ),
-                                    tr: ({ children }) => (
-                                      <tr className="hover:bg-gray-50">
-                                        {children}
-                                      </tr>
-                                    ),
-                                    th: ({ children }) => (
-                                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
-                                        {children}
-                                      </th>
-                                    ),
-                                    td: ({ children }) => (
-                                      <td className="px-6 py-4 text-sm text-gray-700">
-                                        {children}
-                                      </td>
-                                    ),
-
-                                    // Horizontal rules
-                                    hr: () => (
-                                      <hr className="my-8 border-0 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
-                                    ),
-
-                                    // Links
-                                    a: ({ children, href }) => (
-                                      <a
-                                        href={href}
-                                        className="text-blue-600 hover:text-blue-800 underline decoration-blue-300 hover:decoration-blue-500 transition-colors"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                      >
-                                        {children}
-                                      </a>
-                                    ),
-                                  }}
-                                >
-                                  {message.text}
-                                </ReactMarkdown>
-                              </div>
-
-                              {/* แสดงรูปภาพของ AI ถ้ามี */}
-                              {message.image && (
-                                <div className="mt-4">
-                                  <img
-                                    src={message.image}
-                                    alt="รูปภาพจาก AI"
-                                    className="max-w-[300px] max-h-[300px] rounded-lg border border-gray-200 shadow-sm"
-                                    style={{ objectFit: "cover" }}
-                                    onError={(e) => {
-                                      console.error("Error loading AI image:", message.image);
-                                      console.error("Image src:", e.currentTarget.src);
-                                      e.currentTarget.style.display = "none";
-                                    }}
-                                    onLoad={() => {
-                                      console.log("AI image loaded successfully:", message.image);
-                                    }}
-                                  />
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-
-                  {isTyping && (
-                    <div className="w-full py-6 bg-white">
-                      <div className="max-w-4xl mx-auto px-8">
-                        <div className="flex items-center space-x-2">
-                          <div className="flex space-x-1">
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                            <div
-                              className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                              style={{ animationDelay: "0.1s" }}
-                            />
-                            <div
-                              className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                              style={{ animationDelay: "0.2s" }}
-                            />
-                          </div>
-                          <span className="text-sm text-gray-500 ml-2">
-                            AI กำลังพิมพ์...
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Input Area - Only show when in conversation */}
-          {messages.length > 1 && (
-            <div className="p-6 bg-white flex-shrink-0">
-              <div className="max-w-4xl mx-auto">
-                <div className="bg-white border border-gray-300 rounded-2xl px-4 py-3 shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all duration-200">
-                  <div className="flex items-center gap-3">
-                    {/* File Upload Button */}
-                    {uploadedImage ? (
-                      <div className="relative mr-2">
-                        <img
-                          src={uploadedImage}
-                          alt="preview"
-                          className="w-20 h-20 object-cover rounded-xl border border-gray-300"
-                        />
-                        <div className="absolute top-1 right-1 flex gap-1">
-                          <button
-                            type="button"
-                            className="bg-white/80 hover:bg-white text-gray-700 rounded-full p-1 border border-gray-300 shadow"
-                            title="ลบรูป"
-                            onClick={() => {
-                              setUploadedImage(null);
-                              setUploadedFile(null);
-                            }}
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-4 w-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M6 18L18 6M6 6l12 12"
-                              />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <label
-                        className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer transition-all duration-200 flex items-center justify-center"
-                        title="เพิ่มรูปภาพ"
-                      >
-                        <input
-                          type="file"
-                          accept="image/png,image/jpeg,image/jpg,image/webp"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files && e.target.files[0];
-                            if (file) {
-                              // ตรวจสอบประเภทไฟล์
-                              const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
-                              if (!allowedTypes.includes(file.type)) {
-                                toast({
-                                  title: "ไฟล์ไม่รองรับ",
-                                  description: "รองรับเฉพาะ png, jpg, jpeg, webp",
-                                  variant: "destructive",
-                                });
-                                return;
-                              }
-
-                              // ตรวจสอบขนาดไฟล์
-                              if (file.size > 5 * 1024 * 1024) {
-                                toast({
-                                  title: "ไฟล์ใหญ่เกินไป",
-                                  description: "ขนาดไฟล์สูงสุด 5MB",
-                                  variant: "destructive",
-                                });
-                                return;
-                              }
-
-                              // อ่านไฟล์และสร้าง preview
-                              const reader = new FileReader();
-                              reader.onload = (ev) => {
-                                const result = ev.target?.result;
-                                if (result && typeof result === 'string') {
-                                  setUploadedImage(result);
-                                  setUploadedFile(file);
+                        <label
+                          className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer transition-all duration-200 flex items-center justify-center"
+                          title="เพิ่มรูปภาพ"
+                        >
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/jpg,image/webp"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files && e.target.files[0];
+                              if (file) {
+                                // ตรวจสอบประเภทไฟล์
+                                const allowedTypes = [
+                                  "image/png",
+                                  "image/jpeg",
+                                  "image/jpg",
+                                  "image/webp",
+                                ];
+                                if (!allowedTypes.includes(file.type)) {
                                   toast({
-                                    title: "เพิ่มรูปภาพสำเร็จ",
-                                    description: `รูปภาพ: ${file.name}`,
+                                    title: "ไฟล์ไม่รองรับ",
+                                    description:
+                                      "รองรับเฉพาะ png, jpg, jpeg, webp",
+                                    variant: "destructive",
                                   });
-                                } else {
+                                  return;
+                                }
+
+                                // ตรวจสอบขนาดไฟล์
+                                if (file.size > 5 * 1024 * 1024) {
+                                  toast({
+                                    title: "ไฟล์ใหญ่เกินไป",
+                                    description: "ขนาดไฟล์สูงสุด 5MB",
+                                    variant: "destructive",
+                                  });
+                                  return;
+                                }
+
+                                // อ่านไฟล์และสร้าง preview
+                                const reader = new FileReader();
+                                reader.onload = (ev) => {
+                                  const result = ev.target?.result;
+                                  if (result && typeof result === "string") {
+                                    setUploadedImage(result);
+                                    setUploadedFile(file);
+                                    toast({
+                                      title: "เพิ่มรูปภาพสำเร็จ",
+                                      description: `รูปภาพ: ${file.name}`,
+                                    });
+                                  } else {
+                                    toast({
+                                      title: "เกิดข้อผิดพลาด",
+                                      description: "ไม่สามารถอ่านไฟล์รูปภาพได้",
+                                      variant: "destructive",
+                                    });
+                                  }
+                                };
+                                reader.onerror = () => {
                                   toast({
                                     title: "เกิดข้อผิดพลาด",
                                     description: "ไม่สามารถอ่านไฟล์รูปภาพได้",
                                     variant: "destructive",
                                   });
-                                }
-                              };
-                              reader.onerror = () => {
-                                toast({
-                                  title: "เกิดข้อผิดพลาด",
-                                  description: "ไม่สามารถอ่านไฟล์รูปภาพได้",
-                                  variant: "destructive",
-                                });
-                              };
-                              reader.readAsDataURL(file);
-                            }
-                          }}
-                        />
-                        {/* ไอคอนรูปภาพ */}
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
                           />
-                        </svg>
-                      </label>
-                    )}
+                          {/* ไอคอนรูปภาพ */}
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            />
+                          </svg>
+                        </label>
+                      )}
 
-                    {/* Input Field */}
-                    <textarea
-                      ref={inputRef}
-                      placeholder="พิมพ์ข้อความของคุณ..."
-                      value={inputMessage}
-                      onChange={handleInputChange}
-                      onKeyPress={handleKeyPress}
-                      disabled={isTyping}
-                      rows={1}
-                      className="flex-1 resize-none bg-transparent text-gray-800 placeholder:text-gray-500 focus:outline-none"
-                      style={{ minHeight: "24px" }}
-                    />
+                      {/* Input Field */}
+                      <textarea
+                        ref={inputRef}
+                        placeholder="พิมพ์ข้อความของคุณ..."
+                        value={inputMessage}
+                        onChange={handleInputChange}
+                        onKeyPress={handleKeyPress}
+                        disabled={isTyping}
+                        rows={1}
+                        className="flex-1 resize-none bg-transparent text-gray-800 placeholder:text-gray-500 focus:outline-none"
+                        style={{ minHeight: "24px" }}
+                      />
 
-                    {/* Send Button */}
-                    <button
-                      onClick={handleSendMessage}
-                      disabled={!inputMessage.trim() || isTyping}
-                      className={`p-2 rounded-full transition-all duration-200 ${
-                        inputMessage.trim() && !isTyping
-                          ? "bg-blue-500 text-white hover:bg-blue-600"
-                          : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                      }`}
-                    >
-                      <Send className="h-4 w-4" />
-                    </button>
+                      {/* Send Button */}
+                      <button
+                        onClick={handleSendMessage}
+                        disabled={!inputMessage.trim() || isTyping}
+                        className={`p-2 rounded-full transition-all duration-200 ${
+                          inputMessage.trim() && !isTyping
+                            ? "bg-blue-500 text-white hover:bg-blue-600"
+                            : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                        }`}
+                      >
+                        <Send className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
+                  <p className="text-xs text-gray-500 mt-3 text-center">
+                    AI อาจให้ข้อมูลที่ไม่ถูกต้อง โปรดตรวจสอบข้อมูลสำคัญ
+                  </p>
                 </div>
-                <p className="text-xs text-gray-500 mt-3 text-center">
-                  AI อาจให้ข้อมูลที่ไม่ถูกต้อง โปรดตรวจสอบข้อมูลสำคัญ
-                </p>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
       </main>
     </div>
   );
