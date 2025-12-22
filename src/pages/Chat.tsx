@@ -195,7 +195,7 @@ export default function Chat() {
             include_recent_activities: true,
             include_recommendations: true,
           }),
-        }
+        },
       );
 
       if (response.ok) {
@@ -245,7 +245,7 @@ export default function Chat() {
 
       console.log(
         "Creating new session with token:",
-        token ? `${token.substring(0, 20)}...` : "null"
+        token ? `${token.substring(0, 20)}...` : "null",
       );
 
       const response = await fetch(`${apiConfig.baseUrl}/api/chat/sessions`, {
@@ -310,7 +310,7 @@ export default function Chat() {
         console.error(
           "Failed to create new session:",
           response.status,
-          response.statusText
+          response.statusText,
         );
         const errorData = await response.json().catch(() => ({}));
 
@@ -381,7 +381,7 @@ export default function Chat() {
     // ดึงรายการ session จาก backend เพื่อยืนยันอีกครั้ง
     await fetchChatSessions();
     const existsAfterFetch = chatSessions.some(
-      (s) => s.id === selectedSessionId
+      (s) => s.id === selectedSessionId,
     );
     if (existsAfterFetch) {
       console.log("Session found after fetching list:", { selectedSessionId });
@@ -416,11 +416,11 @@ export default function Chat() {
             title:
               session.title ||
               `AI สุขภาพ (${new Date(session.created_at).toLocaleDateString(
-                "th-TH"
+                "th-TH",
               )})`,
             lastMessage: session.last_message || "เริ่มการสนทนาใหม่",
             timestamp: formatTimestamp(
-              session.updated_at || session.created_at
+              session.updated_at || session.created_at,
             ),
             createdAt: session.created_at || new Date().toISOString(),
           }));
@@ -453,7 +453,7 @@ export default function Chat() {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (response.ok) {
@@ -505,9 +505,40 @@ export default function Chat() {
         }
       } else {
         console.warn("Failed to fetch session messages:", response.status);
+
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.message || response.statusText;
+
+        if (
+          response.status === 403 &&
+          (errorMessage.includes("Outstanding invoices") ||
+            errorMessage.includes("billing"))
+        ) {
+          setMessages([
+            {
+              id: "error-billing",
+              text:
+                "⚠️ **AI Service Suspended / บริการ AI ถูกระงับ**\n\n" +
+                "ผู้ให้บริการ AI (OpenAI) ปฏิเสธคำขอเนื่องจากมียอดค้างชำระ\n" +
+                "กรุณาติดต่อผู้ดูแลระบบเพื่อตรวจสอบการชำระเงิน",
+              isUser: false,
+              timestamp: "เมื่อสักครู่",
+              image: null,
+            },
+          ]);
+        }
       }
     } catch (error) {
       console.error("Error fetching session messages:", error);
+      setMessages([
+        {
+          id: "error-network",
+          text: "⚠️ ไม่สามารถโหลดประวัติการสนทนาได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต",
+          isUser: false,
+          timestamp: "เมื่อสักครู่",
+          image: null,
+        },
+      ]);
     }
   };
 
@@ -603,7 +634,11 @@ export default function Chat() {
   };
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() && !uploadedFile) return;
+    const messageText = inputMessage.trim();
+    const fileToSend = uploadedFile;
+    const imagePreview = uploadedImage;
+
+    if (!messageText && !fileToSend) return;
 
     // ตรวจสอบ token อีกครั้งก่อนส่งข้อความ
     const token = tokenUtils.getValidToken();
@@ -632,12 +667,36 @@ export default function Chat() {
       setSelectedSessionId(validSessionId.toString());
     }
 
+    // Optimistic UI Update: แสดงข้อความของผู้ใช้ทันที
+    setInputMessage("");
+    setUploadedImage(null);
+    setUploadedFile(null);
+
+    const tempUserMessage: Message = {
+      id: Date.now().toString(),
+      text: messageText,
+      isUser: true,
+      timestamp: new Date().toLocaleTimeString("th-TH", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      image: imagePreview,
+    };
+    setMessages((prev) => [...prev, tempUserMessage]);
+    setTimeout(() => scrollToBottom(), 50);
+
+    // Update sidebar optimistically
+    updateSessionAfterMessage(
+      validSessionId.toString(),
+      messageText || "ส่งรูปภาพ",
+    );
+
     setIsTyping(true);
 
     try {
       // สร้าง formData สำหรับ multipart/form-data
       const formData = new FormData();
-      formData.append("message", inputMessage.trim());
+      formData.append("message", messageText);
       formData.append("session_id", validSessionId.toString());
       formData.append("timestamp", new Date().toISOString());
 
@@ -688,19 +747,19 @@ export default function Chat() {
       ];
 
       // ตรวจสอบว่ามีรูปภาพแนบมาหรือไม่
-      const hasImage = !!uploadedFile;
+      const hasImage = !!fileToSend;
 
       // ตรวจสอบประเภทของคำถาม
       const wantsDirectAnswer =
         hasImage &&
         directAnswerKeywords.some((keyword) =>
-          inputMessage.toLowerCase().includes(keyword.toLowerCase())
+          messageText.toLowerCase().includes(keyword.toLowerCase()),
         );
 
       const wantsAnalysis =
         hasImage &&
         analysisKeywords.some((keyword) =>
-          inputMessage.toLowerCase().includes(keyword.toLowerCase())
+          messageText.toLowerCase().includes(keyword.toLowerCase()),
         );
 
       const shouldAnalyzeImage = wantsAnalysis;
@@ -720,7 +779,7 @@ export default function Chat() {
       }
 
       console.log("🔍 Complete Image & Question Analysis Check:", {
-        message: inputMessage,
+        message: messageText,
         hasImage: hasImage,
         wantsDirectAnswer: wantsDirectAnswer,
         wantsAnalysis: wantsAnalysis,
@@ -728,24 +787,24 @@ export default function Chat() {
         analysisType: analysisType,
         logic: {
           hasImageAndDirectQuestion:
-            hasImage && inputMessage.toLowerCase().includes("นี่คืออะไร"),
+            hasImage && messageText.toLowerCase().includes("นี่คืออะไร"),
           hasImageAndAnalysisQuestion:
-            hasImage && inputMessage.toLowerCase().includes("วิเคราะห์"),
+            hasImage && messageText.toLowerCase().includes("วิเคราะห์"),
           shouldTriggerAnalysis: shouldAnalyzeImage,
           shouldTriggerDirect: wantsDirectAnswer && !shouldAnalyzeImage,
         },
         keywords: {
           directFound: directAnswerKeywords.filter((k) =>
-            inputMessage.toLowerCase().includes(k.toLowerCase())
+            messageText.toLowerCase().includes(k.toLowerCase()),
           ),
           analysisFound: analysisKeywords.filter((k) =>
-            inputMessage.toLowerCase().includes(k.toLowerCase())
+            messageText.toLowerCase().includes(k.toLowerCase()),
           ),
         },
       });
 
-      if (uploadedFile) {
-        formData.append("image", uploadedFile);
+      if (fileToSend) {
+        formData.append("image", fileToSend);
         formData.append("analyze_image", shouldAnalyzeImage ? "true" : "false");
         formData.append("analysis_type", analysisType);
 
@@ -753,7 +812,7 @@ export default function Chat() {
         if (wantsDirectAnswer) {
           formData.append(
             "instruction",
-            "ตอบแบบชิวๆ เหมือนเห็นรูปภาพจริงๆ บอกเฉพาะสิ่งที่เห็นในรูป ไม่วิเคราะห์หรือให้คำแนะนำเพิ่มเติม"
+            "ตอบแบบชิวๆ เหมือนเห็นรูปภาพจริงๆ บอกเฉพาะสิ่งที่เห็นในรูป ไม่วิเคราะห์หรือให้คำแนะนำเพิ่มเติม",
           );
         }
       }
@@ -778,7 +837,7 @@ export default function Chat() {
             Authorization: `Bearer ${token}`,
           },
           body: formData,
-        }
+        },
       );
 
       let data: any = null;
@@ -800,38 +859,6 @@ export default function Chat() {
       });
 
       if (response.ok && data.success) {
-        // สร้าง message ฝั่ง user
-        const userMessage: Message = {
-          id: Date.now().toString(),
-          text: inputMessage.trim(),
-          isUser: true,
-          timestamp: new Date().toLocaleTimeString("th-TH", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          image: data.data?.userMessage?.image_url
-            ? (() => {
-                const imagePath = data.data.userMessage.image_url.replace(
-                  /\\/g,
-                  "/"
-                );
-                const fullUrl = imagePath.startsWith("http")
-                  ? imagePath
-                  : `${apiConfig.baseUrl}/${
-                      imagePath.startsWith("/") ? imagePath.slice(1) : imagePath
-                    }`;
-                console.log("User image URL constructed:", fullUrl);
-                return fullUrl;
-              })()
-            : null,
-        };
-        setMessages((prev) => [...prev, userMessage]);
-
-        // เลื่อนแชทลงไปที่ข้อความล่าสุดทันที (หลังจากเพิ่มข้อความผู้ใช้)
-        setTimeout(() => {
-          scrollToBottom();
-        }, 50);
-
         // สร้าง message ฝั่ง AI (ตอบกลับ)
         const aiText =
           data.data?.aiMessage?.message_text ||
@@ -843,7 +870,7 @@ export default function Chat() {
           ? (() => {
               const imagePath = data.data.aiMessage.image_url.replace(
                 /\\/g,
-                "/"
+                "/",
               );
               const fullUrl = imagePath.startsWith("http")
                 ? imagePath
@@ -891,11 +918,6 @@ export default function Chat() {
           });
         }
 
-        // รีเซ็ต input และรูปภาพหลังจากส่งข้อความสำเร็จ
-        setInputMessage("");
-        setUploadedImage(null);
-        setUploadedFile(null);
-
         // เลื่อนแชทลงไปที่ข้อความล่าสุด (หลังจากได้รับการตอบกลับจาก AI)
         setTimeout(() => {
           scrollToBottom();
@@ -908,18 +930,48 @@ export default function Chat() {
           responseHeaders: Object.fromEntries(response.headers.entries()),
         });
 
-        toast({
-          title: "ส่งข้อความไม่สำเร็จ",
-          description: data.message || "เกิดข้อผิดพลาดในการส่งข้อความ",
-          variant: "destructive",
-        });
+        const errorMessage = data.message || "เกิดข้อผิดพลาดในการส่งข้อความ";
+        let displayError = `⚠️ ${errorMessage}`;
+
+        // ตรวจสอบ Error เรื่อง Billing
+        if (
+          response.status === 403 &&
+          (errorMessage.includes("Outstanding invoices") ||
+            errorMessage.includes("billing"))
+        ) {
+          displayError =
+            "⚠️ **AI Service Suspended / บริการ AI ถูกระงับ**\n\n" +
+            "ผู้ให้บริการ AI (OpenAI) ปฏิเสธคำขอเนื่องจากมียอดค้างชำระ\n" +
+            "กรุณาติดต่อผู้ดูแลระบบเพื่อตรวจสอบการชำระเงิน";
+        }
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            text: displayError,
+            isUser: false,
+            timestamp: new Date().toLocaleTimeString("th-TH", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          },
+        ]);
       }
     } catch (error) {
-      toast({
-        title: "ข้อผิดพลาด",
-        description: "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้",
-        variant: "destructive",
-      });
+      console.error("Network error:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          text: "⚠️ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ หรือการเชื่อมต่อถูกตัดขาด",
+          isUser: false,
+          timestamp: new Date().toLocaleTimeString("th-TH", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        },
+      ]);
     } finally {
       setIsTyping(false);
     }
@@ -964,11 +1016,11 @@ export default function Chat() {
         "Deleting session:",
         sessionId,
         "with token:",
-        token ? `${token.substring(0, 20)}...` : "null"
+        token ? `${token.substring(0, 20)}...` : "null",
       );
       console.log(
         "Request URL:",
-        `${apiConfig.baseUrl}/api/chat/sessions/${sessionId}`
+        `${apiConfig.baseUrl}/api/chat/sessions/${sessionId}`,
       );
       console.log("Request headers:", {
         "Content-Type": "application/json",
@@ -983,7 +1035,7 @@ export default function Chat() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (response.ok) {
@@ -1000,7 +1052,7 @@ export default function Chat() {
         if (selectedSessionId === sessionId) {
           setChatSessions((prev) => {
             const remainingSessions = prev.filter(
-              (session) => session.id !== sessionId
+              (session) => session.id !== sessionId,
             );
             if (remainingSessions.length > 0) {
               setSelectedSessionId(remainingSessions[0].id);
@@ -1029,7 +1081,7 @@ export default function Chat() {
         console.error(
           "Failed to delete session:",
           response.status,
-          response.statusText
+          response.statusText,
         );
         const errorData = await response.json().catch(() => ({}));
 
@@ -1067,14 +1119,14 @@ export default function Chat() {
   // อัปเดต session หลังจากส่งข้อความ
   const updateSessionAfterMessage = (
     sessionId: string,
-    lastMessage: string
+    lastMessage: string,
   ) => {
     setChatSessions((prev) =>
       prev.map((session) =>
         session.id === sessionId
           ? { ...session, lastMessage, timestamp: "เมื่อสักครู่" }
-          : session
-      )
+          : session,
+      ),
     );
   };
 
@@ -1495,7 +1547,7 @@ export default function Chat() {
                                         const reader = new FileReader();
                                         reader.onload = (ev) => {
                                           setUploadedImage(
-                                            ev.target?.result as string
+                                            ev.target?.result as string,
                                           );
                                           setUploadedFile(file);
                                         };
@@ -1605,11 +1657,11 @@ export default function Chat() {
                                         onError={(e) => {
                                           console.error(
                                             "Error loading user image:",
-                                            message.image
+                                            message.image,
                                           );
                                           console.error(
                                             "Image src:",
-                                            e.currentTarget.src
+                                            e.currentTarget.src,
                                           );
                                           e.currentTarget.style.display =
                                             "none";
@@ -1617,7 +1669,7 @@ export default function Chat() {
                                         onLoad={() => {
                                           console.log(
                                             "User image loaded successfully:",
-                                            message.image
+                                            message.image,
                                           );
                                         }}
                                       />
@@ -1682,7 +1734,7 @@ export default function Chat() {
                                       li: ({ children, ...props }) => {
                                         const isOrdered =
                                           props.className?.includes(
-                                            "task-list-item"
+                                            "task-list-item",
                                           );
                                         return (
                                           <li className="flex items-start text-gray-700 leading-relaxed text-base mb-2">
@@ -1801,18 +1853,18 @@ export default function Chat() {
                                       onError={(e) => {
                                         console.error(
                                           "Error loading AI image:",
-                                          message.image
+                                          message.image,
                                         );
                                         console.error(
                                           "Image src:",
-                                          e.currentTarget.src
+                                          e.currentTarget.src,
                                         );
                                         e.currentTarget.style.display = "none";
                                       }}
                                       onLoad={() => {
                                         console.log(
                                           "AI image loaded successfully:",
-                                          message.image
+                                          message.image,
                                         );
                                       }}
                                     />
