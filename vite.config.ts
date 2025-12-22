@@ -6,18 +6,16 @@ import { componentTagger } from "lovable-tagger";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   // Load environment variables
-  const env = loadEnv(mode, process.cwd(), '');
-  
+  const env = loadEnv(mode, process.cwd(), "");
+
   return {
     server: {
       host: "::",
-      port: 8081,
+      port: 8080,
     },
-    plugins: [
-      react(),
-      mode === 'development' &&
-      componentTagger(),
-    ].filter(Boolean),
+    plugins: [react(), mode === "development" && componentTagger()].filter(
+      Boolean,
+    ),
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
@@ -26,28 +24,30 @@ export default defineConfig(({ mode }) => {
     // Environment variables configuration
     define: {
       // Make environment variables available to the client
-      __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '1.0.0'),
+      __APP_VERSION__: JSON.stringify(
+        process.env.npm_package_version || "1.0.0",
+      ),
       __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
     },
     // Environment file loading
-    envPrefix: 'VITE_',
-    envDir: './',
+    envPrefix: "VITE_",
+    envDir: "./",
     // Build configuration
     build: {
-      outDir: 'dist',
-      sourcemap: mode === 'development',
+      outDir: "dist",
+      sourcemap: mode === "development",
       rollupOptions: {
         output: {
           manualChunks: {
-            vendor: ['react', 'react-dom'],
-            ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
+            vendor: ["react", "react-dom"],
+            ui: ["@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu"],
           },
         },
       },
     },
     // Preview configuration
     preview: {
-      port: 8081,
+      port: 8080,
       host: "::",
     },
   };
