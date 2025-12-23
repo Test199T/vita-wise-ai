@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { tokenUtils } from "@/lib/utils";
+import Ai04, { AttachedFile } from "@/components/ai-04";
 import { useProfilePicture } from "@/hooks/useProfilePicture";
 import { useProfile } from "@/hooks/useProfile";
 import { apiConfig } from "@/config/env";
@@ -633,10 +634,20 @@ export default function Chat() {
     }
   };
 
-  const handleSendMessage = async () => {
-    const messageText = inputMessage.trim();
-    const fileToSend = uploadedFile;
-    const imagePreview = uploadedImage;
+  const handleSendMessage = async (
+    overrideText?: string,
+    overrideFiles?: AttachedFile[],
+  ) => {
+    const messageText =
+      typeof overrideText === "string" ? overrideText : inputMessage.trim();
+
+    let fileToSend = uploadedFile;
+    let imagePreview = uploadedImage;
+
+    if (overrideFiles && overrideFiles.length > 0) {
+      fileToSend = overrideFiles[0].file;
+      imagePreview = overrideFiles[0].preview || null;
+    }
 
     if (!messageText && !fileToSend) return;
 
@@ -1483,147 +1494,7 @@ export default function Chat() {
                 {messages.length === 1 && !isTyping ? (
                   <div className="h-full flex items-center justify-center px-6 py-12">
                     <div className="text-center w-full max-w-2xl">
-                      {/* Header */}
-                      <div className="mb-12">
-                        <div className="mb-6">
-                          <h1 className="text-4xl text-gray-800 font-semibold">
-                            สวัสดี มีอะไรให้ช่วยไหม?
-                          </h1>
-                        </div>
-                      </div>
-
-                      {/* Input Field */}
-                      <div className="mb-8">
-                        <div className="relative max-w-2xl mx-auto">
-                          <div className="bg-white border border-gray-300 rounded-2xl px-4 py-3 shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all duration-200">
-                            <div className="flex items-center gap-3">
-                              {/* File Upload Button */}
-                              {uploadedImage ? (
-                                <div className="relative mr-2">
-                                  <img
-                                    src={uploadedImage}
-                                    alt="preview"
-                                    className="w-20 h-20 object-cover rounded-xl border border-gray-300"
-                                  />
-                                  <div className="absolute top-1 right-1 flex gap-1">
-                                    <button
-                                      type="button"
-                                      className="bg-white/80 hover:bg-white text-gray-700 rounded-full p-1 border border-gray-300 shadow"
-                                      title="ลบรูป"
-                                      onClick={() => {
-                                        setUploadedImage(null);
-                                        setUploadedFile(null);
-                                      }}
-                                    >
-                                      <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        className="h-4 w-4"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                      >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth={2}
-                                          d="M6 18L18 6M6 6l12 12"
-                                        />
-                                      </svg>
-                                    </button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <label
-                                  className="p-2 rounded-full transition-all duration-200 bg-blue-50 text-blue-600 hover:bg-blue-100 cursor-pointer flex items-center"
-                                  title="เพิ่มรูปภาพเพื่อวิเคราะห์อาหาร"
-                                >
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={(e) => {
-                                      const file = e.target.files?.[0];
-                                      if (file) {
-                                        const reader = new FileReader();
-                                        reader.onload = (ev) => {
-                                          setUploadedImage(
-                                            ev.target?.result as string,
-                                          );
-                                          setUploadedFile(file);
-                                        };
-                                        reader.readAsDataURL(file);
-                                        toast({
-                                          title: "เพิ่มรูปภาพสำเร็จ",
-                                          description: `รูปภาพ: ${file.name}`,
-                                        });
-                                      }
-                                    }}
-                                  />
-                                  {/* ใช้ icon บวก (+) */}
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-5 w-5"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M12 4v16m8-8H4"
-                                    />
-                                  </svg>
-                                </label>
-                              )}
-
-                              {/* Input Field */}
-                              <textarea
-                                ref={inputRef}
-                                placeholder="พิมพ์คำถามของคุณที่นี่..."
-                                value={inputMessage}
-                                onChange={handleInputChange}
-                                onKeyPress={handleKeyPress}
-                                disabled={isTyping}
-                                rows={1}
-                                className="flex-1 resize-none bg-transparent text-base text-gray-800 placeholder:text-gray-500 focus:outline-none"
-                                style={{ minHeight: "24px" }}
-                              />
-
-                              {/* Send Button */}
-                              <button
-                                onClick={handleSendMessage}
-                                disabled={!inputMessage.trim() || isTyping}
-                                className={`p-2 rounded-full transition-all duration-200 ${
-                                  inputMessage.trim() && !isTyping
-                                    ? "bg-blue-500 text-white hover:bg-blue-600"
-                                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                }`}
-                              >
-                                <Send className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Quick Action Buttons */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto">
-                        {quickActions.map((action, index) => (
-                          <button
-                            key={index}
-                            onClick={() =>
-                              handleQuickAction(action.description)
-                            }
-                            className="flex flex-col items-center gap-2 bg-white border border-gray-200 rounded-lg px-4 py-4 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm"
-                          >
-                            <action.icon className="h-5 w-5 text-gray-600" />
-                            <span className="text-sm text-gray-700 font-medium">
-                              {action.text}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
+                      <Ai04 onSubmit={handleSendMessage} />
                     </div>
                   </div>
                 ) : (
@@ -2048,7 +1919,7 @@ export default function Chat() {
 
                       {/* Send Button */}
                       <button
-                        onClick={handleSendMessage}
+                        onClick={() => handleSendMessage()}
                         disabled={!inputMessage.trim() || isTyping}
                         className={`p-2 rounded-full transition-all duration-200 ${
                           inputMessage.trim() && !isTyping
