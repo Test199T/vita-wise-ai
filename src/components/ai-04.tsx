@@ -140,7 +140,8 @@ export default function Ai04({
         <DecryptedText
           text="สวัสดี มีอะไรให้ช่วยไหม?"
           animateOn="view"
-          revealDirection="center"
+          revealDirection="start"
+          sequential={true}
         />
       </h1>
 

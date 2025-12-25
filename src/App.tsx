@@ -23,6 +23,7 @@ import SleepLog from "./pages/SleepLog";
 import WaterLog from "./pages/WaterLog";
 import Notifications from "./pages/Notifications";
 import Debug from "./pages/Debug";
+import GradualBlurDemo from "./pages/GradualBlurDemo";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/demo/gradual-blur" element={<GradualBlurDemo />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
