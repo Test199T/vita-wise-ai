@@ -9,6 +9,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
 
   return {
+    base: "./", // Ensure relative paths for assets (critical for GitHub Pages)
     server: {
       host: "::",
       port: 8080,
