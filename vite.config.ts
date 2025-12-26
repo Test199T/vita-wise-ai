@@ -36,7 +36,7 @@ export default defineConfig(({ mode }) => {
     // Build configuration
     build: {
       outDir: "dist",
-      sourcemap: mode === "development",
+      sourcemap: false, // Hide source maps in production to obscure code structure
       rollupOptions: {
         output: {
           manualChunks: {
