@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
 
   return {
-    base: "./", // Ensure relative paths for assets (critical for GitHub Pages)
+    base: "/", // Changed to absolute root as user URL suggests root domain hosting
     server: {
       host: "::",
       port: 8080,
