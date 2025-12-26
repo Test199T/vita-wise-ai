@@ -3,15 +3,25 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import {
     Activity,
     ArrowRight,
     Brain,
+    Calendar as CalendarIcon,
     Camera,
     CheckCircle2,
     ChevronDown,
     ChevronUp,
     Dumbbell,
     Droplets,
+    FileTextIcon,
     Flame,
     Globe,
     Heart,
@@ -20,8 +30,10 @@ import {
     Lock,
     Moon,
     Server,
+    Share2Icon,
     ShieldCheck,
     Smartphone,
+    BellIcon,
     Target,
     UtensilsCrossed,
     Watch,
@@ -39,6 +51,13 @@ import { RainbowButton } from "@/components/ui/rainbow-button";
 import { AnimatedBeam } from "@/components/ui/animated-beam";
 import { Send, Sparkles } from "lucide-react";
 import { ShinyButton } from "@/components/ui/shiny-button";
+import { Calendar } from "@/components/ui/calendar";
+import { BorderBeam } from "@/components/ui/border-beam";
+import { Marquee } from "@/components/ui/marquee";
+import { BentoCard, BentoGrid, FoodDemoModal, AIChatDemoModal } from "@/components/BentoBadge";
+import { Footer } from "@/components/footer";
+import { CallToAction } from "@/components/cta";
+import { cn } from "@/lib/utils";
 
 // --- Types ---
 interface ChatMessage {
@@ -1151,8 +1170,8 @@ const HeroSection = () => {
                         color="#0ea5e9"
                         flowSpeed={0.4}
                         wispDensity={1.2}
-                        horizontalBeamOffset={0.09}
-                        verticalBeamOffset={-0.22}
+                        horizontalBeamOffset={0.02}
+                        verticalBeamOffset={-0.24}
                         fogIntensity={0.3}
                     />
                 </div>
@@ -1211,6 +1230,9 @@ const HeroSection = () => {
                     >
                         {/* Inner Grid */}
                         <div className="absolute inset-0 bg-[linear-gradient(to_right,#00000008_1px,transparent_1px),linear-gradient(to_bottom,#00000008_1px,transparent_1px)] bg-[size:24px_24px] opacity-50" />
+
+                        {/* Static Glow Border - Blue Light Frame */}
+                        <div className="absolute inset-0 rounded-[inherit] border border-sky-400/60 shadow-[0_0_20px_-5px_rgba(56,189,248,0.4)] pointer-events-none z-10" />
 
                         {/* Top highlight line */}
                         <div className="absolute -inset-[1px] rounded-t-3xl border-t border-x border-sky-400/40 z-10 pointer-events-none"
@@ -1447,6 +1469,8 @@ const featuresBentoCards = [
 
 const Index = () => {
     const navigate = useNavigate();
+    const [isFoodDemoOpen, setIsFoodDemoOpen] = useState(false);
+    const [isAIChatDemoOpen, setIsAIChatDemoOpen] = useState(false);
 
     useEffect(() => {
         if (tokenUtils.isLoggedIn()) {
@@ -1463,71 +1487,151 @@ const Index = () => {
 
                 <div className="w-full bg-slate-50 py-16 border-t border-slate-200">
                     <div className="container mx-auto px-4">
-                        {/* Bento Grid - 2 columns layout matching reference image */}
-                        <ul className="grid grid-cols-1 md:grid-cols-12 md:grid-rows-2 gap-4 lg:gap-6 max-w-6xl mx-auto">
+                        {/* Bento Grid - Magic UI Style Layout */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4 lg:gap-6 max-w-6xl mx-auto">
 
-                            {/* Card 1: ติดตามสุขภาพครบวงจร (ซ้ายบน) - Expandable */}
-                            <ExpandableHealthCard />
+                            {/* Card 1: ติดตามสุขภาพครบวงจร (Spanning 2 columns on lg) */}
+                            <BentoCard
+                                Icon={Zap}
+                                name="ติดตามสุขภาพครบวงจร"
+                                description="ดูแลครบทุกด้าน: อาหาร, ออกกำลังกาย, การนอน และน้ำดื่มในที่เดียว"
+                                href="#"
+                                cta="ดูการทำงาน"
+                                className="md:col-span-2 lg:col-span-1 min-h-[280px]"
+                                background={
+                                    <Marquee
+                                        pauseOnHover
+                                        className="absolute top-10 [mask-image:linear-gradient(to_top,transparent_40%,#000_100%)] [--duration:20s]"
+                                    >
+                                        {[
+                                            { name: "อาหารเช้า", body: "โอ๊ตมีล + กล้วย + นมไขมันต่ำ = 350 kcal" },
+                                            { name: "ออกกำลังกาย", body: "วิ่งเหยาะๆ 30 นาที เผาผลาญ 280 kcal" },
+                                            { name: "น้ำดื่ม", body: "ดื่มน้ำไป 2.1 ลิตร จากเป้า 2.5 ลิตร" },
+                                            { name: "การนอน", body: "นอน 7.5 ชม. คุณภาพการนอนดี" },
+                                            { name: "อาหารกลางวัน", body: "ข้าวผัดไก่ + ไข่ดาว = 520 kcal" },
+                                        ].map((f, idx) => (
+                                            <figure
+                                                key={idx}
+                                                className={cn(
+                                                    "relative w-36 cursor-pointer overflow-hidden rounded-xl border p-4",
+                                                    "border-slate-200 bg-white/80 hover:bg-white",
+                                                    "transform-gpu blur-[1px] transition-all duration-300 ease-out hover:blur-none hover:shadow-md"
+                                                )}
+                                            >
+                                                <div className="flex flex-col">
+                                                    <figcaption className="text-sm font-medium text-slate-800">
+                                                        {f.name}
+                                                    </figcaption>
+                                                </div>
+                                                <blockquote className="mt-2 text-xs text-slate-500">{f.body}</blockquote>
+                                            </figure>
+                                        ))}
+                                    </Marquee>
+                                }
+                            />
 
-                            {/* Card 2: คุยกับ AI ส่วนตัว - Interactive Demo (ขวา row-span-2) */}
-                            <InteractiveAIChatCard />
+                            {/* Card 2: AI Chat Card */}
+                            <BentoCard
+                                Icon={BellIcon}
+                                name="คุยกับ AI ส่วนตัว"
+                                description="ปรึกษาปัญหาสุขภาพได้ตลอด 24 ชม."
+                                href="#"
+                                cta="ลองใช้งาน"
+                                className="md:col-span-1 lg:col-span-2 min-h-[280px]"
+                                onCtaClick={() => setIsAIChatDemoOpen(true)}
+                                background={
+                                    <div className="absolute inset-0 top-10 flex flex-col gap-2 p-4 [mask-image:linear-gradient(to_top,transparent_10%,#000_100%)]">
+                                        {/* AI Chat Demo Messages */}
+                                        {[
+                                            { type: 'user', text: 'วันนี้กินแคลอรี่ไปเท่าไหร่?' },
+                                            { type: 'ai', text: 'วันนี้กินไป 1,850 kcal จากเป้าหมาย 2,000 kcal 🎯' },
+                                            { type: 'user', text: 'แนะนำอาหารเย็นหน่อย' },
+                                        ].map((msg, idx) => (
+                                            <div
+                                                key={idx}
+                                                className={cn(
+                                                    "max-w-[80%] px-3 py-2 rounded-xl text-xs transition-all duration-300",
+                                                    msg.type === 'user'
+                                                        ? "self-end bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-tr-sm"
+                                                        : "self-start bg-white border border-slate-200 text-slate-700 rounded-tl-sm"
+                                                )}
+                                            >
+                                                {msg.text}
+                                            </div>
+                                        ))}
+                                    </div>
+                                }
+                            />
 
-                            {/* Card 3: AI Food Recognition Demo (ซ้ายล่าง) */}
-                            <FoodRecognitionDemo />
+                            {/* Card 3: AI Food Recognition */}
+                            <BentoCard
+                                Icon={Camera}
+                                name="AI วิเคราะห์แคลอรี่"
+                                description="เพียงถ่ายรูปอาหาร รู้ค่าโภชนาการทันที"
+                                href="#"
+                                cta="ดูตัวอย่าง"
+                                className="md:col-span-2 min-h-[280px]"
+                                onCtaClick={() => setIsFoodDemoOpen(true)}
+                                background={
+                                    <div className="absolute right-4 top-10 w-[200px] h-[160px] rounded-xl overflow-hidden shadow-xl border border-slate-200 [mask-image:linear-gradient(to_top,transparent_10%,#000_100%)] transition-all duration-300 group-hover:scale-105">
+                                        <img
+                                            src="/images/tom-yum-noodles.png"
+                                            alt="ก๋วยเตี๋ยวต้มยำ"
+                                            className="w-full h-full object-cover"
+                                        />
+                                        {/* Scanning overlay effect */}
+                                        <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/10 via-transparent to-emerald-500/10 animate-pulse" />
+                                        <div className="absolute bottom-2 left-2 right-2 bg-white/95 backdrop-blur rounded-lg px-2 py-1.5 flex items-center justify-between">
+                                            <span className="text-xs font-medium text-slate-800">ก๋วยเตี๋ยวต้มยำกุ้ง</span>
+                                            <span className="text-xs font-bold text-orange-500">485 kcal</span>
+                                        </div>
+                                    </div>
+                                }
+                            />
 
-                        </ul>
-                    </div>
-                </div>
-                <section className="bg-gradient-to-b from-slate-50 to-white py-16 md:py-24 px-4">
-                    <div className="max-w-6xl mx-auto relative rounded-2xl md:rounded-[2.5rem] border border-slate-200 overflow-hidden bg-white shadow-xl">
+                            {/* Card 4: Calendar - Filter by Date */}
+                            <BentoCard
+                                Icon={CalendarIcon}
+                                name="ดูประวัติสุขภาพ"
+                                description="ดูข้อมูลสุขภาพย้อนหลังตามวันที่ต้องการ"
+                                className="md:col-span-1 min-h-[280px]"
+                                href="#"
+                                cta="ดูประวัติ"
+                                background={
+                                    <Calendar
+                                        mode="single"
+                                        selected={new Date(2024, 11, 25)}
+                                        className="absolute top-10 right-0 origin-top scale-[0.85] rounded-xl border border-slate-200 bg-white shadow-sm [mask-image:linear-gradient(to_top,transparent_40%,#000_100%)] transition-all duration-300 group-hover:scale-90"
+                                    />
+                                }
+                            />
 
-                        {/* Background Gradients */}
-                        <div className="absolute top-0 right-0 w-[300px] md:w-[500px] h-[300px] md:h-[500px] bg-emerald-100/50 blur-[80px] md:blur-[120px] rounded-full pointer-events-none -translate-y-1/2 translate-x-1/3" />
-                        <div className="absolute bottom-0 left-0 w-[300px] md:w-[500px] h-[300px] md:h-[500px] bg-sky-100/50 blur-[80px] md:blur-[120px] rounded-full pointer-events-none translate-y-1/3 -translate-x-1/3" />
-
-                        <div className="relative z-10 flex flex-col items-center justify-center py-12 md:py-20 px-4 md:px-6 text-center">
-                            <h2 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold text-slate-900 mb-4 md:mb-6 tracking-tight leading-tight font-heading">
-                                ไม่มีขีดจำกัดในการ <br className="hidden sm:block" />
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-emerald-500">
-                                    ดูแลสุขภาพ
-                                </span> ด้วย AI
-                            </h2>
-
-                            <div className="text-sm md:text-lg text-slate-600 mb-8 md:mb-10 max-w-lg leading-relaxed font-light font-prompt px-2">
-                                <p>
-                                    "สุขภาพดีขึ้นได้จริง โดยไม่ต้องพยายามจนเกินไป" <br className="hidden sm:block" />
-                                    <span className="text-slate-500">สงสัยใช่ไหม? </span>
-                                    <strong className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-emerald-500 cursor-pointer hover:opacity-80 transition-opacity">
-                                        ลองพิสูจน์
-                                    </strong>
-                                    <span className="text-slate-500"> ด้วยตัวคุณเอง</span>
-                                </p>
-                            </div>
-
-                            <Link to="/register">
-                                <ShinyButton className="px-8 py-6 text-base font-semibold">
-                                    เริ่มต้นใช้งานฟรี
-                                </ShinyButton>
-                            </Link>
                         </div>
                     </div>
-                </section>
+                </div>
+                <CallToAction />
 
             </main>
 
-            <footer className="py-12 bg-white border-t border-slate-200">
-                <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div className="flex items-center gap-2">
-                        <div className="bg-gradient-to-br from-sky-500 to-emerald-500 p-1.5 rounded-lg text-white">
-                            <Activity size={18} />
-                        </div>
-                        <span className="font-bold text-slate-900">Vita Wise AI</span>
-                    </div>
-                    <p className="text-slate-500 text-sm">© 2024 Vita Wise AI Health Automation.</p>
-                </div>
-            </footer>
+
+            <div className="w-full">
+                <Footer />
+            </div>
+
+            {/* Food Demo Modal */}
+            <FoodDemoModal
+                isOpen={isFoodDemoOpen}
+                onClose={() => setIsFoodDemoOpen(false)}
+            />
+
+            {/* AI Chat Demo Modal */}
+            <AIChatDemoModal
+                isOpen={isAIChatDemoOpen}
+                onClose={() => setIsAIChatDemoOpen(false)}
+            />
         </div>
     );
 };
 
 export default Index;
+
