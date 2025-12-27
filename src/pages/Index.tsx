@@ -58,6 +58,7 @@ import { BentoCard, BentoGrid, FoodDemoModal, AIChatDemoModal } from "@/componen
 import { Footer } from "@/components/footer";
 import { CallToAction } from "@/components/cta";
 import { cn } from "@/lib/utils";
+import { LinearGridBackground } from "@/components/ui/linear-grid-background";
 
 // --- Types ---
 interface ChatMessage {
@@ -219,7 +220,7 @@ const InteractiveAIChatCard = () => {
                 ref={cardRef}
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
-                className="relative h-full rounded-2xl border border-slate-200 p-2 md:rounded-3xl md:p-3 bg-white overflow-hidden group"
+                className="relative h-full rounded-2xl border border-slate-300 p-2 md:rounded-3xl md:p-3 bg-white overflow-hidden group"
             >
                 {/* Animated Gradient Border */}
                 <div className="absolute inset-0 rounded-2xl md:rounded-3xl pointer-events-none">
@@ -291,7 +292,7 @@ const InteractiveAIChatCard = () => {
                                 <span className="inline-block animate-bounce">👇</span>
                             </p>
                         </div>
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-white to-slate-50 border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.05)] flex items-center justify-center hover:scale-110 transition-transform duration-300">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-white to-slate-50 border border-slate-300 shadow-[0_2px_10px_rgba(0,0,0,0.05)] flex items-center justify-center hover:scale-110 transition-transform duration-300">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" color="currentColor" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-800">
                                 <path d="M2.5 16.5C2.5 17.4293 2.5 17.894 2.57686 18.2804C2.89249 19.8671 4.13288 21.1075 5.71964 21.4231C6.10603 21.5 6.57069 21.5 7.5 21.5M21.5 16.5C21.5 17.4293 21.5 17.894 21.4231 18.2804C21.1075 19.8671 19.8671 21.1075 18.2804 21.4231C17.894 21.5 17.4293 21.5 16.5 21.5M21.5 7.5C21.5 6.57069 21.5 6.10603 21.4231 5.71964C21.1075 4.13288 19.8671 2.89249 18.2804 2.57686C17.894 2.5 17.4293 2.5 16.5 2.5M2.5 7.5C2.5 6.57069 2.5 6.10603 2.57686 5.71964C2.89249 4.13288 4.13288 2.89249 5.71964 2.57686C6.10603 2.5 6.57069 2.5 7.5 2.5" />
                                 <path d="M12 8.5V6.5M10 11.5V12M14 11.5V12M11 8.5H13C14.8856 8.5 15.8284 8.5 16.4142 9.08579C17 9.67157 17 10.6144 17 12.5C17 14.3856 17 15.3284 16.4142 15.9142C15.8284 16.5 14.8856 16.5 13 16.5H11C9.11438 16.5 8.17157 16.5 7.58579 15.9142C7 15.3284 7 14.3856 7 12.5C7 10.6144 7 9.67157 7.58579 9.08579C8.17157 8.5 9.11438 8.5 11 8.5Z" />
@@ -306,7 +307,7 @@ const InteractiveAIChatCard = () => {
                                 key={q}
                                 onClick={() => handleQuickQuestion(q)}
                                 disabled={isTyping}
-                                className="relative px-3 py-1.5 text-xs bg-gradient-to-r from-slate-50 to-slate-100 hover:from-sky-50 hover:to-emerald-50 text-slate-600 hover:text-slate-900 rounded-full border border-slate-200 hover:border-sky-300 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group/btn"
+                                className="relative px-3 py-1.5 text-xs bg-gradient-to-r from-slate-50 to-slate-100 hover:from-sky-50 hover:to-emerald-50 text-slate-600 hover:text-slate-900 rounded-full border border-slate-300 hover:border-sky-300 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group/btn"
                                 style={{
                                     animation: `fadeInUp 0.5s ease-out ${index * 0.1}s both`
                                 }}
@@ -339,7 +340,7 @@ const InteractiveAIChatCard = () => {
                             ) : (
                                 <div
                                     key={msg.id}
-                                    className="self-start bg-gradient-to-br from-white to-slate-50 text-slate-700 px-4 py-4 rounded-2xl rounded-tl-sm border border-slate-200 max-w-[95%] shadow-md animate-in slide-in-from-left-2 duration-300 hover:shadow-lg transition-all relative"
+                                    className="self-start bg-gradient-to-br from-white to-slate-50 text-slate-700 px-4 py-4 rounded-2xl rounded-tl-sm border border-slate-300 max-w-[95%] shadow-md animate-in slide-in-from-left-2 duration-300 hover:shadow-lg transition-all relative"
                                     style={{
                                         animation: `slideInLeft 0.4s ease-out`
                                     }}
@@ -383,7 +384,7 @@ const InteractiveAIChatCard = () => {
 
                         {/* Premium Typing Indicator */}
                         {isTyping && !currentAIMessageId && (
-                            <div className="self-start bg-gradient-to-br from-white to-slate-50 text-slate-700 px-4 py-3 rounded-2xl rounded-tl-sm border border-slate-200 shadow-md">
+                            <div className="self-start bg-gradient-to-br from-white to-slate-50 text-slate-700 px-4 py-3 rounded-2xl rounded-tl-sm border border-slate-300 shadow-md">
                                 <div className="flex items-center gap-1.5">
                                     {[0, 150, 300].map((delay, i) => (
                                         <div
@@ -401,7 +402,7 @@ const InteractiveAIChatCard = () => {
                     </div>
 
                     {/* Input Area with Enhanced Design */}
-                    <form onSubmit={handleSubmit} className="mt-auto pt-4 border-t border-slate-200/50 relative z-10">
+                    <form onSubmit={handleSubmit} className="mt-auto pt-4 border-t border-slate-300/80 relative z-10">
                         <div className="relative flex items-center group/input">
                             <input
                                 type="text"
@@ -696,7 +697,7 @@ const ExpandableHealthCard = () => {
 
     return (
         <li className="list-none md:[grid-area:1/1/2/8]" style={{ minHeight: isExpanded ? '450px' : '260px', transition: 'min-height 600ms cubic-bezier(0.4, 0, 0.2, 1)' }}>
-            <div className="relative h-full rounded-2xl border border-slate-200 p-2 md:rounded-3xl md:p-3 bg-white">
+            <div className="relative h-full rounded-2xl border border-slate-300 p-2 md:rounded-3xl md:p-3 bg-white">
                 <GlowingEffect
                     spread={40}
                     glow={true}
@@ -706,7 +707,7 @@ const ExpandableHealthCard = () => {
                 />
                 <div className="relative flex h-full flex-col gap-4 overflow-hidden rounded-xl p-6 md:p-8 bg-white">
                     {/* Icon */}
-                    <div className="w-12 h-12 rounded-xl bg-white border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.05)] flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-xl bg-white border border-slate-300 shadow-[0_2px_10px_rgba(0,0,0,0.05)] flex items-center justify-center">
                         <Zap size={24} className="text-slate-800" />
                     </div>
 
@@ -734,7 +735,7 @@ const ExpandableHealthCard = () => {
                             {workflowSteps.map((step, index) => (
                                 <div
                                     key={index}
-                                    className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:shadow-sm transition-all duration-300"
+                                    className="flex items-center gap-3 p-3 rounded-xl border border-slate-300 bg-slate-50/50 hover:bg-white hover:shadow-sm transition-all duration-300"
                                     style={{
                                         opacity: isExpanded ? 1 : 0,
                                         transform: isExpanded ? 'translateY(0)' : 'translateY(10px)',
@@ -815,7 +816,7 @@ const FoodRecognitionDemo = () => {
 
     return (
         <li className="min-h-[320px] list-none md:[grid-area:2/1/3/8]">
-            <div className="relative h-full rounded-2xl border border-slate-200 p-2 md:rounded-3xl md:p-3 bg-white">
+            <div className="relative h-full rounded-2xl border border-slate-300 p-2 md:rounded-3xl md:p-3 bg-white">
                 <GlowingEffect
                     spread={40}
                     glow={true}
@@ -827,7 +828,7 @@ const FoodRecognitionDemo = () => {
                     {/* Left Content */}
                     <div className="flex-1 p-6 md:p-8 flex flex-col justify-between gap-4">
                         {/* Badge */}
-                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white text-slate-600 border border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.04)] text-xs font-medium w-fit">
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white text-slate-600 border border-slate-300 shadow-[0_1px_3px_rgba(0,0,0,0.04)] text-xs font-medium w-fit">
                             <Brain size={12} className="text-slate-900" />
                             <span>AI วิเคราะห์อาหาร</span>
                         </div>
@@ -869,7 +870,7 @@ const FoodRecognitionDemo = () => {
                     {/* Right - Premium Food Recognition Demo */}
                     <div className="hidden md:flex flex-1 items-center justify-center relative p-6">
                         {/* Phone-like Frame */}
-                        <div className="relative w-[260px] bg-white rounded-[2rem] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.15)] border border-slate-200/80 overflow-hidden">
+                        <div className="relative w-[260px] bg-white rounded-[2rem] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.15)] border border-slate-300 overflow-hidden">
                             {/* Food Image */}
                             <div className="relative aspect-square overflow-hidden">
                                 <img
@@ -1039,10 +1040,10 @@ const FoodRecognitionDemo = () => {
 
 const NodeCard = ({ title, icon: Icon, iconColor, label, spotlightColor = "rgba(0, 229, 255, 0.15)", isActive = false }: any) => (
     <SpotlightCard
-        className={`z-10 w-36 sm:w-48 p-5 bg-white border-slate-200 shadow-sm flex flex-col items-center gap-4 transition-all duration-300 rounded-2xl group ${isActive ? 'ring-1 ring-slate-300 shadow-md' : 'hover:shadow-md hover:border-slate-300'}`}
+        className={`z-10 w-36 sm:w-48 p-5 bg-white border border-slate-300 shadow-sm flex flex-col items-center gap-4 transition-all duration-300 rounded-2xl group ${isActive ? 'ring-1 ring-slate-400 shadow-md' : 'hover:shadow-md hover:border-slate-400'}`}
         spotlightColor={spotlightColor}
     >
-        <div className="w-12 h-12 rounded-xl bg-white border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex items-center justify-center">
+        <div className="w-12 h-12 rounded-xl bg-white border border-slate-300 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex items-center justify-center">
             <Icon size={22} className={iconColor || "text-slate-600"} />
         </div>
         <div className="text-center space-y-1">
@@ -1157,15 +1158,26 @@ const HeroSection = () => {
 
             {/* Light Theme Background Effects */}
             <div className="absolute inset-0 z-0">
-                {/* Soft gradient orbs */}
-                <div className="absolute top-20 left-1/4 w-[500px] h-[500px] bg-sky-200/40 rounded-full blur-[120px] pointer-events-none" />
-                <div className="absolute top-40 right-1/4 w-[400px] h-[400px] bg-emerald-200/30 rounded-full blur-[100px] pointer-events-none" />
+                {/* Structure Grid - Startup Visuals Style */}
+                <svg
+                    className="absolute inset-0 w-full h-full opacity-[0.03] pointer-events-none"
+                    xmlns="http://www.w3.org/2000/svg"
+                >
+                    <defs>
+                        <pattern id="grid-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
+                            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="1" />
+                        </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#grid-pattern)" />
+                </svg>
 
-                {/* Subtle grid pattern */}
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,#00000005_1px,transparent_1px),linear-gradient(to_bottom,#00000005_1px,transparent_1px)] bg-[size:40px_40px]" />
+                {/* Soft gradient orbs - Restored */}
+                <div className="absolute top-20 left-1/4 w-[500px] h-[500px] bg-sky-300/30 rounded-full blur-[120px] pointer-events-none mix-blend-multiply" />
+                <div className="absolute top-40 right-1/4 w-[400px] h-[400px] bg-emerald-300/20 rounded-full blur-[100px] pointer-events-none mix-blend-multiply" />
+                <div className="absolute bottom-0 left-1/3 w-[600px] h-[300px] bg-indigo-200/20 rounded-full blur-[100px] pointer-events-none" />
 
                 {/* LaserFlow Beam Effect */}
-                <div className="absolute inset-0 opacity-60 mix-blend-multiply pointer-events-none">
+                <div className="absolute inset-0 opacity-70 mix-blend-multiply pointer-events-none">
                     <LaserFlow
                         color="#0ea5e9"
                         flowSpeed={0.4}
@@ -1220,12 +1232,12 @@ const HeroSection = () => {
                 </div>
 
                 {/* Workflow Visualization - Hidden on mobile, shown on md+ */}
-                <div className="hidden md:block w-full max-w-5xl mt-auto relative z-20 transform translate-y-1">
+                <div className="hidden md:block w-full max-w-6xl mt-auto relative z-20 transform translate-y-1">
                     {/* Glow effect for light theme */}
                     <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-sky-300/20 rounded-full blur-[100px] pointer-events-none" />
 
                     <SpotlightCard
-                        className="rounded-t-3xl rounded-b-none border-t border-x border-b-0 border-slate-200 bg-white/90 shadow-xl backdrop-blur-xl p-8 pb-0 md:p-12 md:pb-0 !overflow-visible"
+                        className="rounded-t-3xl rounded-b-none border-t border-x border-b-0 border-slate-300 bg-white/90 shadow-xl backdrop-blur-xl p-8 pb-0 md:p-12 md:pb-0 !overflow-visible"
                         spotlightColor="rgba(56, 189, 248, 0.1)"
                     >
                         {/* Inner Grid */}
@@ -1243,7 +1255,7 @@ const HeroSection = () => {
                         <div className="absolute -top-[1px] left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-sky-400 to-transparent z-20" />
 
 
-                        <div ref={containerRef} className="relative z-10 w-full max-w-5xl mx-auto pb-8 md:pb-12">
+                        <div ref={containerRef} className="relative z-10 w-full max-w-6xl mx-auto pb-8 md:pb-12">
                             <div className="flex flex-col md:flex-row items-center justify-center md:justify-between gap-4 md:gap-6 w-full md:h-40">
                                 {/* Left Card - Sources */}
                                 <div ref={leftCardRef} className="flex-shrink-0 z-10">
@@ -1485,128 +1497,140 @@ const Index = () => {
             <main>
                 <HeroSection />
 
-                <div className="w-full bg-slate-50 py-16 border-t border-slate-200">
-                    <div className="container mx-auto px-4">
-                        {/* Bento Grid - Magic UI Style Layout */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4 lg:gap-6 max-w-6xl mx-auto">
+                <div className="w-full bg-[#f9f9f9]">
+                    <div className="relative mx-auto flex w-full max-w-6xl flex-col justify-between border-x border-dashed border-slate-300 py-16">
+                        <div
+                            className="-translate-x-1/2 -top-px pointer-events-none absolute left-1/2 w-screen"
+                            style={{
+                                height: '2px',
+                                background: 'repeating-linear-gradient(90deg, #cbd5e1 0, #cbd5e1 3px, transparent 3px, transparent 6px)'
+                            }}
+                        />
 
-                            {/* Card 1: ติดตามสุขภาพครบวงจร (Spanning 2 columns on lg) */}
-                            <BentoCard
-                                Icon={Zap}
-                                name="ติดตามสุขภาพครบวงจร"
-                                description="ดูแลครบทุกด้าน: อาหาร, ออกกำลังกาย, การนอน และน้ำดื่มในที่เดียว"
-                                href="#"
-                                cta="ดูการทำงาน"
-                                className="md:col-span-2 lg:col-span-1 min-h-[280px]"
-                                background={
-                                    <Marquee
-                                        pauseOnHover
-                                        className="absolute top-10 [mask-image:linear-gradient(to_top,transparent_40%,#000_100%)] [--duration:20s]"
-                                    >
-                                        {[
-                                            { name: "อาหารเช้า", body: "โอ๊ตมีล + กล้วย + นมไขมันต่ำ = 350 kcal" },
-                                            { name: "ออกกำลังกาย", body: "วิ่งเหยาะๆ 30 นาที เผาผลาญ 280 kcal" },
-                                            { name: "น้ำดื่ม", body: "ดื่มน้ำไป 2.1 ลิตร จากเป้า 2.5 ลิตร" },
-                                            { name: "การนอน", body: "นอน 7.5 ชม. คุณภาพการนอนดี" },
-                                            { name: "อาหารกลางวัน", body: "ข้าวผัดไก่ + ไข่ดาว = 520 kcal" },
-                                        ].map((f, idx) => (
-                                            <figure
-                                                key={idx}
-                                                className={cn(
-                                                    "relative w-36 cursor-pointer overflow-hidden rounded-xl border p-4",
-                                                    "border-slate-200 bg-white/80 hover:bg-white",
-                                                    "transform-gpu blur-[1px] transition-all duration-300 ease-out hover:blur-none hover:shadow-md"
-                                                )}
-                                            >
-                                                <div className="flex flex-col">
-                                                    <figcaption className="text-sm font-medium text-slate-800">
-                                                        {f.name}
-                                                    </figcaption>
+                        <div className="container mx-auto px-4 py-8">
+                            {/* Bento Grid - Magic UI Style Layout */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4 lg:gap-6">
+
+                                {/* Card 1: ติดตามสุขภาพครบวงจร (Spanning 2 columns on lg) */}
+                                <BentoCard
+                                    Icon={Zap}
+                                    name="ติดตามสุขภาพครบวงจร"
+                                    description="ดูแลครบทุกด้าน: อาหาร, ออกกำลังกาย, การนอน และน้ำดื่มในที่เดียว"
+                                    href="#"
+                                    cta="ดูการทำงาน"
+                                    className="md:col-span-2 lg:col-span-1 min-h-[280px]"
+                                    background={
+                                        <Marquee
+                                            pauseOnHover
+                                            className="absolute top-10 [mask-image:linear-gradient(to_top,transparent_40%,#000_100%)] [--duration:20s]"
+                                        >
+                                            {[
+                                                { name: "อาหารเช้า", body: "โอ๊ตมีล + กล้วย + นมไขมันต่ำ = 350 kcal" },
+                                                { name: "ออกกำลังกาย", body: "วิ่งเหยาะๆ 30 นาที เผาผลาญ 280 kcal" },
+                                                { name: "น้ำดื่ม", body: "ดื่มน้ำไป 2.1 ลิตร จากเป้า 2.5 ลิตร" },
+                                                { name: "การนอน", body: "นอน 7.5 ชม. คุณภาพการนอนดี" },
+                                                { name: "อาหารกลางวัน", body: "ข้าวผัดไก่ + ไข่ดาว = 520 kcal" },
+                                            ].map((f, idx) => (
+                                                <figure
+                                                    key={idx}
+                                                    className={cn(
+                                                        "relative w-36 cursor-pointer overflow-hidden rounded-xl border p-4",
+                                                        "border-slate-300 bg-white/80 hover:bg-white",
+                                                        "transform-gpu blur-[1px] transition-all duration-300 ease-out hover:blur-none hover:shadow-md"
+                                                    )}
+                                                >
+                                                    <div className="flex flex-col">
+                                                        <figcaption className="text-sm font-medium text-slate-800">
+                                                            {f.name}
+                                                        </figcaption>
+                                                    </div>
+                                                    <blockquote className="mt-2 text-xs text-slate-500">{f.body}</blockquote>
+                                                </figure>
+                                            ))}
+                                        </Marquee>
+                                    }
+                                />
+
+                                {/* Card 2: AI Chat Card */}
+                                <BentoCard
+                                    Icon={BellIcon}
+                                    name="คุยกับ AI ส่วนตัว"
+                                    description="ปรึกษาปัญหาสุขภาพได้ตลอด 24 ชม."
+                                    href="#"
+                                    cta="ลองใช้งาน"
+                                    className="md:col-span-1 lg:col-span-2 min-h-[280px]"
+                                    onCtaClick={() => setIsAIChatDemoOpen(true)}
+                                    background={
+                                        <div className="absolute inset-0 top-10 flex flex-col gap-2 p-4 [mask-image:linear-gradient(to_top,transparent_10%,#000_100%)]">
+                                            {/* AI Chat Demo Messages */}
+                                            {[
+                                                { type: 'user', text: 'วันนี้กินแคลอรี่ไปเท่าไหร่?' },
+                                                { type: 'ai', text: 'วันนี้กินไป 1,850 kcal จากเป้าหมาย 2,000 kcal 🎯' },
+                                                { type: 'user', text: 'แนะนำอาหารเย็นหน่อย' },
+                                            ].map((msg, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className={cn(
+                                                        "max-w-[80%] px-3 py-2 rounded-xl text-xs transition-all duration-300",
+                                                        msg.type === 'user'
+                                                            ? "self-end bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-tr-sm"
+                                                            : "self-start bg-white border border-slate-300 text-slate-700 rounded-tl-sm"
+                                                    )}
+                                                >
+                                                    {msg.text}
                                                 </div>
-                                                <blockquote className="mt-2 text-xs text-slate-500">{f.body}</blockquote>
-                                            </figure>
-                                        ))}
-                                    </Marquee>
-                                }
-                            />
-
-                            {/* Card 2: AI Chat Card */}
-                            <BentoCard
-                                Icon={BellIcon}
-                                name="คุยกับ AI ส่วนตัว"
-                                description="ปรึกษาปัญหาสุขภาพได้ตลอด 24 ชม."
-                                href="#"
-                                cta="ลองใช้งาน"
-                                className="md:col-span-1 lg:col-span-2 min-h-[280px]"
-                                onCtaClick={() => setIsAIChatDemoOpen(true)}
-                                background={
-                                    <div className="absolute inset-0 top-10 flex flex-col gap-2 p-4 [mask-image:linear-gradient(to_top,transparent_10%,#000_100%)]">
-                                        {/* AI Chat Demo Messages */}
-                                        {[
-                                            { type: 'user', text: 'วันนี้กินแคลอรี่ไปเท่าไหร่?' },
-                                            { type: 'ai', text: 'วันนี้กินไป 1,850 kcal จากเป้าหมาย 2,000 kcal 🎯' },
-                                            { type: 'user', text: 'แนะนำอาหารเย็นหน่อย' },
-                                        ].map((msg, idx) => (
-                                            <div
-                                                key={idx}
-                                                className={cn(
-                                                    "max-w-[80%] px-3 py-2 rounded-xl text-xs transition-all duration-300",
-                                                    msg.type === 'user'
-                                                        ? "self-end bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-tr-sm"
-                                                        : "self-start bg-white border border-slate-200 text-slate-700 rounded-tl-sm"
-                                                )}
-                                            >
-                                                {msg.text}
-                                            </div>
-                                        ))}
-                                    </div>
-                                }
-                            />
-
-                            {/* Card 3: AI Food Recognition */}
-                            <BentoCard
-                                Icon={Camera}
-                                name="AI วิเคราะห์แคลอรี่"
-                                description="เพียงถ่ายรูปอาหาร รู้ค่าโภชนาการทันที"
-                                href="#"
-                                cta="ดูตัวอย่าง"
-                                className="md:col-span-2 min-h-[280px]"
-                                onCtaClick={() => setIsFoodDemoOpen(true)}
-                                background={
-                                    <div className="absolute right-4 top-10 w-[200px] h-[160px] rounded-xl overflow-hidden shadow-xl border border-slate-200 [mask-image:linear-gradient(to_top,transparent_10%,#000_100%)] transition-all duration-300 group-hover:scale-105">
-                                        <img
-                                            src="/images/tom-yum-noodles.png"
-                                            alt="ก๋วยเตี๋ยวต้มยำ"
-                                            className="w-full h-full object-cover"
-                                        />
-                                        {/* Scanning overlay effect */}
-                                        <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/10 via-transparent to-emerald-500/10 animate-pulse" />
-                                        <div className="absolute bottom-2 left-2 right-2 bg-white/95 backdrop-blur rounded-lg px-2 py-1.5 flex items-center justify-between">
-                                            <span className="text-xs font-medium text-slate-800">ก๋วยเตี๋ยวต้มยำกุ้ง</span>
-                                            <span className="text-xs font-bold text-orange-500">485 kcal</span>
+                                            ))}
                                         </div>
-                                    </div>
-                                }
-                            />
+                                    }
+                                />
 
-                            {/* Card 4: Calendar - Filter by Date */}
-                            <BentoCard
-                                Icon={CalendarIcon}
-                                name="ดูประวัติสุขภาพ"
-                                description="ดูข้อมูลสุขภาพย้อนหลังตามวันที่ต้องการ"
-                                className="md:col-span-1 min-h-[280px]"
-                                href="#"
-                                cta="ดูประวัติ"
-                                background={
-                                    <Calendar
-                                        mode="single"
-                                        selected={new Date(2024, 11, 25)}
-                                        className="absolute top-10 right-0 origin-top scale-[0.85] rounded-xl border border-slate-200 bg-white shadow-sm [mask-image:linear-gradient(to_top,transparent_40%,#000_100%)] transition-all duration-300 group-hover:scale-90"
-                                    />
-                                }
-                            />
+                                {/* Card 3: AI Food Recognition */}
+                                <BentoCard
+                                    Icon={Camera}
+                                    name="AI วิเคราะห์แคลอรี่"
+                                    description="เพียงถ่ายรูปอาหาร รู้ค่าโภชนาการทันที"
+                                    href="#"
+                                    cta="ดูตัวอย่าง"
+                                    className="md:col-span-2 min-h-[280px]"
+                                    onCtaClick={() => setIsFoodDemoOpen(true)}
+                                    background={
+                                        <div className="absolute right-4 top-10 w-[200px] h-[160px] rounded-xl overflow-hidden shadow-xl border border-slate-300 [mask-image:linear-gradient(to_top,transparent_10%,#000_100%)] transition-all duration-300 group-hover:scale-105">
+                                            <img
+                                                src="/images/tom-yum-noodles.png"
+                                                alt="ก๋วยเตี๋ยวต้มยำ"
+                                                className="w-full h-full object-cover"
+                                            />
+                                            {/* Scanning overlay effect */}
+                                            <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/10 via-transparent to-emerald-500/10 animate-pulse" />
+                                            <div className="absolute bottom-2 left-2 right-2 bg-white/95 backdrop-blur rounded-lg px-2 py-1.5 flex items-center justify-between">
+                                                <span className="text-xs font-medium text-slate-800">ก๋วยเตี๋ยวต้มยำกุ้ง</span>
+                                                <span className="text-xs font-bold text-orange-500">485 kcal</span>
+                                            </div>
+                                        </div>
+                                    }
+                                />
 
+                                {/* Card 4: Calendar - Filter by Date */}
+                                <BentoCard
+                                    Icon={CalendarIcon}
+                                    name="ดูประวัติสุขภาพ"
+                                    description="ดูข้อมูลสุขภาพย้อนหลังตามวันที่ต้องการ"
+                                    className="md:col-span-1 min-h-[280px]"
+                                    href="#"
+                                    cta="ดูประวัติ"
+                                    background={
+                                        <Calendar
+                                            mode="single"
+                                            selected={new Date(2024, 11, 25)}
+                                            className="absolute top-10 right-0 origin-top scale-[0.85] rounded-xl border border-slate-300 bg-white shadow-sm [mask-image:linear-gradient(to_top,transparent_40%,#000_100%)] transition-all duration-300 group-hover:scale-90"
+                                        />
+                                    }
+                                />
+
+                            </div>
                         </div>
+
+                        <div className="-translate-x-1/2 -bottom-px pointer-events-none absolute left-1/2 w-screen border-b border-dashed border-slate-300" />
                     </div>
                 </div>
                 <CallToAction />

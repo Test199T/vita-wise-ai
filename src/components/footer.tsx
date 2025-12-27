@@ -77,15 +77,15 @@ export function Footer() {
         },
     ];
     return (
-        <footer className="relative">
+        <footer className="relative w-full bg-[#f9f9f9]">
             <div
                 className={cn(
-                    "mx-auto max-w-5xl lg:border-x",
+                    "mx-auto max-w-6xl lg:border-x lg:border-dashed border-slate-300 bg-[#f9f9f9]",
                     "dark:bg-[radial-gradient(35%_80%_at_30%_0%,--theme(--color-foreground/.1),transparent)]"
                 )}
             >
-                <div className="absolute inset-x-0 h-px w-full bg-border" />
-                <div className="grid max-w-5xl grid-cols-6 gap-6 p-4">
+                <div className="absolute inset-x-0 w-full border-t border-dashed border-slate-300" />
+                <div className="grid max-w-6xl grid-cols-6 gap-6 p-4">
                     <div className="col-span-6 flex flex-col gap-4 pt-5 md:col-span-4">
                         <div className="flex items-center gap-2">
                             <div className="bg-gradient-to-br from-sky-500 to-emerald-500 p-1.5 rounded-lg text-white">
@@ -140,8 +140,8 @@ export function Footer() {
                         </div>
                     </div>
                 </div>
-                <div className="absolute inset-x-0 h-px w-full bg-border" />
-                <div className="flex max-w-4xl flex-col justify-between gap-2 py-4 px-4">
+                <div className="absolute inset-x-0 w-full border-t border-dashed border-slate-300" />
+                <div className="flex max-w-6xl flex-col justify-between gap-2 py-4 px-4">
                     <p className="text-center font-light text-muted-foreground text-sm">
                         &copy; {new Date().getFullYear()} Vita Wise AI Health Automation. All rights reserved.
                     </p>

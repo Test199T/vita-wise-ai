@@ -75,7 +75,7 @@ export const BentoCard: React.FC<BentoCardProps> = ({
     return (
         <div
             className={cn(
-                "group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200 bg-white",
+                "group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-dashed border-slate-300 bg-white",
                 "hover:shadow-lg transition-all duration-500",
                 className
             )}
