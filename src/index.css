@@ -8,6 +8,7 @@
 
 @layer base {
   :root {
+    color-scheme: light;
     /* สีพื้นหลัง */
     --background: 0 0% 100%;
     --foreground: 210 12% 16%;
@@ -191,6 +192,35 @@
 
   .bounce-in {
     animation: bounceIn 0.6s ease-out;
+  }
+
+  /* Custom Dashed Border Utilities - Consistent dash pattern */
+  .border-dashed-custom {
+    border-style: dashed !important;
+    border-width: 1px;
+  }
+
+  /* Horizontal dashed line (top/bottom) - longer dashes */
+  .border-t-dashed-wide {
+    border: none !important;
+    height: 1px !important;
+    background: repeating-linear-gradient(to right, #cbd5e1, #cbd5e1 20px, transparent 20px, transparent 32px);
+  }
+
+  .border-b-dashed-wide {
+    border: none !important;
+    height: 1px !important;
+    background: repeating-linear-gradient(to right, #cbd5e1, #cbd5e1 20px, transparent 20px, transparent 32px);
+  }
+
+  /* For elements that need both top and bottom dashed borders */
+  .border-y-dashed-custom {
+    background-image:
+      linear-gradient(to right, #cbd5e1 50%, transparent 50%),
+      linear-gradient(to right, #cbd5e1 50%, transparent 50%);
+    background-size: 12px 1px;
+    background-repeat: repeat-x;
+    background-position: top, bottom;
   }
 }
 
