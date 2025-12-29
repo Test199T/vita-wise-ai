@@ -371,6 +371,544 @@ export const FoodDemoModal: React.FC<FoodDemoModalProps> = ({ isOpen, onClose })
     );
 };
 
+// Health Dashboard Demo Modal Component
+interface HealthDashboardDemoModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+}
+
+// Circular Progress Component
+const CircularProgress: React.FC<{
+    value: number;
+    max: number;
+    color: string;
+    size?: number;
+    strokeWidth?: number;
+    icon: React.ReactNode;
+    label: string;
+    unit: string;
+    delay?: number;
+}> = ({ value, max, color, size = 100, strokeWidth = 8, icon, label, unit, delay = 0 }) => {
+    const [animatedValue, setAnimatedValue] = useState(0);
+    const [displayValue, setDisplayValue] = useState(0);
+    const radius = (size - strokeWidth) / 2;
+    const circumference = radius * 2 * Math.PI;
+    const progress = (animatedValue / max) * 100;
+    const strokeDashoffset = circumference - (progress / 100) * circumference;
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            const duration = 1500;
+            const steps = 60;
+            const increment = value / steps;
+            let current = 0;
+            const interval = setInterval(() => {
+                current += increment;
+                if (current >= value) {
+                    setAnimatedValue(value);
+                    setDisplayValue(value);
+                    clearInterval(interval);
+                } else {
+                    setAnimatedValue(current);
+                    setDisplayValue(Math.floor(current));
+                }
+            }, duration / steps);
+            return () => clearInterval(interval);
+        }, delay);
+        return () => clearTimeout(timer);
+    }, [value, delay]);
+
+    return (
+        <div className="flex flex-col items-center gap-2">
+            <div className="relative" style={{ width: size, height: size }}>
+                {/* Background circle */}
+                <svg className="transform -rotate-90" width={size} height={size}>
+                    <circle
+                        cx={size / 2}
+                        cy={size / 2}
+                        r={radius}
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={strokeWidth}
+                        className="text-gray-100"
+                    />
+                    <circle
+                        cx={size / 2}
+                        cy={size / 2}
+                        r={radius}
+                        fill="none"
+                        stroke={color}
+                        strokeWidth={strokeWidth}
+                        strokeLinecap="round"
+                        strokeDasharray={circumference}
+                        strokeDashoffset={strokeDashoffset}
+                        className="transition-all duration-300 ease-out"
+                        style={{ filter: `drop-shadow(0 0 6px ${color}40)` }}
+                    />
+                </svg>
+                {/* Center content */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <div className="mb-0.5" style={{ color }}>{icon}</div>
+                    <span className="text-lg font-bold text-gray-800">{displayValue}</span>
+                </div>
+            </div>
+            <div className="text-center">
+                <div className="text-xs font-medium text-gray-600">{label}</div>
+                <div className="text-[10px] text-gray-400">{displayValue} / {max} {unit}</div>
+            </div>
+        </div>
+    );
+};
+
+export const HealthDashboardDemoModal: React.FC<HealthDashboardDemoModalProps> = ({ isOpen, onClose }) => {
+    const [healthScore, setHealthScore] = useState(0);
+    const [showRecommendation, setShowRecommendation] = useState(false);
+
+    // Demo data
+    const healthData = {
+        calories: { value: 1650, max: 2000 },
+        exercise: { value: 45, max: 60 },
+        sleep: { value: 7.5, max: 8 },
+        water: { value: 1.8, max: 2 },
+    };
+
+    const targetScore = 83;
+
+    useEffect(() => {
+        if (isOpen) {
+            setHealthScore(0);
+            setShowRecommendation(false);
+
+            // Animate health score
+            setTimeout(() => {
+                const duration = 2000;
+                const steps = 60;
+                const increment = targetScore / steps;
+                let current = 0;
+                const interval = setInterval(() => {
+                    current += increment;
+                    if (current >= targetScore) {
+                        setHealthScore(targetScore);
+                        clearInterval(interval);
+                    } else {
+                        setHealthScore(Math.floor(current));
+                    }
+                }, duration / steps);
+            }, 800);
+
+            // Show recommendation after animations
+            setTimeout(() => setShowRecommendation(true), 2500);
+        }
+    }, [isOpen]);
+
+    // Lock body scroll when modal is open
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [isOpen]);
+
+    if (!isOpen) return null;
+
+    const getScoreColor = (score: number) => {
+        if (score >= 80) return 'text-emerald-500';
+        if (score >= 60) return 'text-yellow-500';
+        return 'text-red-500';
+    };
+
+    const getScoreLabel = (score: number) => {
+        if (score >= 80) return 'ยอดเยี่ยม!';
+        if (score >= 60) return 'ดีมาก';
+        return 'พยายามต่อไป';
+    };
+
+    return (
+        <div
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+            onClick={onClose}
+        >
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm" />
+
+            {/* Modal */}
+            <div
+                className="relative w-full max-w-sm bg-white rounded-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-4 duration-300"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Header - Minimal */}
+                <div className="relative px-5 pt-5 pb-6 bg-slate-900">
+                    {/* Close button */}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onClose();
+                        }}
+                        className="absolute top-4 right-4 z-10 w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:bg-white/20 hover:text-white transition-all"
+                    >
+                        <X size={16} />
+                    </button>
+
+                    {/* Header content */}
+                    <div className="text-center text-white">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/10 rounded-full text-[10px] font-medium tracking-wider uppercase mb-3">
+                            <span className="w-1 h-1 bg-emerald-400 rounded-full" />
+                            Demo
+                        </span>
+                        <h2 className="text-lg font-semibold mb-0.5">สรุปสุขภาพวันนี้</h2>
+                        <p className="text-xs text-white/50">27 ธันวาคม 2567</p>
+                    </div>
+                </div>
+
+                {/* Health Score Card */}
+                <div className="relative -mt-4 mx-4">
+                    <div className="bg-white rounded-xl p-4 shadow-lg border border-slate-100">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Health Score</div>
+                                <div className="flex items-baseline gap-0.5">
+                                    <span className={`text-3xl font-bold ${getScoreColor(healthScore)}`}>
+                                        {healthScore}
+                                    </span>
+                                    <span className="text-slate-300 text-sm font-medium">/100</span>
+                                </div>
+                            </div>
+                            <div className={`text-right transition-all duration-500 ${showRecommendation ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'}`}>
+                                <div className={`text-sm font-semibold ${getScoreColor(healthScore)}`}>
+                                    {getScoreLabel(healthScore)}
+                                </div>
+                                <div className="text-[10px] text-slate-400">เกือบครบเป้าหมาย</div>
+                            </div>
+                        </div>
+
+                        {/* Progress bar */}
+                        <div className="mt-3 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full transition-all duration-1000 ease-out"
+                                style={{ width: `${healthScore}%` }}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Stats Grid - Minimal */}
+                <div className="px-4 py-5">
+                    <div className="grid grid-cols-4 gap-3">
+                        <CircularProgress
+                            value={healthData.calories.value}
+                            max={healthData.calories.max}
+                            color="#10b981"
+                            size={64}
+                            strokeWidth={5}
+                            icon={<span className="text-sm">🔥</span>}
+                            label="แคลอรี่"
+                            unit="kcal"
+                            delay={200}
+                        />
+                        <CircularProgress
+                            value={healthData.exercise.value}
+                            max={healthData.exercise.max}
+                            color="#10b981"
+                            size={64}
+                            strokeWidth={5}
+                            icon={<span className="text-sm">🏃</span>}
+                            label="ออกกำลังกาย"
+                            unit="นาที"
+                            delay={400}
+                        />
+                        <CircularProgress
+                            value={healthData.sleep.value}
+                            max={healthData.sleep.max}
+                            color="#10b981"
+                            size={64}
+                            strokeWidth={5}
+                            icon={<span className="text-sm">💤</span>}
+                            label="การนอน"
+                            unit="ชม."
+                            delay={600}
+                        />
+                        <CircularProgress
+                            value={healthData.water.value}
+                            max={healthData.water.max}
+                            color="#10b981"
+                            size={64}
+                            strokeWidth={5}
+                            icon={<span className="text-sm">💧</span>}
+                            label="น้ำดื่ม"
+                            unit="ลิตร"
+                            delay={800}
+                        />
+                    </div>
+                </div>
+
+                {/* AI Recommendation - Minimal */}
+                <div className={`px-4 pb-4 transition-all duration-500 ${showRecommendation ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                    <div className="bg-slate-50 rounded-xl p-3.5">
+                        <div className="flex gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center flex-shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                                </svg>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">AI Insight</div>
+                                <p className="text-xs text-slate-600 leading-relaxed">
+                                    ออกกำลังกายอีก 15 นาที และดื่มน้ำอีก 200ml จะครบเป้าหมาย
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Footer */}
+                <div className="px-4 pb-4">
+                    <div className="text-center">
+                        <p className="text-[10px] text-gray-400">
+                            ⚡ นี่คือตัวอย่างการแสดงผล · ข้อมูลจริงจะอัปเดตอัตโนมัติ
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// History Demo Modal Component
+interface HistoryDemoModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+}
+
+// Demo data for different days
+const historyData: Record<number, { calories: number; exercise: number; sleep: number; water: number; score: number }> = {
+    22: { calories: 1920, exercise: 30, sleep: 7, water: 1.5, score: 72 },
+    23: { calories: 2100, exercise: 0, sleep: 6.5, water: 1.2, score: 58 },
+    24: { calories: 2400, exercise: 45, sleep: 8, water: 2.0, score: 85 },
+    25: { calories: 2800, exercise: 0, sleep: 7.5, water: 1.8, score: 62 },
+    26: { calories: 1750, exercise: 60, sleep: 8, water: 2.2, score: 92 },
+    27: { calories: 1650, exercise: 45, sleep: 7.5, water: 1.8, score: 83 },
+    28: { calories: 1200, exercise: 30, sleep: 0, water: 0.8, score: 45 },
+};
+
+export const HistoryDemoModal: React.FC<HistoryDemoModalProps> = ({ isOpen, onClose }) => {
+    const [selectedDay, setSelectedDay] = useState(27);
+    const [animatedScore, setAnimatedScore] = useState(0);
+
+    const currentData = historyData[selectedDay] || historyData[27];
+
+    // Lock body scroll
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+            setSelectedDay(27);
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [isOpen]);
+
+    // Animate score on day change
+    useEffect(() => {
+        if (!isOpen) return;
+        setAnimatedScore(0);
+        const timer = setTimeout(() => {
+            const duration = 800;
+            const steps = 30;
+            const increment = currentData.score / steps;
+            let current = 0;
+            const interval = setInterval(() => {
+                current += increment;
+                if (current >= currentData.score) {
+                    setAnimatedScore(currentData.score);
+                    clearInterval(interval);
+                } else {
+                    setAnimatedScore(Math.floor(current));
+                }
+            }, duration / steps);
+        }, 100);
+        return () => clearTimeout(timer);
+    }, [selectedDay, isOpen, currentData.score]);
+
+    if (!isOpen) return null;
+
+    const getScoreColor = (score: number) => {
+        if (score >= 80) return 'text-emerald-500';
+        if (score >= 60) return 'text-amber-500';
+        return 'text-red-500';
+    };
+
+    const getScoreBg = (score: number) => {
+        if (score >= 80) return 'bg-emerald-500';
+        if (score >= 60) return 'bg-amber-500';
+        return 'bg-red-500';
+    };
+
+    const getStatusIcon = (value: number, target: number) => {
+        const percent = (value / target) * 100;
+        if (percent >= 90) return { icon: '✅', color: 'text-emerald-500' };
+        if (percent >= 70) return { icon: '⚠️', color: 'text-amber-500' };
+        return { icon: '❌', color: 'text-red-500' };
+    };
+
+    const days = [22, 23, 24, 25, 26, 27, 28];
+    const dayNames = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+
+    return (
+        <div
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+            onClick={onClose}
+        >
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm" />
+
+            {/* Modal */}
+            <div
+                className="relative w-full max-w-sm bg-white rounded-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-4 duration-300"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div className="relative px-5 pt-5 pb-4 bg-slate-900">
+                    {/* Close button */}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onClose();
+                        }}
+                        className="absolute top-4 right-4 z-10 w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:bg-white/20 hover:text-white transition-all"
+                    >
+                        <X size={16} />
+                    </button>
+
+                    {/* Header content */}
+                    <div className="text-center text-white">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/10 rounded-full text-[10px] font-medium tracking-wider uppercase mb-3">
+                            <span className="w-1 h-1 bg-emerald-400 rounded-full" />
+                            Demo
+                        </span>
+                        <h2 className="text-lg font-semibold mb-0.5">ประวัติสุขภาพ</h2>
+                        <p className="text-xs text-white/50">ธันวาคม 2567</p>
+                    </div>
+                </div>
+
+                {/* Mini Calendar */}
+                <div className="px-4 py-4 border-b border-slate-100">
+                    <div className="flex justify-between items-center mb-3">
+                        {dayNames.map((name, i) => (
+                            <div key={i} className="w-10 text-center text-[10px] text-slate-400 font-medium">
+                                {name}
+                            </div>
+                        ))}
+                    </div>
+                    <div className="flex justify-between items-center">
+                        {days.map((day) => {
+                            const dayData = historyData[day];
+                            const isSelected = day === selectedDay;
+                            const isToday = day === 27;
+                            return (
+                                <button
+                                    key={day}
+                                    onClick={() => setSelectedDay(day)}
+                                    className={cn(
+                                        "relative w-10 h-10 rounded-xl text-sm font-medium transition-all",
+                                        isSelected
+                                            ? "bg-slate-900 text-white shadow-lg"
+                                            : "text-slate-700 hover:bg-slate-100",
+                                        isToday && !isSelected && "ring-2 ring-emerald-400 ring-offset-1"
+                                    )}
+                                >
+                                    {day}
+                                    {/* Score indicator */}
+                                    {dayData && !isSelected && (
+                                        <div className={cn(
+                                            "absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full",
+                                            getScoreBg(dayData.score)
+                                        )} />
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Day Summary */}
+                <div className="px-4 py-4">
+                    <div className="flex items-center justify-between mb-4">
+                        <div>
+                            <div className="text-[10px] text-slate-400 uppercase tracking-wider">วันที่ {selectedDay} ธ.ค.</div>
+                            <div className="flex items-baseline gap-1 mt-1">
+                                <span className={cn("text-2xl font-bold", getScoreColor(animatedScore))}>
+                                    {animatedScore}
+                                </span>
+                                <span className="text-slate-300 text-sm">/100</span>
+                            </div>
+                        </div>
+                        <div className={cn(
+                            "px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300",
+                            currentData.score >= 80 ? "bg-emerald-50 text-emerald-600" :
+                                currentData.score >= 60 ? "bg-amber-50 text-amber-600" :
+                                    "bg-red-50 text-red-600"
+                        )}>
+                            {currentData.score >= 80 ? 'ยอดเยี่ยม' : currentData.score >= 60 ? 'ดี' : 'ควรปรับปรุง'}
+                        </div>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="space-y-3">
+                        {[
+                            { icon: '🔥', label: 'แคลอรี่', value: currentData.calories, target: 2000, unit: 'kcal' },
+                            { icon: '🏃', label: 'ออกกำลังกาย', value: currentData.exercise, target: 60, unit: 'นาที' },
+                            { icon: '💤', label: 'การนอน', value: currentData.sleep, target: 8, unit: 'ชม.' },
+                            { icon: '💧', label: 'น้ำดื่ม', value: currentData.water, target: 2, unit: 'ลิตร' },
+                        ].map((stat) => {
+                            const status = getStatusIcon(stat.value, stat.target);
+                            const percent = Math.min((stat.value / stat.target) * 100, 100);
+                            return (
+                                <div key={stat.label} className="flex items-center gap-3">
+                                    <span className="text-lg">{stat.icon}</span>
+                                    <div className="flex-1">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <span className="text-xs text-slate-600">{stat.label}</span>
+                                            <span className="text-xs text-slate-400">
+                                                {stat.value} / {stat.target} {stat.unit}
+                                            </span>
+                                        </div>
+                                        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                            <div
+                                                className={cn(
+                                                    "h-full rounded-full transition-all duration-500",
+                                                    percent >= 90 ? "bg-emerald-400" :
+                                                        percent >= 70 ? "bg-amber-400" : "bg-red-400"
+                                                )}
+                                                style={{ width: `${percent}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                    <span className="text-sm">{status.icon}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Footer */}
+                <div className="px-4 pb-4">
+                    <div className="text-center">
+                        <p className="text-[10px] text-gray-400">
+                            ⚡ กดเลือกวันเพื่อดูข้อมูลย้อนหลัง
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // AI Chat Demo Modal Component
 interface AIChatDemoModalProps {
     isOpen: boolean;
@@ -381,6 +919,7 @@ interface ChatMessage {
     id: string;
     type: 'user' | 'ai';
     text: string;
+    image?: string;
 }
 
 // Simple quick suggestions
@@ -417,20 +956,43 @@ const getAIResponse = (question: string): string => {
 
 export const AIChatDemoModal: React.FC<AIChatDemoModalProps> = ({ isOpen, onClose }) => {
     const [messages, setMessages] = useState<ChatMessage[]>([
-        { id: '0', type: 'ai', text: 'สวัสดีครับ! มีอะไรให้ช่วยไหมครับ?' }
+        { id: '0', type: 'ai', text: 'สวัสดีครับ! มีอะไรให้ช่วยไหมครับ? ลองส่งรูปอาหารมาให้วิเคราะห์ได้นะครับ 📸' }
     ]);
     const [inputValue, setInputValue] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const [displayedText, setDisplayedText] = useState('');
     const [currentAIMessageId, setCurrentAIMessageId] = useState<string | null>(null);
+    const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
     const chatContainerRef = React.useRef<HTMLDivElement>(null);
     const inputRef = React.useRef<HTMLInputElement>(null);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    // Demo food analysis results with tips
+    const demoFoodAnalysis = [
+        { name: 'ข้าวผัดกระเพรา', calories: 520, protein: 25, carbs: 58, fat: 22, tip: 'โซเดียมสูง ดื่มน้ำให้เพียงพอนะครับ' },
+        { name: 'ส้มตำไทย', calories: 180, protein: 5, carbs: 28, fat: 8, tip: 'ดีต่อระบบย่อยอาหาร แต่ระวังความเผ็ดครับ' },
+        { name: 'ต้มยำกุ้ง', calories: 285, protein: 22, carbs: 18, fat: 15, tip: 'โปรตีนสูง เหมาะกับคนออกกำลังกายครับ' },
+        { name: 'ผัดไทย', calories: 450, protein: 18, carbs: 52, fat: 20, tip: 'คาร์บสูง เหมาะทานก่อนออกกำลังกายครับ' },
+        { name: 'ข้าวมันไก่', calories: 580, protein: 28, carbs: 65, fat: 20, tip: 'โปรตีนดี แต่ไขมันสูง ทานแต่พอดีนะครับ' },
+        { name: 'แกงเขียวหวาน', calories: 420, protein: 20, carbs: 35, fat: 25, tip: 'กะทิเยอะ ระวังไขมันอิ่มตัวครับ' },
+        { name: 'ข้าวผัดหมู', calories: 480, protein: 22, carbs: 55, fat: 18, tip: 'สมดุลพอดี แนะนำเพิ่มผักด้วยครับ' },
+        { name: 'ก๋วยเตี๋ยวน้ำใส', calories: 320, protein: 18, carbs: 42, fat: 10, tip: 'แคลอรี่ไม่สูง เหมาะกับมื้อกลางวันครับ' },
+    ];
+
+    // Not food responses (random)
+    const notFoodResponses = [
+        '😅 อุ๊ปส์! ดูเหมือนรูปนี้ไม่ใช่อาหารนะครับ ลองถ่ายรูปอาหารใหม่อีกครั้งได้เลยครับ 📸',
+        '🤔 หืม... ผมมองไม่ชัดว่าเป็นอาหารอะไรเลยครับ ลองถ่ายให้ชัดขึ้นหรือเปลี่ยนมุมดูนะครับ',
+        '🍽️ ดูเหมือนนี่ไม่ใช่อาหารนะครับ ผมวิเคราะห์ได้เฉพาะรูปอาหาร ลองส่งมาใหม่ได้เลย!',
+        '📷 รูปนี้ไม่ชัดพอครับ หรืออาจไม่ใช่อาหาร ลองถ่ายใกล้ๆ อาหารอีกครั้งนะครับ',
+    ];
 
     // Reset state when modal closes
     useEffect(() => {
         if (!isOpen) {
             setMessages([
-                { id: '0', type: 'ai', text: 'สวัสดีครับ! มีอะไรให้ช่วยไหมครับ?' }
+                { id: '0', type: 'ai', text: 'สวัสดีครับ! มีอะไรให้ช่วยไหมครับ? ลองส่งรูปอาหารมาให้วิเคราะห์ได้นะครับ 📸' }
             ]);
             setInputValue('');
             setIsTyping(false);
@@ -521,14 +1083,74 @@ export const AIChatDemoModal: React.FC<AIChatDemoModalProps> = ({ isOpen, onClos
         sendMessage(inputValue);
     };
 
+    // Handle image upload
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || isTyping) return;
+
+        // Read image as base64
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const imageUrl = event.target?.result as string;
+            setUploadedImage(imageUrl);
+
+            // Add user message with image
+            const userMessage: ChatMessage = {
+                id: Date.now().toString(),
+                type: 'user',
+                text: '📷 ส่งรูปอาหาร',
+                image: imageUrl
+            };
+            setMessages(prev => [...prev, userMessage]);
+            setIsAnalyzing(true);
+            setIsTyping(true);
+
+            // Simulate AI analysis with 85% food / 15% not food
+            setTimeout(() => {
+                setIsAnalyzing(false);
+
+                const isFood = Math.random() < 0.85; // 85% chance it's food
+                let aiResponse: string;
+
+                if (isFood) {
+                    // Food detected
+                    const randomFood = demoFoodAnalysis[Math.floor(Math.random() * demoFoodAnalysis.length)];
+                    const confidence = Math.floor(Math.random() * 11) + 88; // 88-98%
+
+                    aiResponse = `🍽️ วิเคราะห์แล้วครับ! (มั่นใจ ${confidence}%)\n\n📌 อาหาร: ${randomFood.name}\n🔥 แคลอรี่: ${randomFood.calories} kcal\n🥩 โปรตีน: ${randomFood.protein}g\n🍚 คาร์โบไฮเดรต: ${randomFood.carbs}g\n🥑 ไขมัน: ${randomFood.fat}g\n\n💡 ${randomFood.tip}\n\n✅ บันทึกลงระบบเรียบร้อยครับ`;
+                } else {
+                    // Not food detected
+                    aiResponse = notFoodResponses[Math.floor(Math.random() * notFoodResponses.length)];
+                }
+
+                const aiMessage: ChatMessage = {
+                    id: (Date.now() + 1).toString(),
+                    type: 'ai',
+                    text: aiResponse
+                };
+                setMessages(prev => [...prev, aiMessage]);
+                setDisplayedText('');
+                setCurrentAIMessageId(aiMessage.id);
+            }, 2000);
+        };
+        reader.readAsDataURL(file);
+
+        // Reset file input
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
     const resetChat = () => {
         setMessages([
-            { id: '0', type: 'ai', text: 'สวัสดีครับ! มีอะไรให้ช่วยไหมครับ?' }
+            { id: '0', type: 'ai', text: 'สวัสดีครับ! มีอะไรให้ช่วยไหมครับ? ลองส่งรูปอาหารมาให้วิเคราะห์ได้นะครับ 📸' }
         ]);
         setInputValue('');
         setIsTyping(false);
         setDisplayedText('');
         setCurrentAIMessageId(null);
+        setUploadedImage(null);
+        setIsAnalyzing(false);
     };
 
     if (!isOpen) return null;
@@ -551,8 +1173,16 @@ export const AIChatDemoModal: React.FC<AIChatDemoModalProps> = ({ isOpen, onClos
 
                     {/* Header - Minimal */}
                     <div className="px-4 py-3 flex items-center gap-3 border-b border-gray-100">
-                        <div className="w-9 h-9 rounded-full bg-black flex items-center justify-center">
-                            <span className="text-white text-sm font-medium">V</span>
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-400 to-emerald-500 flex items-center justify-center shadow-md">
+                            {/* Activity/Heartbeat icon */}
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className="w-6 h-6">
+                                <path d="M85 50h-12a4 4 0 0 0-3.8 2.8L61 76a1 1 0 0 1-1.9 0L39 24a1 1 0 0 0-1.9 0l-8 23.2A4 4 0 0 1 25 50H15"
+                                    stroke="white"
+                                    strokeWidth="7"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    fill="none" />
+                            </svg>
                         </div>
                         <div className="flex-1 min-w-0">
                             <div className="font-medium text-[15px] text-gray-900">Vita Wise</div>
@@ -560,14 +1190,14 @@ export const AIChatDemoModal: React.FC<AIChatDemoModalProps> = ({ isOpen, onClos
                         {messages.length > 1 && (
                             <button
                                 onClick={resetChat}
-                                className="text-[13px] text-gray-400 hover:text-gray-600 transition-colors"
+                                className="text-[13px] text-red-500 hover:text-red-600 font-medium transition-colors"
                             >
                                 ล้าง
                             </button>
                         )}
                         <button
                             onClick={onClose}
-                            className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+                            className="bg-gray-200 text-gray-600 p-1.5 rounded-md transition-all duration-300 hover:!bg-red-500 hover:!text-white"
                         >
                             <X size={18} />
                         </button>
@@ -582,34 +1212,121 @@ export const AIChatDemoModal: React.FC<AIChatDemoModalProps> = ({ isOpen, onClos
                             <div
                                 key={msg.id}
                                 className={cn(
-                                    "flex",
-                                    msg.type === 'user' ? 'justify-end' : 'justify-start'
+                                    "flex gap-2.5",
+                                    msg.type === 'user' ? 'flex-row-reverse' : 'flex-row'
                                 )}
                             >
-                                <div
-                                    className={cn(
-                                        "max-w-[85%] px-4 py-2.5 text-[15px] leading-relaxed",
-                                        msg.type === 'user'
-                                            ? "bg-gray-900 text-white rounded-2xl rounded-br-md"
-                                            : "bg-white text-gray-800 rounded-2xl rounded-bl-md shadow-sm border border-gray-100"
+                                {/* Avatar */}
+                                {msg.type === 'ai' ? (
+                                    <div className="flex-shrink-0 mt-0.5">
+                                        <div className="relative w-8 h-8 rounded-full bg-gradient-to-br from-sky-400 via-emerald-400 to-teal-500 flex items-center justify-center shadow-md shadow-emerald-500/20 ring-2 ring-white">
+                                            {/* Cute Robot Icon */}
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M4 15.5C2.89543 15.5 2 14.6046 2 13.5C2 12.3954 2.89543 11.5 4 11.5" />
+                                                <path d="M20 15.5C21.1046 15.5 22 14.6046 22 13.5C22 12.3954 21.1046 11.5 20 11.5" />
+                                                <path d="M7 7L7 4" />
+                                                <path d="M17 7L17 4" />
+                                                <circle cx="7" cy="3" r="1" />
+                                                <circle cx="17" cy="3" r="1" />
+                                                <path d="M13.5 7H10.5C7.67157 7 6.25736 7 5.37868 7.90898C4.5 8.81796 4.5 10.2809 4.5 13.2069C4.5 16.1329 4.5 17.5958 5.37868 18.5048C6.25736 19.4138 7.67157 19.4138 10.5 19.4138H11.5253C12.3169 19.4138 12.5962 19.5773 13.1417 20.1713C13.745 20.8283 14.6791 21.705 15.5242 21.9091C16.7254 22.1994 16.8599 21.7979 16.5919 20.6531C16.5156 20.327 16.3252 19.8056 16.526 19.5018C16.6385 19.3316 16.8259 19.2898 17.2008 19.2061C17.7922 19.074 18.2798 18.8581 18.6213 18.5048C19.5 17.5958 19.5 16.1329 19.5 13.2069C19.5 10.2809 19.5 8.81796 18.6213 7.90898C17.7426 7 16.3284 7 13.5 7Z" />
+                                                <path d="M9.5 15C10.0701 15.6072 10.9777 16 12 16C13.0223 16 13.9299 15.6072 14.5 15" />
+                                                <path d="M9.00896 11H9" />
+                                                <path d="M15.009 11H15" />
+                                            </svg>
+                                            {/* Sparkle */}
+                                            <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-yellow-400 rounded-full shadow-sm flex items-center justify-center">
+                                                <div className="w-1 h-1 bg-yellow-200 rounded-full" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex-shrink-0 mt-0.5">
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center shadow-md ring-2 ring-white">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4 text-white/90" fill="currentColor">
+                                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Message Content */}
+                                <div className={cn(
+                                    "flex flex-col",
+                                    msg.type === 'user' ? 'items-end' : 'items-start'
+                                )}>
+                                    {/* Name Label */}
+                                    <span className={cn(
+                                        "text-[11px] font-medium mb-1 px-1",
+                                        msg.type === 'ai' ? "text-emerald-600" : "text-slate-500"
+                                    )}>
+                                        {msg.type === 'ai' ? 'วีต้า' : 'คุณ'}
+                                    </span>
+
+                                    {/* Image Preview */}
+                                    {msg.image && (
+                                        <div className="mb-2 rounded-xl overflow-hidden shadow-md border-2 border-white">
+                                            <img
+                                                src={msg.image}
+                                                alt="Uploaded food"
+                                                className="w-40 h-40 object-cover"
+                                            />
+                                        </div>
                                     )}
-                                >
-                                    {msg.id === currentAIMessageId ? displayedText : msg.text}
-                                    {msg.id === currentAIMessageId && displayedText.length < msg.text.length && (
-                                        <span className="inline-block w-[2px] h-4 bg-gray-400 ml-0.5 animate-pulse" />
-                                    )}
+
+                                    <div
+                                        className={cn(
+                                            "max-w-[280px] px-4 py-2.5 text-[15px] leading-relaxed whitespace-pre-line",
+                                            msg.type === 'user'
+                                                ? "bg-gradient-to-br from-slate-800 to-slate-900 text-white rounded-2xl rounded-tr-md shadow-md"
+                                                : "bg-white text-gray-800 rounded-2xl rounded-tl-md shadow-sm border border-slate-100"
+                                        )}
+                                    >
+                                        {msg.id === currentAIMessageId ? displayedText : msg.text}
+                                        {msg.id === currentAIMessageId && displayedText.length < msg.text.length && (
+                                            <span className="inline-block w-[2px] h-4 bg-emerald-400 ml-0.5 animate-pulse" />
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         ))}
 
-                        {/* Typing Indicator */}
+                        {/* Typing/Analyzing Indicator */}
                         {isTyping && !currentAIMessageId && (
-                            <div className="flex justify-start">
-                                <div className="bg-white px-4 py-3 rounded-2xl rounded-bl-md shadow-sm border border-gray-100">
-                                    <div className="flex gap-1">
-                                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                            <div className="flex gap-2.5">
+                                <div className="flex-shrink-0 mt-0.5">
+                                    <div className="relative w-8 h-8 rounded-full bg-gradient-to-br from-sky-400 via-emerald-400 to-teal-500 flex items-center justify-center shadow-md shadow-emerald-500/20 ring-2 ring-white">
+                                        {/* Cute Robot Icon */}
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M4 15.5C2.89543 15.5 2 14.6046 2 13.5C2 12.3954 2.89543 11.5 4 11.5" />
+                                            <path d="M20 15.5C21.1046 15.5 22 14.6046 22 13.5C22 12.3954 21.1046 11.5 20 11.5" />
+                                            <path d="M7 7L7 4" />
+                                            <path d="M17 7L17 4" />
+                                            <circle cx="7" cy="3" r="1" />
+                                            <circle cx="17" cy="3" r="1" />
+                                            <path d="M13.5 7H10.5C7.67157 7 6.25736 7 5.37868 7.90898C4.5 8.81796 4.5 10.2809 4.5 13.2069C4.5 16.1329 4.5 17.5958 5.37868 18.5048C6.25736 19.4138 7.67157 19.4138 10.5 19.4138H11.5253C12.3169 19.4138 12.5962 19.5773 13.1417 20.1713C13.745 20.8283 14.6791 21.705 15.5242 21.9091C16.7254 22.1994 16.8599 21.7979 16.5919 20.6531C16.5156 20.327 16.3252 19.8056 16.526 19.5018C16.6385 19.3316 16.8259 19.2898 17.2008 19.2061C17.7922 19.074 18.2798 18.8581 18.6213 18.5048C19.5 17.5958 19.5 16.1329 19.5 13.2069C19.5 10.2809 19.5 8.81796 18.6213 7.90898C17.7426 7 16.3284 7 13.5 7Z" />
+                                            <path d="M9.5 15C10.0701 15.6072 10.9777 16 12 16C13.0223 16 13.9299 15.6072 14.5 15" />
+                                            <path d="M9.00896 11H9" />
+                                            <path d="M15.009 11H15" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col items-start">
+                                    <span className="text-[11px] font-medium mb-1 px-1 text-emerald-600">วีต้า</span>
+                                    <div className="bg-white px-4 py-3 rounded-2xl rounded-tl-md shadow-sm border border-gray-100">
+                                        <div className="flex items-center gap-2">
+                                            {isAnalyzing ? (
+                                                <>
+                                                    <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                                                    <span className="text-sm text-gray-500">กำลังวิเคราะห์รูปอาหาร...</span>
+                                                </>
+                                            ) : (
+                                                <div className="flex gap-1">
+                                                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -635,13 +1352,41 @@ export const AIChatDemoModal: React.FC<AIChatDemoModalProps> = ({ isOpen, onClos
 
                     {/* Input Area - Minimal */}
                     <div className="p-3 border-t border-gray-100">
+                        {/* Hidden file input */}
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="hidden"
+                        />
+
                         <form onSubmit={handleSubmit} className="flex gap-2 items-center">
+                            {/* Image Upload Button */}
+                            <button
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={isTyping}
+                                className={cn(
+                                    "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 border",
+                                    isTyping
+                                        ? "bg-gray-50 border-gray-200 text-gray-300"
+                                        : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm active:scale-95"
+                                )}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M7 7L7.89443 5.21114C8.43234 4.13531 8.7013 3.5974 9.18461 3.2987C9.66791 3 10.2693 3 11.4721 3H12.5279C13.7307 3 14.3321 3 14.8154 3.2987C15.2987 3.5974 15.5677 4.13531 16.1056 5.21115L17 7C18.8692 7 19.8038 7 20.5 7.40192C20.9561 7.66523 21.3348 8.04394 21.5981 8.5C22 9.19615 22 10.1308 22 12V15C22 17.8284 22 19.2426 21.1213 20.1213C20.2426 21 18.8284 21 16 21H8C5.17157 21 3.75736 21 2.87868 20.1213C2 19.2426 2 17.8284 2 15V12C2 10.1308 2 9.19615 2.40192 8.5C2.66523 8.04394 3.04394 7.66523 3.5 7.40192C4.19615 7 5.13077 7 7 7ZM7 7H12" />
+                                    <path d="M15.5 14C15.5 15.933 13.933 17.5 12 17.5C10.067 17.5 8.5 15.933 8.5 14C8.5 12.067 10.067 10.5 12 10.5C13.933 10.5 15.5 12.067 15.5 14Z" />
+                                    <path d="M19 10V10.01" />
+                                </svg>
+                            </button>
+
                             <input
                                 ref={inputRef}
                                 type="text"
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
-                                placeholder="พิมพ์ข้อความ..."
+                                placeholder="พิมพ์ข้อความ หรือส่งรูปอาหาร..."
                                 disabled={isTyping}
                                 className="flex-1 px-4 py-2.5 bg-gray-100 rounded-full text-[15px] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 disabled:opacity-50"
                             />
@@ -649,18 +1394,26 @@ export const AIChatDemoModal: React.FC<AIChatDemoModalProps> = ({ isOpen, onClos
                                 type="submit"
                                 disabled={isTyping || !inputValue.trim()}
                                 className={cn(
-                                    "w-9 h-9 rounded-full flex items-center justify-center transition-all",
+                                    "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 border",
                                     isTyping || !inputValue.trim()
-                                        ? "bg-gray-100 text-gray-400"
-                                        : "bg-gray-900 text-white hover:bg-gray-800"
+                                        ? "bg-gray-50 border-gray-200 text-gray-300"
+                                        : "bg-gray-900 border-gray-900 text-white hover:bg-gray-800 hover:border-gray-800 active:scale-95"
                                 )}
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M5 12h14" />
-                                    <path d="m12 5 7 7-7 7" />
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M9.49811 15L16.9981 7.5" />
+                                    <path d="M8.00634 7.67888L15.327 4.21881C18.3688 2.78111 19.8897 2.06226 20.8598 2.78341C21.8299 3.50455 21.5527 5.14799 20.9984 8.43486L20.0435 14.0968C19.6811 16.246 19.4998 17.3205 18.6989 17.7891C17.8979 18.2577 16.8574 17.8978 14.7765 17.178L8.41077 14.9762C4.51917 13.6301 2.57337 12.9571 2.50019 11.6365C2.427 10.3159 4.28678 9.43692 8.00634 7.67888Z" />
+                                    <path d="M9.49811 15.5V17.7274C9.49811 20.101 9.49811 21.2878 10.2083 21.4771C10.9185 21.6663 11.6664 20.6789 13.1622 18.7039L13.9981 17.5" />
                                 </svg>
                             </button>
                         </form>
+
+                        {/* Demo Notice */}
+                        <div className="mt-2 text-center">
+                            <p className="text-[10px] text-gray-400 leading-relaxed">
+                                ⚡ นี่คือตัวอย่างการทำงาน ไม่ใช่ AI จริง · ระบบจริงจะตอบได้หลากหลายกว่านี้
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>

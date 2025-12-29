@@ -6,13 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Bell,
   Trash2,
   CheckCircle2,
   AlertTriangle,
   Info,
   CalendarClock,
 } from "lucide-react";
+import { NotificationBellIcon } from "@/components/ui/notification-bell-icon";
 
 type NotificationType = "info" | "warning" | "success" | "reminder";
 
@@ -74,7 +74,7 @@ function getTypeMeta(type: NotificationType) {
     case "warning":
       return { label: "แจ้งเตือน", color: "bg-yellow-100 text-yellow-800", Icon: AlertTriangle };
     case "reminder":
-      return { label: "เตือนความจำ", color: "bg-blue-100 text-blue-800", Icon: Bell };
+      return { label: "เตือนความจำ", color: "bg-blue-100 text-blue-800", Icon: NotificationBellIcon };
     default:
       return { label: "ข้อมูล", color: "bg-gray-100 text-gray-800", Icon: Info };
   }
@@ -114,7 +114,7 @@ export default function Notifications() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg text-primary">
-              <Bell className="h-5 w-5" />
+              <NotificationBellIcon className="h-5 w-5" size={20} />
             </div>
             <div>
               <h1 className="text-2xl font-bold">ศูนย์แจ้งเตือน</h1>
@@ -176,7 +176,7 @@ export default function Notifications() {
               </div>
             ) : (
               <div className="text-center text-muted-foreground p-8">
-                <Bell className="h-10 w-10 mx-auto mb-2 opacity-60" />
+                <NotificationBellIcon className="h-10 w-10 mx-auto mb-2 opacity-60" size={40} />
                 <div>ยังไม่มีแจ้งเตือน</div>
               </div>
             )}

@@ -1,4 +1,5 @@
-import { Bell, Activity, ChevronDown, MessageCircle, User, Settings, LogOut } from "lucide-react";
+import { Activity, ChevronDown, MessageCircle, User, Settings, LogOut } from "lucide-react";
+import { NotificationBellIcon } from "@/components/ui/notification-bell-icon";
 import { Button } from "@/components/ui/button";
 import { Link, NavLink } from "react-router-dom";
 import { useProfilePicture } from "@/hooks/useProfilePicture";
@@ -131,7 +132,7 @@ export function Header() {
           <div className="flex items-center gap-2 sm:gap-4">
             <Button variant="ghost" size="icon" className="relative hover:bg-muted/50" asChild>
               <Link to="/notifications">
-                <Bell className="h-5 w-5" />
+                <NotificationBellIcon className="h-5 w-5" size={20} />
                 <span className="absolute -top-1 -right-1 bg-warning text-warning-foreground text-xs rounded-full h-4 w-4 flex items-center justify-center">
                   3
                 </span>
