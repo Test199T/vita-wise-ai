@@ -1,15 +1,19 @@
 import { Link } from "react-router-dom";
 import { ShinyButton } from "@/components/ui/shiny-button";
+import { HeroHighlight } from "@/components/ui/hero-highlight";
 
 export function CallToAction() {
     return (
         <section className="w-full bg-[#f9f9f9]">
-            <div className="relative mx-auto flex w-full max-w-6xl flex-col items-center justify-center border-x border-dashed border-slate-300 py-24 text-center">
+            <div className="relative mx-auto flex w-full max-w-6xl flex-col items-center justify-center border-x-dashed-wide py-24 text-center">
                 {/* Top Full-Width Border */}
 
 
                 <div className="w-full px-4 md:px-12">
-                    <div className="relative w-full overflow-hidden rounded-[2.5rem] border border-dashed border-slate-300 bg-white/50 py-16 md:py-24">
+                    <HeroHighlight
+                        containerClassName="relative w-full overflow-hidden rounded-[2.5rem] border border-dashed border-slate-300 !bg-white/50 !h-auto"
+                        className="py-16 md:py-24"
+                    >
                         {/* Background Gradients - Subtle */}
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-emerald-100/40 via-sky-100/40 to-transparent blur-3xl rounded-full pointer-events-none opacity-60" />
 
@@ -41,7 +45,7 @@ export function CallToAction() {
                                 </Link>
                             </div>
                         </div>
-                    </div>
+                    </HeroHighlight>
                 </div>
 
                 {/* Bottom Full-Width Border */}

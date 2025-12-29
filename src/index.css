@@ -222,6 +222,31 @@
     background-repeat: repeat-x;
     background-position: top, bottom;
   }
+
+  /* Vertical dashed lines positioned outward from container */
+  .border-x-dashed-wide {
+    border-left: none !important;
+    border-right: none !important;
+    position: relative;
+  }
+
+  .border-x-dashed-wide::before,
+  .border-x-dashed-wide::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    border-left: 1px dashed #cbd5e1;
+  }
+
+  .border-x-dashed-wide::before {
+    left: -65px;
+  }
+
+  .border-x-dashed-wide::after {
+    right: -65px;
+  }
 }
 
 @keyframes fadeIn {

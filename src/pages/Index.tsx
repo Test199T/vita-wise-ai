@@ -54,11 +54,14 @@ import { ShinyButton } from "@/components/ui/shiny-button";
 import { Calendar } from "@/components/ui/calendar";
 import { BorderBeam } from "@/components/ui/border-beam";
 import { Marquee } from "@/components/ui/marquee";
-import { BentoCard, BentoGrid, FoodDemoModal, AIChatDemoModal } from "@/components/BentoBadge";
+import { BentoCard, BentoGrid, FoodDemoModal, AIChatDemoModal, HealthDashboardDemoModal, HistoryDemoModal } from "@/components/BentoBadge";
 import { Footer } from "@/components/footer";
 import { CallToAction } from "@/components/cta";
+import { NotificationBellIcon } from "@/components/ui/notification-bell-icon";
 import { cn } from "@/lib/utils";
 import { LinearGridBackground } from "@/components/ui/linear-grid-background";
+import { HeroHighlight } from "@/components/ui/hero-highlight";
+import { Header } from "@/components/header";
 
 // --- Types ---
 interface ChatMessage {
@@ -496,192 +499,6 @@ const InteractiveAIChatCard = () => {
 };
 
 // --- Components ---
-
-const DropdownMenu = ({
-    label,
-    items
-}: {
-    label: string;
-    items: { label: string; href: string; }[]
-}) => {
-    const [isOpen, setIsOpen] = useState(false);
-
-    return (
-        <div
-            className="relative"
-            onMouseEnter={() => setIsOpen(true)}
-            onMouseLeave={() => setIsOpen(false)}
-        >
-            <button
-                className="relative group flex items-center gap-1 px-4 py-2 rounded-xl transition-all duration-300 hover:scale-105"
-                aria-expanded={isOpen}
-            >
-                {/* Glassmorphism background */}
-                <div className="absolute inset-0 z-0 bg-white/5 backdrop-blur-sm rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                {/* Gradient border glow */}
-                <div className="absolute inset-0 z-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-sky-400/30 to-transparent blur-sm" />
-                </div>
-
-                <span className="relative z-10 group-hover:text-sky-400 transition-colors duration-300">
-                    {label}
-                </span>
-                <ChevronDown
-                    size={16}
-                    className={`relative z-10 transition-all duration-300 ${isOpen ? 'rotate-180 text-sky-400' : 'text-slate-400'}`}
-                />
-            </button>
-
-            {/* Dropdown Menu */}
-            <div
-                className={`absolute top-full left-0 mt-1 min-w-[200px] rounded-lg border border-white/10 bg-[rgba(0,0,0,0.92)] backdrop-blur-xl shadow-[0_15px_14px_0px_#00000066] transition-all duration-300 ${isOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-2 pointer-events-none'
-                    }`}
-            >
-                <div className="p-1 flex flex-col gap-1">
-                    {items.map((item, index) => (
-                        <a
-                            key={index}
-                            href={item.href}
-                            className="block rounded-lg bg-transparent px-4 py-2.5 text-sm text-white transition-all duration-200 hover:bg-white/10 hover:text-sky-400"
-                        >
-                            {item.label}
-                        </a>
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const Navbar = () => {
-    const [scrolled, setScrolled] = useState(false);
-
-    useEffect(() => {
-        const handleScroll = () => {
-            setScrolled(window.scrollY > 20);
-        };
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
-
-    return (
-        <nav
-            className="fixed top-0 left-0 right-0 z-50"
-            style={{
-                padding: scrolled ? '12px 16px' : '0px',
-                transition: 'padding 800ms cubic-bezier(0.4, 0, 0.2, 1)'
-            }}
-        >
-            <div
-                className="mx-auto backdrop-blur-xl"
-                style={{
-                    maxWidth: scrolled ? '1152px' : '100%',
-                    backgroundColor: 'rgba(255, 255, 255, 1)',
-                    borderRadius: scrolled ? '16px' : '0px',
-                    border: scrolled ? '1px solid rgba(226, 232, 240, 0.6)' : 'none',
-                    borderBottom: scrolled ? 'none' : '1px solid rgba(241, 245, 249, 1)',
-                    boxShadow: scrolled ? '0 10px 40px -10px rgba(0, 0, 0, 0.1)' : 'none',
-                    transition: 'all 800ms cubic-bezier(0.4, 0, 0.2, 1)'
-                }}
-            >
-                <div
-                    className="px-4 md:px-6 flex items-center justify-between"
-                    style={{
-                        height: scrolled ? '56px' : '64px',
-                        transition: 'height 600ms cubic-bezier(0.4, 0, 0.2, 1)'
-                    }}
-                >
-                    {/* Logo */}
-                    <div className="flex items-center gap-2">
-                        <div className="bg-gradient-to-br from-sky-500 to-emerald-500 p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-white shadow-md">
-                            <Activity size={18} className="fill-current sm:w-5 sm:h-5" />
-                        </div>
-                        <span className="text-lg sm:text-xl font-bold tracking-tight text-slate-900">Vita Wise AI</span>
-                    </div>
-
-                    {/* Mobile Menu Icon */}
-                    <div className="flex md:hidden items-center gap-3">
-                        <button className="p-2 text-slate-700">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="4" x2="20" y1="6" y2="6"></line>
-                                <line x1="4" x2="20" y1="12" y2="12"></line>
-                                <line x1="4" x2="20" y1="18" y2="18"></line>
-                            </svg>
-                        </button>
-                        <Button
-                            size="sm"
-                            asChild
-                            className="bg-gradient-to-r from-sky-500 to-emerald-500 text-white hover:from-sky-400 hover:to-emerald-400 rounded-full px-4 text-sm shadow-md border-0 font-medium"
-                        >
-                            <Link to="/register">เริ่มต้น</Link>
-                        </Button>
-                    </div>
-
-                    {/* Desktop Navigation Menu */}
-                    <div className="hidden md:flex items-center gap-1 text-sm font-medium text-slate-700">
-                        <DropdownMenu
-                            label="ฟีเจอร์"
-                            items={[
-                                { label: "บันทึกอาหาร & โภชนาการ", href: "#food-log" },
-                                { label: "บันทึกการออกกำลังกาย", href: "#exercise-log" },
-                                { label: "บันทึกการนอน & น้ำดื่ม", href: "#sleep-water" },
-                                { label: "AI วิเคราะห์สุขภาพ", href: "#ai-analysis" },
-                            ]}
-                        />
-
-                        <DropdownMenu
-                            label="การทำงาน"
-                            items={[
-                                { label: "Dashboard ภาพรวม", href: "#dashboard" },
-                                { label: "เป้าหมายสุขภาพ", href: "#health-goals" },
-                                { label: "Chat AI ส่วนตัว", href: "#chat-ai" },
-                            ]}
-                        />
-
-                        <DropdownMenu
-                            label="AI วิเคราะห์"
-                            items={[
-                                { label: "วิเคราะห์รูปอาหาร", href: "#food-ai" },
-                                { label: "คำแนะนำโภชนาการ", href: "#nutrition-advice" },
-                                { label: "Health Score", href: "#health-score" },
-                            ]}
-                        />
-
-                        <a
-                            href="#pricing"
-                            className="relative group px-4 py-2 rounded-xl transition-all duration-300 hover:scale-105"
-                        >
-                            <div className="absolute inset-0 z-0 bg-slate-100 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                            <span className="relative z-10 group-hover:text-emerald-600 transition-colors duration-300">
-                                ราคา
-                            </span>
-                        </a>
-                    </div>
-
-                    {/* Desktop Right Actions */}
-                    <div className="hidden md:flex items-center gap-3">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            asChild
-                            className="text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium transition-all duration-200"
-                        >
-                            <Link to="/login">เข้าสู่ระบบ</Link>
-                        </Button>
-                        <Button
-                            size="sm"
-                            asChild
-                            className="bg-gradient-to-r from-sky-500 to-emerald-500 text-white hover:from-sky-400 hover:to-emerald-400 rounded-full px-5 text-sm shadow-md border-0 font-medium transition-all duration-200"
-                        >
-                            <Link to="/register">เริ่มต้นใช้งาน</Link>
-                        </Button>
-                    </div>
-                </div>
-            </div>
-        </nav>
-    );
-};
 
 // Expandable Health Tracking Card Component
 const ExpandableHealthCard = () => {
@@ -1171,7 +988,7 @@ const HeroSection = () => {
                     <rect width="100%" height="100%" fill="url(#grid-pattern)" />
                 </svg>
 
-                {/* Soft gradient orbs - Restored */}
+                {/* Soft gradient orbs */}
                 <div className="absolute top-20 left-1/4 w-[500px] h-[500px] bg-sky-300/30 rounded-full blur-[120px] pointer-events-none mix-blend-multiply" />
                 <div className="absolute top-40 right-1/4 w-[400px] h-[400px] bg-emerald-300/20 rounded-full blur-[100px] pointer-events-none mix-blend-multiply" />
                 <div className="absolute bottom-0 left-1/3 w-[600px] h-[300px] bg-indigo-200/20 rounded-full blur-[100px] pointer-events-none" />
@@ -1483,6 +1300,8 @@ const Index = () => {
     const navigate = useNavigate();
     const [isFoodDemoOpen, setIsFoodDemoOpen] = useState(false);
     const [isAIChatDemoOpen, setIsAIChatDemoOpen] = useState(false);
+    const [isHealthDashboardOpen, setIsHealthDashboardOpen] = useState(false);
+    const [isHistoryDemoOpen, setIsHistoryDemoOpen] = useState(false);
 
     useEffect(() => {
         if (tokenUtils.isLoggedIn()) {
@@ -1492,20 +1311,14 @@ const Index = () => {
 
     return (
         <div className="min-h-screen bg-background text-foreground font-prompt selection:bg-primary/20 scroll-smooth">
-            <Navbar />
+            <Header />
 
             <main>
                 <HeroSection />
 
                 <div className="w-full bg-[#f9f9f9]">
-                    <div className="relative mx-auto flex w-full max-w-6xl flex-col justify-between border-x border-dashed border-slate-300 py-16">
-                        <div
-                            className="-translate-x-1/2 -top-px pointer-events-none absolute left-1/2 w-screen"
-                            style={{
-                                height: '2px',
-                                background: 'repeating-linear-gradient(90deg, #cbd5e1 0, #cbd5e1 3px, transparent 3px, transparent 6px)'
-                            }}
-                        />
+                    <div className="relative mx-auto flex w-full max-w-6xl flex-col justify-between border-x-dashed-wide py-16">
+                        <div className="-translate-x-1/2 -top-px pointer-events-none absolute left-1/2 w-screen border-t border-dashed border-slate-300" />
 
                         <div className="container mx-auto px-4 py-8">
                             {/* Bento Grid - Magic UI Style Layout */}
@@ -1519,6 +1332,7 @@ const Index = () => {
                                     href="#"
                                     cta="ดูการทำงาน"
                                     className="md:col-span-2 lg:col-span-1 min-h-[280px]"
+                                    onCtaClick={() => setIsHealthDashboardOpen(true)}
                                     background={
                                         <Marquee
                                             pauseOnHover
@@ -1553,7 +1367,7 @@ const Index = () => {
 
                                 {/* Card 2: AI Chat Card */}
                                 <BentoCard
-                                    Icon={BellIcon}
+                                    Icon={NotificationBellIcon}
                                     name="คุยกับ AI ส่วนตัว"
                                     description="ปรึกษาปัญหาสุขภาพได้ตลอด 24 ชม."
                                     href="#"
@@ -1618,6 +1432,7 @@ const Index = () => {
                                     className="md:col-span-1 min-h-[280px]"
                                     href="#"
                                     cta="ดูประวัติ"
+                                    onCtaClick={() => setIsHistoryDemoOpen(true)}
                                     background={
                                         <Calendar
                                             mode="single"
@@ -1652,6 +1467,18 @@ const Index = () => {
             <AIChatDemoModal
                 isOpen={isAIChatDemoOpen}
                 onClose={() => setIsAIChatDemoOpen(false)}
+            />
+
+            {/* Health Dashboard Demo Modal */}
+            <HealthDashboardDemoModal
+                isOpen={isHealthDashboardOpen}
+                onClose={() => setIsHealthDashboardOpen(false)}
+            />
+
+            {/* History Demo Modal */}
+            <HistoryDemoModal
+                isOpen={isHistoryDemoOpen}
+                onClose={() => setIsHistoryDemoOpen(false)}
             />
         </div>
     );

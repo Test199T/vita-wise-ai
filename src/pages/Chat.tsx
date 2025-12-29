@@ -12,7 +12,6 @@ import {
   BookOpen,
   Code2,
   Heart,
-  Bell,
   ChevronDown,
   User,
   Mic,
@@ -41,6 +40,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { NotificationBellIcon } from "@/components/ui/notification-bell-icon";
 
 export default function Chat() {
   const navigate = useNavigate();
@@ -1168,7 +1168,7 @@ export default function Chat() {
             to="/notifications"
             className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
           >
-            <Bell className="h-5 w-5 text-gray-600 hover:text-blue-600 transition-colors" />
+            <NotificationBellIcon className="h-5 w-5 text-gray-600 hover:text-blue-600 transition-colors" size={20} />
             <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center">
               <span className="text-xs text-white font-medium">3</span>
             </div>
