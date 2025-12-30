@@ -14,7 +14,7 @@ export function Header() {
 
 
     return (
-        <div className="fixed top-4 left-0 right-0 z-50 flex justify-center px-4">
+        <div className="fixed top-4 left-0 right-0 z-[99] flex justify-center px-4">
             <nav className="flex h-16 w-full max-w-[1240px] items-center justify-between rounded-2xl border border-dashed border-slate-300 bg-white/90 backdrop-blur-md px-4 shadow-sm transition-all hover:shadow-md">
                 <div className="flex items-center gap-4">
                     <Link to="/" className="flex items-center group">
