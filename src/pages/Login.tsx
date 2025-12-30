@@ -3,8 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, Eye, EyeOff, Mail, Lock } from "lucide-react";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Eye, EyeOff, Mail, Lock, Activity } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { tokenUtils } from "@/lib/utils";
 import { apiConfig, authConfig } from "@/config/env";
@@ -14,13 +15,13 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // ตรวจสอบว่าผู้ใช้ล็อกอินแล้วหรือไม่
   useEffect(() => {
     if (tokenUtils.isLoggedIn()) {
-      console.log('✅ Login: ผู้ใช้ล็อกอินแล้ว - เปลี่ยนไปยังหน้า Dashboard');
+      console.log('✅ Login: User already logged in - Redirecting to Dashboard');
       navigate('/dashboard');
     }
   }, [navigate]);
@@ -29,7 +30,6 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
 
-    // Log ข้อมูลที่ผู้ใช้กรอก (ไม่รวมรหัสผ่าน)
     console.log('Login attempt:', { email, passwordLength: password.length });
 
     try {
@@ -45,8 +45,7 @@ export default function Login() {
       });
 
       const data = await response.json();
-      
-      // Log response จาก backend
+
       console.log('Backend response:', {
         status: response.status,
         statusText: response.statusText,
@@ -54,108 +53,67 @@ export default function Login() {
       });
 
       if (response.ok) {
-        // รับ access_token จาก backend
         if (!data.access_token) {
           console.error('No access_token received from backend:', data);
           toast({
-            title: "ข้อผิดพลาด",
-            description: "ไม่ได้รับ access_token จากเซิร์ฟเวอร์ กรุณาลองใหม่อีกครั้ง",
+            title: "Error",
+            description: "No access token received. Please try again.",
             variant: "destructive",
           });
           return;
         }
 
-        // ใช้ utility function เพื่อบันทึก access_token จาก backend
         if (!tokenUtils.setToken(data.access_token)) {
           toast({
-            title: "ข้อผิดพลาด",
-            description: "ไม่สามารถบันทึก access_token ได้ กรุณาลองใหม่อีกครั้ง",
+            title: "Error",
+            description: "Failed to save access token. Please try again.",
             variant: "destructive",
           });
           return;
         }
 
-        // บันทึกข้อมูลผู้ใช้
         localStorage.setItem('user', JSON.stringify(data.user || {}));
-        
-        console.log('Login successful:', {
-          user: data.user,
-          hasToken: !!data.access_token,
-          tokenLength: data.access_token.length,
-          tokenPreview: `${data.access_token.substring(0, 20)}...`,
-          tokenParts: data.access_token.split('.').length,
-          tokenStored: tokenUtils.isValidToken(tokenUtils.getToken()),
-          tokenFromBackend: true,
-          tokenType: 'access_token'
-        });
-        
+        if (rememberMe) {
+          localStorage.setItem('rememberMe_email', email);
+        } else {
+          localStorage.removeItem('rememberMe_email');
+        }
+
+        console.log('Login successful');
+
         toast({
-          title: "เข้าสู่ระบบสำเร็จ",
-          description: "ยินดีต้อนรับสู่แอปสุขภาพดี AI",
+          title: "Login Successful",
+          description: "Welcome back to Vita Wise AI!",
         });
-        
-        // รอสักครู่แล้วค่อยไปหน้า dashboard เพื่อให้ toast แสดงเสร็จ
+
         setTimeout(() => {
           navigate("/dashboard");
         }, 1000);
       } else {
-        // จัดการ error cases ต่างๆ
-        let errorMessage = "เกิดข้อผิดพลาดในการเข้าสู่ระบบ";
-        
+        let errorMessage = "Login failed";
+
         if (response.status === 401) {
-          errorMessage = "อีเมลหรือรหัสผ่านไม่ถูกต้อง";
-          console.warn('Authentication failed:', {
-            email,
-            reason: 'Invalid credentials',
-            backendMessage: data.message
-          });
+          errorMessage = "Invalid email or password";
         } else if (response.status === 404) {
-          errorMessage = "ไม่พบผู้ใช้ในระบบ";
-          console.warn('User not found:', {
-            email,
-            reason: 'User does not exist in database',
-            backendMessage: data.message
-          });
+          errorMessage = "User not found";
         } else if (response.status === 500) {
-          errorMessage = "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์";
-          console.error('Server error:', {
-            email,
-            status: response.status,
-            backendMessage: data.message,
-            error: data.error
-          });
+          errorMessage = "Server error";
         } else if (response.status === 422) {
-          errorMessage = "ข้อมูลไม่ถูกต้อง";
-          console.warn('Validation error:', {
-            email,
-            validationErrors: data.errors,
-            backendMessage: data.message
-          });
-        } else {
-          console.error('Unexpected error response:', {
-            email,
-            status: response.status,
-            statusText: response.statusText,
-            data: data
-          });
+          errorMessage = "Validation error";
         }
 
         toast({
-          title: "ข้อผิดพลาด",
+          title: "Login Failed",
           description: errorMessage,
           variant: "destructive",
         });
       }
     } catch (error) {
-      console.error('Network/Connection error:', {
-        email,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined
-      });
-      
+      console.error('Network/Connection error:', error);
+
       toast({
-        title: "ข้อผิดพลาด",
-        description: "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต",
+        title: "Connection Error",
+        description: "Could not connect to the server. Please check your internet connection.",
         variant: "destructive",
       });
     } finally {
@@ -164,102 +122,137 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-light to-secondary-light flex items-center justify-center p-4">
-      <div className="w-full max-w-md fade-in">
-        <Card className="shadow-health border-0">
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <div className="bg-gradient-primary p-3 rounded-full">
-                <Activity className="h-8 w-8 text-primary-foreground" />
-              </div>
-            </div>
-            <CardTitle className="text-2xl font-bold text-foreground">
-              เข้าสู่ระบบ
-            </CardTitle>
-            <CardDescription className="text-muted-foreground">
-              เข้าสู่ระบบเพื่อติดตามสุขภาพของคุณ
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium">
-                  อีเมล
-                </Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="อีเมลของคุณ"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 health-input"
-                    required
-                  />
-                </div>
-              </div>
+    <div className="min-h-screen bg-gradient-to-br from-primary-light to-secondary-light flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Dot pattern background */}
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          backgroundImage: 'radial-gradient(#cbd5e1 1.5px, transparent 1.5px)',
+          backgroundSize: '24px 24px'
+        }}
+      />
 
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium">
-                  รหัสผ่าน
-                </Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="รหัสผ่านของคุณ"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 health-input"
-                    required
+      <div className="z-10 w-full max-w-[420px] flex flex-col items-center gap-6">
+        {/* Logo Section */}
+        <div className="flex flex-col items-center gap-6 mb-2">
+          <div className="bg-gradient-primary p-3 rounded-2xl shadow-lg shadow-health/20">
+            <Activity className="h-8 w-8 text-primary-foreground" />
+          </div>
+          <div className="text-center space-y-2">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">ยินดีต้อนรับกลับมา!</h1>
+            <p className="text-muted-foreground text-base max-w-sm mx-auto">
+              กรอกอีเมลด้านล่างเพื่อเข้าสู่ระบบ
+            </p>
+          </div>
+        </div>
+
+        {/* Card Section */}
+        <div className="w-full relative">
+          <Card className="w-full shadow-health border-0 rounded-3xl overflow-hidden bg-white/90 backdrop-blur-sm relative z-10">
+            <CardContent className="p-8 pt-8">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-semibold text-foreground flex">
+                    อีเมล <span className="text-primary ml-1">*</span>
+                  </Label>
+                  <div className="relative group">
+                    <Mail className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="example@gmail.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="health-input pl-11 h-12 text-base"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password" className="text-sm font-semibold text-foreground flex">
+                      รหัสผ่าน <span className="text-primary ml-1">*</span>
+                    </Label>
+                    <Link
+                      to="/forgot-password"
+                      className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      ลืมรหัสผ่าน?
+                    </Link>
+                  </div>
+                  <div className="relative group">
+                    <Lock className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="health-input pl-11 pr-11 h-12 text-base"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3.5 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-5 w-5" />
+                      ) : (
+                        <Eye className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="remember"
+                    checked={rememberMe}
+                    onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                    className="data-[state=checked]:bg-primary border-muted-foreground/30 h-5 w-5 rounded-md"
                   />
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                    onClick={() => setShowPassword(!showPassword)}
+                  <label
+                    htmlFor="remember"
+                    className="text-sm font-medium text-foreground leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer select-none"
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </button>
+                    จดจำฉันไว้
+                  </label>
                 </div>
-              </div>
 
-              <div className="text-right">
-                <Link 
-                  to="/forgot-password" 
-                  className="text-sm text-primary hover:text-primary-hover underline"
+                <Button
+                  type="submit"
+                  className="health-button w-full h-12 text-base font-semibold shadow-lg shadow-health/30 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                  disabled={loading}
                 >
-                  ลืมรหัสผ่าน?
-                </Link>
-              </div>
+                  {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
+                </Button>
 
-              <Button
-                type="submit"
-                className="w-full health-button"
-                disabled={loading}
-              >
-                {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
-              </Button>
-            </form>
+                <div className="text-center mt-4">
+                  <p className="text-sm text-muted-foreground">
+                    ยังไม่มีบัญชี?{" "}
+                    <Link
+                      to="/register"
+                      className="text-primary hover:text-primary-hover font-bold hover:underline"
+                    >
+                      สมัครสมาชิก
+                    </Link>
+                  </p>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
 
-            <div className="mt-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                ยังไม่มีบัญชี?{" "}
-                <Link 
-                  to="/register" 
-                  className="text-primary hover:text-primary-hover font-medium underline"
-                >
-                  สมัครสมาชิก
-                </Link>
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+          {/* Footer Layer - stacked behind */}
+          <div className="w-full relative -mt-6 pt-10 pb-4 px-10 bg-[#eff1f3] bg-opacity-90 backdrop-blur-md rounded-b-3xl border border-t-0 border-slate-200/60 shadow-sm z-0 text-left transition-all duration-300">
+            <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-[400px]">
+              เมื่อคลิกดำเนินการต่อ คุณยอมรับ{' '}
+              <a href="#" className="font-bold text-slate-700 underline decoration-slate-400 underline-offset-2 hover:text-slate-900 transition-colors">เงื่อนไขการให้บริการ</a> และ{' '}
+              <a href="#" className="font-bold text-slate-700 underline decoration-slate-400 underline-offset-2 hover:text-slate-900 transition-colors">นโยบายความเป็นส่วนตัว</a> ของเรา
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

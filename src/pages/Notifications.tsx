@@ -31,36 +31,9 @@ function loadNotifications(): NotificationItem[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
-  } catch {}
-  // Seed with sample notifications
-  const seed: NotificationItem[] = [
-    {
-      id: crypto.randomUUID(),
-      type: "reminder",
-      title: "ถึงเวลาดื่มน้ำ",
-      description: "ดื่มน้ำ 300 มล. เพื่อให้ถึงเป้าหมายประจำวัน",
-      created_at: new Date().toISOString(),
-      read: false,
-    },
-    {
-      id: crypto.randomUUID(),
-      type: "info",
-      title: "อัปเดต AI Insights",
-      description: "มีคำแนะนำใหม่เกี่ยวกับการนอนของคุณ",
-      created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-      read: false,
-    },
-    {
-      id: crypto.randomUUID(),
-      type: "warning",
-      title: "โซเดียมวันนี้ใกล้ถึงลิมิต",
-      description: "แนะนำหลีกเลี่ยงอาหารแปรรูปในมื้อถัดไป",
-      created_at: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
-      read: false,
-    },
-  ];
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
-  return seed;
+  } catch { }
+  // Return empty array by default
+  return [];
 }
 
 function saveNotifications(items: NotificationItem[]) {
@@ -108,6 +81,7 @@ export default function Notifications() {
     [notifications]
   );
 
+
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -140,7 +114,7 @@ export default function Notifications() {
           </CardHeader>
           <CardContent className="space-y-3">
             {hasItems ? (
-              <div className="divide-y divide-muted/50">
+              <div className="divide-y divide-muted/50 max-h-[400px] overflow-y-auto pr-2">
                 {sorted.map((n) => {
                   const meta = getTypeMeta(n.type);
                   const TypeIcon = meta.Icon;
@@ -182,8 +156,8 @@ export default function Notifications() {
             )}
           </CardContent>
         </Card>
-      </div>
-    </MainLayout>
+      </div >
+    </MainLayout >
   );
 }
 

@@ -40,7 +40,7 @@ export function Header() {
                 </div>
 
                 <div className="hidden items-center gap-2 md:flex">
-                    <Button variant="ghost" className="h-8 text-slate-600 hover:text-slate-900 text-xs font-medium px-3 border border-dashed border-slate-400 rounded-xl hover:border-slate-500" asChild>
+                    <Button variant="ghost" className="h-8 text-slate-600 hover:text-slate-900 text-xs font-medium px-3 border border-dashed border-slate-400 rounded-xl hover:border-slate-800 hover:shadow-sm hover:bg-transparent" asChild>
                         <Link to="/login">เข้าสู่ระบบ</Link>
                     </Button>
                     <Button className="h-8 bg-slate-900 hover:bg-slate-800 text-xs font-medium px-4 rounded-xl shadow-md" asChild>

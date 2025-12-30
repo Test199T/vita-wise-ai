@@ -130,17 +130,14 @@ export function Header() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">
-            <Button variant="ghost" size="icon" className="relative hover:bg-muted/50" asChild>
+            <Button variant="ghost" size="icon" className="relative text-slate-600 hover:text-slate-900 hover:bg-transparent transition-colors" asChild>
               <Link to="/notifications">
                 <NotificationBellIcon className="h-5 w-5" size={20} />
-                <span className="absolute -top-1 -right-1 bg-warning text-warning-foreground text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                  3
-                </span>
               </Link>
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2 hover:bg-muted/50 px-2 py-1 rounded-lg">
+                <Button variant="ghost" className="flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-transparent px-2 py-1 rounded-lg">
                   {profilePicture ? (
                     <img src={profilePicture} alt="avatar" className="w-7 h-7 rounded-full object-cover border-2 border-border" />
                   ) : (
@@ -161,7 +158,7 @@ export function Header() {
                     โปรไฟล์
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={() => tokenUtils.logout()}
                   className="flex items-center gap-2 text-destructive cursor-pointer"
                 >
