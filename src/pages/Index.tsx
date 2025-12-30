@@ -1199,7 +1199,7 @@ const HeroSection = () => {
                 curve="bezier"
                 exponential={true}
                 opacity={1}
-                zIndex={50}
+                zIndex={40}
             />
         </section>
     );
