@@ -102,7 +102,7 @@ export function Footer() {
                                     key={`social-${item.link}-${index}`}
                                     size="icon"
                                     variant="outline"
-                                    className="w-8 h-8 rounded-full"
+                                    className="w-8 h-8 rounded-full hover:bg-transparent hover:border-slate-900 transition-colors"
                                 >
                                     <a href={item.link} target="_blank">
                                         <item.icon className="size-3.5" />
@@ -116,7 +116,7 @@ export function Footer() {
                         <div className="mt-2 flex flex-col gap-2">
                             {resources.map(({ href, title }) => (
                                 <a
-                                    className="w-max text-sm hover:underline text-slate-600"
+                                    className="w-max text-sm text-slate-600 hover:text-slate-900 transition-colors"
                                     href={href}
                                     key={title}
                                 >
@@ -130,7 +130,7 @@ export function Footer() {
                         <div className="mt-2 flex flex-col gap-2">
                             {company.map(({ href, title }) => (
                                 <a
-                                    className="w-max text-sm hover:underline text-slate-600"
+                                    className="w-max text-sm text-slate-600 hover:text-slate-900 transition-colors"
                                     href={href}
                                     key={title}
                                 >
