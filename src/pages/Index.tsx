@@ -964,15 +964,38 @@ const ConnectionLine = ({ position = "left" }: { position?: "left" | "right" }) 
     );
 };
 
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
+
+// ... inside the component ...
+
 const HeroSection = () => {
     const containerRef = React.useRef<HTMLDivElement>(null);
     const leftCardRef = React.useRef<HTMLDivElement>(null);
     const centerCardRef = React.useRef<HTMLDivElement>(null);
     const rightCardRef = React.useRef<HTMLDivElement>(null);
 
-    return (
-        <section className="relative min-h-[85vh] md:h-[900px] overflow-hidden bg-gradient-to-b from-white via-slate-50 to-white">
+    // GSAP Animation Refs
+    const titleRef = React.useRef<HTMLHeadingElement>(null);
+    const subtitleRef = React.useRef<HTMLSpanElement>(null);
 
+    useGSAP(() => {
+        const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+
+        tl.fromTo(titleRef.current,
+            { y: 50, opacity: 0 },
+            { y: 0, opacity: 1, duration: 1, delay: 0.2 }
+        )
+            .fromTo(subtitleRef.current,
+                { y: 20, opacity: 0, filter: "blur(10px)" },
+                { y: 0, opacity: 1, filter: "blur(0px)", duration: 1.2 },
+                "-=0.6"
+            );
+
+    }, { scope: containerRef }); // Scope to container for performance
+
+    return (
+        <section className="relative min-h-[85vh] md:h-[900px] bg-gradient-to-b from-white via-slate-50 to-[#f9f9f9] overflow-hidden">
             {/* Light Theme Background Effects */}
             <div className="absolute inset-0 z-0">
                 {/* Structure Grid - Startup Visuals Style */}
@@ -1010,10 +1033,10 @@ const HeroSection = () => {
 
                 {/* Header Content */}
                 <div className="mb-8 md:mb-12 space-y-4 md:space-y-6 max-w-4xl mx-auto flex-1 flex flex-col justify-center md:block">
-                    <h1 className="text-[2rem] sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-slate-900 leading-[1.2] font-heading px-2">
+                    <h1 ref={titleRef} className="text-[2rem] sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-slate-900 leading-[1.2] font-heading px-2 opacity-0 translate-y-8">
                         ดูแลสุขภาพครบวงจร <br />
                         {/* Gradient text on mobile, Cover animation on desktop */}
-                        <span className="inline-block mt-1 sm:mt-3">
+                        <span ref={subtitleRef} className="inline-block mt-1 sm:mt-3 opacity-0">
                             <span className="md:hidden text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-emerald-500">
                                 ด้วย AI อัจฉริยะ
                             </span>
@@ -1054,7 +1077,7 @@ const HeroSection = () => {
                     <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-sky-300/20 rounded-full blur-[100px] pointer-events-none" />
 
                     <SpotlightCard
-                        className="rounded-t-3xl rounded-b-none border-t border-x border-b-0 border-slate-300 bg-white/90 shadow-xl backdrop-blur-xl p-8 pb-0 md:p-12 md:pb-0 !overflow-visible"
+                        className="rounded-t-3xl rounded-b-none border-t border-x border-b-0 border-slate-300 bg-[#f9f9f9] shadow-xl backdrop-blur-xl p-8 pb-0 md:p-12 md:pb-0 !overflow-visible"
                         spotlightColor="rgba(56, 189, 248, 0.1)"
                     >
                         {/* Inner Grid */}
@@ -1074,12 +1097,12 @@ const HeroSection = () => {
 
                         <div ref={containerRef} className="relative z-10 w-full max-w-6xl mx-auto pb-8 md:pb-12">
                             <div className="flex flex-col md:flex-row items-center justify-center md:justify-between gap-4 md:gap-6 w-full md:h-40">
-                                {/* Left Card - Sources */}
+                                {/* Left Card - Input */}
                                 <div ref={leftCardRef} className="flex-shrink-0 z-10">
                                     <NodeCard
-                                        title="Connect"
-                                        icon={Watch}
-                                        label="SOURCES"
+                                        title="Input"
+                                        icon={Camera}
+                                        label="INPUT"
                                         iconColor="text-slate-800"
                                         spotlightColor="rgba(56, 189, 248, 0.1)"
                                     />
@@ -1316,7 +1339,10 @@ const Index = () => {
             <main>
                 <HeroSection />
 
-                <div className="w-full bg-[#f9f9f9]">
+                <div className="w-full bg-[#f9f9f9] relative">
+                    {/* Subtle Grid Pattern Background - matches HeroSection */}
+                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#00000008_1px,transparent_1px),linear-gradient(to_bottom,#00000008_1px,transparent_1px)] bg-[size:24px_24px] opacity-50 pointer-events-none" />
+
                     <div className="relative mx-auto flex w-full max-w-6xl flex-col justify-between border-x-dashed-wide py-16">
                         <div className="-translate-x-1/2 -top-px pointer-events-none absolute left-1/2 w-screen border-t border-dashed border-slate-300" />
 
