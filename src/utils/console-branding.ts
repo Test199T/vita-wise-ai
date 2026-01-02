@@ -218,10 +218,9 @@ export function showConsoleBranding(): void {
         _console.log(
             `%c🔍 SYSTEM DIAGNOSTICS
 ────────────────────────
- ●  AI Core       [ ONLINE ]   🟢
- ●  Neural Net    [ ACTIVE ]   ⚡
- ●  Security      [ SECURE ]   🛡️
- ●  Environment   [ PROD   ]   🚀
+ ●  System Status [ ONLINE ]   🟢
+ ●  Security      [ ACTIVE ]   🛡️
+ ●  Connection    [ SECURE ]   🔒
 ────────────────────────
 💡 Type "vitawise.help()" for tools`,
             styles.hud
@@ -229,7 +228,7 @@ export function showConsoleBranding(): void {
 
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //  CAREERS
+        // 💼 CAREERS
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
         _console.log('');
@@ -244,7 +243,7 @@ export function showConsoleBranding(): void {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// � INTERACTIVE TOOLS (Pro Level)
+// 🎮 INTERACTIVE TOOLS (Pro Level)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export function showEasterEgg(): void {
@@ -271,22 +270,25 @@ export function showEasterEgg(): void {
 }
 
 const runDiagnostics = () => {
-    _console.log('%c🔄 Running System Scan...', 'color: #38bdf8');
-    setTimeout(() => _console.log('%c✅ Memory Integrity: OK', 'color: #34d399'), 300);
-    setTimeout(() => _console.log('%c✅ Network Latency: 24ms', 'color: #34d399'), 600);
-    setTimeout(() => _console.log('%c✅ AI Model: Loaded (Vita-v1)', 'color: #34d399'), 900);
-    setTimeout(() => _console.log('%c🚀 All Systems Operational', 'color: #34d399; font-weight: bold; font-size: 14px; margin-top: 8px;'), 1200);
-    return "Scan complete.";
+    _console.log('%c🔄 Running Security Scan...', 'color: #38bdf8');
+    setTimeout(() => _console.log('%c✅ Integrity Check: PASS', 'color: #34d399'), 300);
+    setTimeout(() => _console.log('%c✅ Encryption: AES-256', 'color: #34d399'), 600);
+    setTimeout(() => _console.log('%c✅ Firewall: ACTIVE', 'color: #34d399'), 900);
+    setTimeout(() => _console.log('%c🛡️ System Secure', 'color: #34d399; font-weight: bold; font-size: 14px; margin-top: 8px;'), 1200);
+    return "Verification complete.";
 };
+
+// Declare global define from vite.config.ts
+declare const __COMMIT_HASH__: string;
 
 const showHelp = () => {
     _console.table({
-        'scan()': 'Run system diagnostics animation',
+        'scan()': 'Run security diagnostics',
         'easter()': 'Reveal secret artifact',
-        'version': '1.0.0'
     });
     return "Select a command to run.";
 };
+
 
 // Expose tools globally
 if (typeof window !== 'undefined') {

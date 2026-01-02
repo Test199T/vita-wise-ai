@@ -2,6 +2,31 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
+import { execSync } from "child_process";
+
+// Get git info
+const getGitHash = () => {
+  try {
+    return execSync("git rev-parse --short HEAD").toString().trim();
+  } catch (e) {
+    return "unknown";
+  }
+};
+
+const commitHash = getGitHash();
+const buildDate = new Date().toLocaleDateString('en-GB', {
+  day: 'numeric', month: 'short', year: 'numeric'
+});
+
+const banner = `
+/*!
+ * VITA WISE AI - AI-Powered Health & Wellness Platform
+ * Version: ${process.env.npm_package_version || "1.0.0"} (${commitHash})
+ * Built: ${buildDate}
+ * 
+ * (c) 2024 Vita Wise AI. All rights reserved.
+ */
+`;
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -29,6 +54,7 @@ export default defineConfig(({ mode }) => {
         process.env.npm_package_version || "1.0.0",
       ),
       __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+      __COMMIT_HASH__: JSON.stringify(commitHash),
     },
     // Environment file loading
     envPrefix: "VITE_",
@@ -36,17 +62,20 @@ export default defineConfig(({ mode }) => {
     // Build configuration
     build: {
       outDir: "dist",
-      sourcemap: false, // Hide source maps in production to obscure code structure
-      // Use terser to remove console.log statements in production
+      sourcemap: false, // Absolutely no source maps
       minify: 'terser',
       terserOptions: {
+        format: {
+          comments: false, // Remove ALL comments
+        },
         compress: {
-          drop_console: true,
+          drop_console: true, // Remove console.logs
           drop_debugger: true,
         },
       },
       rollupOptions: {
         output: {
+          // No banner
           manualChunks: {
             vendor: ["react", "react-dom"],
             ui: ["@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu"],
