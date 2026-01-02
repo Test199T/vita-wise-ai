@@ -37,6 +37,14 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: "dist",
       sourcemap: false, // Hide source maps in production to obscure code structure
+      // Use terser to remove console.log statements in production
+      minify: 'terser',
+      terserOptions: {
+        compress: {
+          drop_console: true,
+          drop_debugger: true,
+        },
+      },
       rollupOptions: {
         output: {
           manualChunks: {

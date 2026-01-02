@@ -110,22 +110,18 @@ export const tokenUtils: TokenUtils = {
     try {
       const token = tokenUtils.getValidToken();
       if (!token) {
-        console.log('No valid token found');
         return null;
       }
       
       const tokenData = JSON.parse(atob(token.split('.')[1]));
-      console.log('Token data:', tokenData);
       
       // Try different possible user ID fields
       const userId = tokenData.userId || tokenData.id || tokenData.sub || tokenData.user_id;
       
       if (userId) {
-        console.log('Found user ID:', userId);
         return typeof userId === 'string' ? parseInt(userId, 10) : userId;
       }
       
-      console.log('No user ID found in token data');
       return null;
     } catch (error) {
       console.error('Error extracting user ID from token:', error);
@@ -135,7 +131,6 @@ export const tokenUtils: TokenUtils = {
 
   // ฟังก์ชัน logout ที่สมบูรณ์
   logout: (): void => {
-    console.log('🔄 เริ่มกระบวนการออกจากระบบ...');
     
     // ล้างข้อมูลทั้งหมดใน localStorage
     const keysToRemove = [
@@ -156,7 +151,6 @@ export const tokenUtils: TokenUtils = {
     keysToRemove.forEach(key => {
       if (localStorage.getItem(key)) {
         localStorage.removeItem(key);
-        console.log(`🗑️ ลบ ${key} จาก localStorage`);
       }
     });
     
@@ -179,7 +173,6 @@ export const tokenUtils: TokenUtils = {
     sessionKeysToRemove.forEach(key => {
       if (sessionStorage.getItem(key)) {
         sessionStorage.removeItem(key);
-        console.log(`🗑️ ลบ ${key} จาก sessionStorage`);
       }
     });
     
@@ -190,7 +183,6 @@ export const tokenUtils: TokenUtils = {
       window.removeEventListener('beforeunload', () => {});
     }
     
-    console.log('✅ ออกจากระบบเรียบร้อยแล้ว');
     
     // เปลี่ยน URL ไปยังหน้า login และป้องกันการย้อนกลับ
     if (typeof window !== 'undefined') {
@@ -208,7 +200,6 @@ export const tokenUtils: TokenUtils = {
   // ตรวจสอบและป้องกันการเข้าถึงหน้าที่ต้องล็อกอิน
   requireAuth: (): boolean => {
     if (!tokenUtils.isLoggedIn()) {
-      console.log('🚫 requireAuth: ผู้ใช้ไม่ได้เข้าสู่ระบบ');
       return false;
     }
     return true;
