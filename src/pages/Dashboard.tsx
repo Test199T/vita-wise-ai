@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 // lucide-react kept for inlined status icons/badges; main tiles use Iconify via HealthCard
 import { AlertTriangle, CheckCircle, XCircle, TrendingUp, MessageCircle, Calendar, Pill, BarChart3, Target, Clock, LineChart, Dumbbell, Flame, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -1444,6 +1445,15 @@ export default function Dashboard() {
             </Button>
           </div>
         </div>
+
+        {/* Medical Disclaimer Warning */}
+        <Alert variant="default" className="bg-amber-500/10 text-amber-600 border-amber-500/20">
+          <AlertTriangle className="h-4 w-4 stroke-amber-600" />
+          <AlertTitle className="ml-2 font-semibold">คำเตือนทางการแพทย์</AlertTitle>
+          <AlertDescription className="ml-2">
+            ข้อมูลและการวิเคราะห์จาก AI เป็นเพียงคำแนะนำเบื้องต้นเพื่อสุขภาพเท่านั้น ไม่สามารถใช้ทดแทนการวินิจฉัย การรักษา หรือคำแนะนำจากแพทย์ผู้เชี่ยวชาญได้ หากมีอาการผิดปกติโปรดปรึกษาแพทย์
+          </AlertDescription>
+        </Alert>
 
         {/* AI Insight สรุปรวม (ภาพรวม) */}
         <Card className="border-primary/20">
