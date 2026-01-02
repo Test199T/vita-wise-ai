@@ -5,8 +5,21 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// Token utilities type definition
+interface TokenUtils {
+  isValidToken: (token: string | null) => boolean;
+  getToken: () => string | null;
+  getValidToken: () => string | null;
+  setToken: (token: string) => boolean;
+  removeToken: () => void;
+  isLoggedIn: () => boolean;
+  getUserId: () => number | null;
+  logout: () => void;
+  requireAuth: () => boolean;
+}
+
 // Token management utilities
-export const tokenUtils = {
+export const tokenUtils: TokenUtils = {
   // ตรวจสอบว่า token มีอยู่และมีรูปแบบถูกต้อง
   isValidToken: (token: string | null): boolean => {
     if (!token || typeof token !== 'string') return false;
@@ -68,6 +81,136 @@ export const tokenUtils = {
 
   // ตรวจสอบสถานะการล็อกอิน
   isLoggedIn: (): boolean => {
-    return tokenUtils.isValidToken(tokenUtils.getToken());
+    const token = tokenUtils.getToken();
+    if (!tokenUtils.isValidToken(token)) {
+      return false;
+    }
+
+    // ตรวจสอบว่า token ไม่ได้หมดอายุ (ถ้ามีข้อมูล expiration)
+    try {
+      const tokenData = JSON.parse(atob(token.split('.')[1]));
+      const currentTime = Math.floor(Date.now() / 1000);
+      
+      if (tokenData.exp && tokenData.exp < currentTime) {
+        // Token หมดอายุแล้ว
+        tokenUtils.removeToken();
+        return false;
+      }
+    } catch (error) {
+      // ถ้าไม่สามารถ decode token ได้ ให้ถือว่า invalid
+      tokenUtils.removeToken();
+      return false;
+    }
+    
+    return true;
+  },
+
+  // รับ User ID จาก token
+  getUserId: (): number | null => {
+    try {
+      const token = tokenUtils.getValidToken();
+      if (!token) {
+        console.log('No valid token found');
+        return null;
+      }
+      
+      const tokenData = JSON.parse(atob(token.split('.')[1]));
+      console.log('Token data:', tokenData);
+      
+      // Try different possible user ID fields
+      const userId = tokenData.userId || tokenData.id || tokenData.sub || tokenData.user_id;
+      
+      if (userId) {
+        console.log('Found user ID:', userId);
+        return typeof userId === 'string' ? parseInt(userId, 10) : userId;
+      }
+      
+      console.log('No user ID found in token data');
+      return null;
+    } catch (error) {
+      console.error('Error extracting user ID from token:', error);
+      return null;
+    }
+  },
+
+  // ฟังก์ชัน logout ที่สมบูรณ์
+  logout: (): void => {
+    console.log('🔄 เริ่มกระบวนการออกจากระบบ...');
+    
+    // ล้างข้อมูลทั้งหมดใน localStorage
+    const keysToRemove = [
+      'token',
+      'accessToken',
+      'user',
+      'onboardingData',
+      'profileData',
+      'chat_sessions',
+      'food_logs',
+      'exercise_logs',
+      'sleep_logs',
+      'water_logs',
+      'health_goals',
+      'notifications'
+    ];
+    
+    keysToRemove.forEach(key => {
+      if (localStorage.getItem(key)) {
+        localStorage.removeItem(key);
+        console.log(`🗑️ ลบ ${key} จาก localStorage`);
+      }
+    });
+    
+    // ล้างข้อมูลทั้งหมดใน sessionStorage
+    const sessionKeysToRemove = [
+      'token',
+      'accessToken',
+      'user',
+      'onboardingData',
+      'profileData',
+      'chat_sessions',
+      'food_logs',
+      'exercise_logs',
+      'sleep_logs',
+      'water_logs',
+      'health_goals',
+      'notifications'
+    ];
+    
+    sessionKeysToRemove.forEach(key => {
+      if (sessionStorage.getItem(key)) {
+        sessionStorage.removeItem(key);
+        console.log(`🗑️ ลบ ${key} จาก sessionStorage`);
+      }
+    });
+    
+    // ล้างข้อมูลใน memory (ถ้ามี)
+    if (typeof window !== 'undefined') {
+      // ล้าง event listeners ที่อาจเกี่ยวข้องกับ user data
+      window.removeEventListener('storage', () => {});
+      window.removeEventListener('beforeunload', () => {});
+    }
+    
+    console.log('✅ ออกจากระบบเรียบร้อยแล้ว');
+    
+    // เปลี่ยน URL ไปยังหน้า login และป้องกันการย้อนกลับ
+    if (typeof window !== 'undefined') {
+      // ใช้ replaceState เพื่อไม่ให้สามารถย้อนกลับได้
+      window.history.replaceState(null, '', '/login');
+      
+      // ล้างประวัติการนำทางทั้งหมด
+      window.history.pushState(null, '', '/login');
+      
+      // เปลี่ยนไปยังหน้า login
+      window.location.href = '/login';
+    }
+  },
+
+  // ตรวจสอบและป้องกันการเข้าถึงหน้าที่ต้องล็อกอิน
+  requireAuth: (): boolean => {
+    if (!tokenUtils.isLoggedIn()) {
+      console.log('🚫 requireAuth: ผู้ใช้ไม่ได้เข้าสู่ระบบ');
+      return false;
+    }
+    return true;
   }
 };

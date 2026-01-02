@@ -6,13 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Bell,
   Trash2,
   CheckCircle2,
   AlertTriangle,
   Info,
   CalendarClock,
 } from "lucide-react";
+import { NotificationBellIcon } from "@/components/ui/notification-bell-icon";
 
 type NotificationType = "info" | "warning" | "success" | "reminder";
 
@@ -31,36 +31,9 @@ function loadNotifications(): NotificationItem[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
-  } catch {}
-  // Seed with sample notifications
-  const seed: NotificationItem[] = [
-    {
-      id: crypto.randomUUID(),
-      type: "reminder",
-      title: "ถึงเวลาดื่มน้ำ",
-      description: "ดื่มน้ำ 300 มล. เพื่อให้ถึงเป้าหมายประจำวัน",
-      created_at: new Date().toISOString(),
-      read: false,
-    },
-    {
-      id: crypto.randomUUID(),
-      type: "info",
-      title: "อัปเดต AI Insights",
-      description: "มีคำแนะนำใหม่เกี่ยวกับการนอนของคุณ",
-      created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-      read: false,
-    },
-    {
-      id: crypto.randomUUID(),
-      type: "warning",
-      title: "โซเดียมวันนี้ใกล้ถึงลิมิต",
-      description: "แนะนำหลีกเลี่ยงอาหารแปรรูปในมื้อถัดไป",
-      created_at: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
-      read: false,
-    },
-  ];
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
-  return seed;
+  } catch { }
+  // Return empty array by default
+  return [];
 }
 
 function saveNotifications(items: NotificationItem[]) {
@@ -74,7 +47,7 @@ function getTypeMeta(type: NotificationType) {
     case "warning":
       return { label: "แจ้งเตือน", color: "bg-yellow-100 text-yellow-800", Icon: AlertTriangle };
     case "reminder":
-      return { label: "เตือนความจำ", color: "bg-blue-100 text-blue-800", Icon: Bell };
+      return { label: "เตือนความจำ", color: "bg-blue-100 text-blue-800", Icon: NotificationBellIcon };
     default:
       return { label: "ข้อมูล", color: "bg-gray-100 text-gray-800", Icon: Info };
   }
@@ -108,13 +81,14 @@ export default function Notifications() {
     [notifications]
   );
 
+
   return (
     <MainLayout>
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg text-primary">
-              <Bell className="h-5 w-5" />
+              <NotificationBellIcon className="h-5 w-5" size={20} />
             </div>
             <div>
               <h1 className="text-2xl font-bold">ศูนย์แจ้งเตือน</h1>
@@ -140,7 +114,7 @@ export default function Notifications() {
           </CardHeader>
           <CardContent className="space-y-3">
             {hasItems ? (
-              <div className="divide-y divide-muted/50">
+              <div className="divide-y divide-muted/50 max-h-[400px] overflow-y-auto pr-2">
                 {sorted.map((n) => {
                   const meta = getTypeMeta(n.type);
                   const TypeIcon = meta.Icon;
@@ -176,14 +150,14 @@ export default function Notifications() {
               </div>
             ) : (
               <div className="text-center text-muted-foreground p-8">
-                <Bell className="h-10 w-10 mx-auto mb-2 opacity-60" />
+                <NotificationBellIcon className="h-10 w-10 mx-auto mb-2 opacity-60" size={40} />
                 <div>ยังไม่มีแจ้งเตือน</div>
               </div>
             )}
           </CardContent>
         </Card>
-      </div>
-    </MainLayout>
+      </div >
+    </MainLayout >
   );
 }
 

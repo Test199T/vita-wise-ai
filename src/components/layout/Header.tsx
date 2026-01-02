@@ -1,6 +1,10 @@
-import { Bell, Activity, ChevronDown, MessageCircle } from "lucide-react";
+import { Activity, ChevronDown, MessageCircle, User, Settings, LogOut } from "lucide-react";
+import { NotificationBellIcon } from "@/components/ui/notification-bell-icon";
 import { Button } from "@/components/ui/button";
 import { Link, NavLink } from "react-router-dom";
+import { useProfilePicture } from "@/hooks/useProfilePicture";
+import { useProfile } from "@/hooks/useProfile";
+import { tokenUtils } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,19 +37,51 @@ const topNav: NavItem[] = [
   },
 ];
 
-// Simple in-memory user profile mock (replace with real auth state as needed)
-const mockUser = {
-  name: 'สมใจ ใสใจ',
-  avatarUrl: '',
-};
-
 export function Header() {
+  const { profilePicture } = useProfilePicture();
+  const { profile, loading, isLoggedIn } = useProfile();
+
+  // ถ้าผู้ใช้ไม่ได้เข้าสู่ระบบ ให้แสดงเฉพาะโลโก้และปุ่มเข้าสู่ระบบ
+  if (!isLoggedIn) {
+    return (
+      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-sm border-b border-border shadow-soft">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Link to="/" className="flex items-center gap-2">
+                <div className="bg-gradient-primary p-2 rounded-lg">
+                  <Activity className="h-6 w-6 text-primary-foreground" />
+                </div>
+                <span className="text-xl font-semibold text-foreground">
+                  สุขภาพดี AI
+                </span>
+              </Link>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button asChild variant="outline">
+                <Link to="/login">เข้าสู่ระบบ</Link>
+              </Button>
+              <Button asChild>
+                <Link to="/register">สมัครสมาชิก</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+    );
+  }
+
+  // Get user name from profile data or use fallback
+  const userName = profile ? `${profile.first_name} ${profile.last_name}` : 'ผู้ใช้';
+  const userInitial = userName.charAt(0);
+
   return (
-    <header className="bg-card border-b border-border shadow-soft">
+    <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-sm border-b border-border shadow-soft">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <Link to="/" className="flex items-center gap-2">
+            <Link to="/dashboard" className="flex items-center gap-2">
               <div className="bg-gradient-primary p-2 rounded-lg">
                 <Activity className="h-6 w-6 text-primary-foreground" />
               </div>
@@ -94,24 +130,43 @@ export function Header() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">
-            <Button variant="ghost" size="icon" className="relative hover:bg-muted/50" asChild>
+            <Button variant="ghost" size="icon" className="relative text-slate-600 hover:text-slate-900 hover:bg-transparent transition-colors" asChild>
               <Link to="/notifications">
-                <Bell className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 bg-warning text-warning-foreground text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                  3
-                </span>
+                <NotificationBellIcon className="h-5 w-5" size={20} />
               </Link>
             </Button>
-            <Link to="/profile" className="flex items-center gap-2 hover:bg-muted/50 px-2 py-1 rounded-lg">
-              {mockUser.avatarUrl ? (
-                <img src={mockUser.avatarUrl} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
-              ) : (
-                <div className="w-7 h-7 rounded-full bg-gradient-primary text-primary-foreground flex items-center justify-center text-xs font-medium">
-                  {mockUser.name.slice(0,1)}
-                </div>
-              )}
-              <span className="hidden sm:block text-sm font-medium max-w-[140px] truncate">{mockUser.name}</span>
-            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-transparent px-2 py-1 rounded-lg">
+                  {profilePicture ? (
+                    <img src={profilePicture} alt="avatar" className="w-7 h-7 rounded-full object-cover border-2 border-border" />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-gradient-primary text-primary-foreground flex items-center justify-center text-xs font-medium">
+                      {userInitial}
+                    </div>
+                  )}
+                  <span className="hidden sm:block text-sm font-medium max-w-[140px] truncate">
+                    {loading ? 'กำลังโหลด...' : userName}
+                  </span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem asChild>
+                  <Link to="/profile" className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    โปรไฟล์
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => tokenUtils.logout()}
+                  className="flex items-center gap-2 text-destructive cursor-pointer"
+                >
+                  <LogOut className="h-4 w-4" />
+                  ออกจากระบบ
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
