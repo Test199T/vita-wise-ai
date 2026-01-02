@@ -8,100 +8,127 @@
 // Dynamic console access - terser จะไม่ลบเพราะไม่ใช่ direct console.log call
 const _console = (typeof window !== 'undefined' ? window : globalThis).console;
 
-const VITA_WISE_LOGO = `
-╔═══════════════════════════════════════════════════════════════╗
-║                                                               ║
-║     🌿  V I T A   W I S E   A I                               ║
-║         ดูแลสุขภาพครบวงจรด้วย AI อัจฉริยะ                      ║
-║                                                               ║
-╚═══════════════════════════════════════════════════════════════╝
+// ASCII Art Logo with gradient effect
+const LOGO_ART = `
+    ██╗   ██╗██╗████████╗ █████╗     ██╗    ██╗██╗███████╗███████╗
+    ██║   ██║██║╚══██╔══╝██╔══██╗    ██║    ██║██║██╔════╝██╔════╝
+    ██║   ██║██║   ██║   ███████║    ██║ █╗ ██║██║███████╗█████╗  
+    ╚██╗ ██╔╝██║   ██║   ██╔══██║    ██║███╗██║██║╚════██║██╔══╝  
+     ╚████╔╝ ██║   ██║   ██║  ██║    ╚███╔███╔╝██║███████║███████╗
+      ╚═══╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝     ╚══╝╚══╝ ╚═╝╚══════╝╚══════╝
 `;
 
-const SECURITY_WARNING_TITLE = '🛑 หยุด!';
-
-const SECURITY_WARNING_BODY = `
-นี่คือฟีเจอร์สำหรับนักพัฒนาเท่านั้น
-
-หากมีคนบอกให้คุณ copy และ paste บางอย่างที่นี่
-เพื่อเปิดใช้งานฟีเจอร์หรือ "แฮ็ก" บัญชีของผู้อื่น
-นั่นคือการหลอกลวง และอาจทำให้บัญชีของคุณถูกขโมย
-
-เรียนรู้เพิ่มเติม: https://vita-wise-ai.vercel.app/security
+const TAGLINE = `
+                    🌿 AI-Powered Health & Wellness Platform 🌿
+                      ดูแลสุขภาพครบวงจรด้วย AI อัจฉริยะ
 `;
 
-const BUILD_INFO = `📦 Version: 1.0.0 | Build: ${new Date().toLocaleDateString('th-TH')}`;
+const DIVIDER = `
+════════════════════════════════════════════════════════════════════════════
+`;
 
-const CAREERS_MESSAGE = `💼 สนใจร่วมงานกับเรา? ติดต่อ: ppansiun@outlook.co.th`;
+const SECURITY_TITLE = `
+    ⚠️  ข้อควรระวัง
+`;
+
+const SECURITY_BODY = `
+    นี่คือพื้นที่สำหรับนักพัฒนาเท่านั้น
+    
+    ❌ อย่า copy/paste โค้ดจากคนแปลกหน้าที่นี่
+    ❌ อาจทำให้บัญชีของคุณถูกโจมตีได้
+    
+    🔒 รักษาความปลอดภัยบัญชีของคุณ
+`;
+
+const BUILD_INFO = `    📦 v1.0.0  •  🗓️ ${new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}`;
+
+const FOOTER = `
+    💼 Join our team → ppansiun@outlook.co.th
+    🌐 Visit us → vita-wise-ai.vercel.app
+`;
+
+// Gradient style presets
+const styles = {
+    // Gold gradient for logo
+    logoGold: 'font-family: monospace; font-size: 10px; font-weight: bold; background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FF8C00 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-shadow: 0 0 20px rgba(255,215,0,0.5);',
+
+    // Teal gradient for tagline
+    taglineTeal: 'font-family: system-ui; font-size: 13px; color: #14b8a6; font-weight: 500;',
+
+    // Divider style
+    divider: 'color: #4a5568; font-size: 10px;',
+
+    // Warning - amber/orange
+    warningTitle: 'font-size: 18px; font-weight: bold; color: #f59e0b; text-shadow: 0 0 10px rgba(245,158,11,0.3);',
+
+    // Warning body
+    warningBody: 'font-size: 12px; color: #9ca3af; line-height: 1.8;',
+
+    // Build info - subtle gray
+    buildInfo: 'font-size: 11px; color: #6b7280;',
+
+    // Footer - blue accent
+    footer: 'font-size: 11px; color: #60a5fa;',
+
+    // Dev mode
+    devMode: 'background: linear-gradient(90deg, #14b8a6, #0d9488); color: white; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 14px;',
+};
 
 /**
  * แสดงข้อความ Branding และ Security Warning ใน Console
  */
 export function showConsoleBranding(): void {
-    // ตรวจสอบว่าเป็น Production หรือไม่
     const isProduction = import.meta.env.PROD;
 
     if (!isProduction) {
-        // ใน Development mode แสดงข้อความสั้นๆ
         _console.log(
-            '%c🌿 Vita Wise AI - Development Mode',
-            'color: #14b8a6; font-weight: bold; font-size: 14px;'
+            '%c🌿 Vita Wise AI — Development Mode',
+            styles.devMode
         );
         return;
     }
 
-    // Production mode - แสดง Full Branding
     try {
-        // Clear console ก่อน (optional)
+        // Clear for clean slate (optional)
         // _console.clear();
 
-        // 1. Logo
-        _console.log(
-            '%c' + VITA_WISE_LOGO,
-            'color: #14b8a6; font-weight: bold; font-size: 11px; font-family: monospace;'
-        );
+        // 1. Main Logo with gold gradient
+        _console.log('%c' + LOGO_ART, 'color: #FFD700; font-family: monospace; font-size: 10px; font-weight: bold; text-shadow: 0 0 15px rgba(255,215,0,0.4);');
 
-        // 2. Security Warning - Title (ใหญ่และแดง)
-        _console.log(
-            '%c' + SECURITY_WARNING_TITLE,
-            'color: #ef4444; font-weight: bold; font-size: 32px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);'
-        );
+        // 2. Tagline
+        _console.log('%c' + TAGLINE, styles.taglineTeal);
 
-        // 3. Security Warning - Body
-        _console.log(
-            '%c' + SECURITY_WARNING_BODY,
-            'color: #6b7280; font-size: 14px; line-height: 1.8;'
-        );
+        // 3. Divider
+        _console.log('%c' + DIVIDER, styles.divider);
 
-        // 4. Separator
-        _console.log(
-            '%c───────────────────────────────────────────',
-            'color: #e5e7eb;'
-        );
+        // 4. Security Warning Title
+        _console.log('%c' + SECURITY_TITLE, styles.warningTitle);
 
-        // 5. Build Info
-        _console.log(
-            '%c' + BUILD_INFO,
-            'color: #9ca3af; font-size: 11px;'
-        );
+        // 5. Security Warning Body
+        _console.log('%c' + SECURITY_BODY, styles.warningBody);
 
-        // 6. Careers
-        _console.log(
-            '%c' + CAREERS_MESSAGE,
-            'color: #3b82f6; font-size: 11px;'
-        );
+        // 6. Divider
+        _console.log('%c' + DIVIDER, styles.divider);
+
+        // 7. Build Info
+        _console.log('%c' + BUILD_INFO, styles.buildInfo);
+
+        // 8. Footer
+        _console.log('%c' + FOOTER, styles.footer);
+
+        // 9. Final spacing
+        _console.log('');
 
     } catch {
-        // Silent fail - ไม่แสดง error ใน production
+        // Silent fail
     }
 }
 
-// Auto-execute เมื่อ import
+// Auto-execute
 if (typeof window !== 'undefined') {
-    // รอให้ DOM พร้อมก่อน
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', showConsoleBranding);
     } else {
-        // DOM พร้อมแล้ว - แสดงทันที
         showConsoleBranding();
     }
 }
