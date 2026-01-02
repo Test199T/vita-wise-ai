@@ -482,10 +482,7 @@ export default function Dashboard() {
         setWaterLogs(waterLogsResponse);
       }
 
-      toast({
-        title: '🔄 รีเฟรชข้อมูลสำเร็จ',
-        description: 'อัปเดตข้อมูลการนอน, อาหาร, และน้ำดื่มของวันนี้เรียบร้อยแล้ว'
-      });
+
 
     } catch (error) {
       console.error('❌ Error refreshing today data:', error);
@@ -626,10 +623,7 @@ export default function Dashboard() {
       // โหลดข้อมูลการนอนด้วย
       await loadSleepData();
 
-      toast({
-        title: '🔄 รีเฟรชข้อมูลโภชนาการสำเร็จ',
-        description: 'อัปเดตข้อมูลอาหาร, การวิเคราะห์โภชนาการ, และสถิติเรียบร้อยแล้ว'
-      });
+
 
     } catch (error) {
       console.error('❌ Error loading food data:', error);
@@ -687,10 +681,7 @@ export default function Dashboard() {
         setRecentExercises(recentResponse.slice(0, 5)); // เอาแค่ 5 รายการแรก
       }
 
-      toast({
-        title: 'โหลดข้อมูลสำเร็จ',
-        description: 'โหลดข้อมูลการออกกำลังกายเรียบร้อยแล้ว'
-      });
+
 
     } catch (error) {
       console.error('❌ Error loading exercise data:', error);
@@ -767,10 +758,7 @@ export default function Dashboard() {
         setSleepLogs([]);
       }
 
-      toast({
-        title: 'โหลดข้อมูลสำเร็จ',
-        description: 'โหลดข้อมูลการนอนเรียบร้อยแล้ว'
-      });
+
 
     } catch (error) {
       console.error('❌ Error loading sleep data:', error);
@@ -817,10 +805,7 @@ export default function Dashboard() {
         setWaterLogs(logsResponse);
       }
 
-      toast({
-        title: 'โหลดข้อมูลสำเร็จ',
-        description: 'โหลดข้อมูลน้ำดื่มเรียบร้อยแล้ว'
-      });
+
 
     } catch (error) {
       console.error('❌ Error loading water data:', error);
@@ -1484,8 +1469,8 @@ export default function Dashboard() {
               <div className="font-semibold">
                 {todaySleepHours.toFixed(1)} / 8 ชม.
                 <span className={`ml-2 text-xs px-2 py-1 rounded ${todaySleepHours >= 7 ? 'bg-green-100 text-green-800' :
-                    todaySleepHours >= 6 ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
+                  todaySleepHours >= 6 ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-red-100 text-red-800'
                   }`}>
                   {todaySleepHours >= 7 ? 'ดี' : todaySleepHours >= 6 ? 'ปานกลาง' : 'ต้องปรับปรุง'}
                 </span>
@@ -1511,8 +1496,8 @@ export default function Dashboard() {
               <div className="font-semibold">
                 {todayWaterLiters.toFixed(1)} ลิตร/วัน • เป้าหมาย 2.5 ลิตร
                 <span className={`ml-2 text-xs px-2 py-1 rounded ${todayWaterLiters >= 2 ? 'bg-green-100 text-green-800' :
-                    todayWaterLiters >= 1.5 ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
+                  todayWaterLiters >= 1.5 ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-red-100 text-red-800'
                   }`}>
                   {todayWaterLiters >= 2 ? 'ดี' : todayWaterLiters >= 1.5 ? 'ปานกลาง' : 'ต้องปรับปรุง'}
                 </span>
