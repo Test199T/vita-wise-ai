@@ -1,14 +1,8 @@
 /**
  * Console Branding & Security Warning for Production
  * 
- * ✨ Premium Console Experience
- * 🎨 Inspired by: Facebook, Stripe, Discord
- * 
- * Features:
- * - Gradient text effects
- * - Grouped console sections
- * - Professional typography
- * - Security warnings
+ * ✨ Premium Multi-Color Console Experience
+ * 🎨 Inspired by: Facebook, Stripe, Discord, iamickdev
  */
 
 // Dynamic console access - bypass terser drop_console
@@ -18,150 +12,122 @@ const _console = (typeof window !== 'undefined' ? window : globalThis).console;
 // 🎨 PREMIUM STYLES
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const createGradient = (colors: string[]) =>
-    `background: linear-gradient(135deg, ${colors.join(', ')})`;
-
 const styles = {
-    // ━━━ Hero Section ━━━
-    hero: {
-        logo: [
-            createGradient(['#14b8a6', '#0d9488', '#047857']),
-            'color: white',
-            'font-size: 48px',
-            'font-weight: 900',
-            'font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif',
-            'padding: 20px 40px',
-            'border-radius: 16px',
-            'text-shadow: 2px 2px 4px rgba(0,0,0,0.3)',
-            'letter-spacing: -1px',
-        ].join(';'),
+    // Big Warning Banner (Red with SUPER Glow) -> Font: Impact/Heavy
+    warningBanner: [
+        'color: #ff0000',
+        'font-size: 80px',
+        'font-weight: 900',
+        'font-family: "Impact", "Arial Black", "Helvetica Neue", sans-serif', // ฟอนต์หนาตึก
+        'text-shadow: 4px 4px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 0 20px #ff0000, 0 0 40px #ff0000, 0 0 80px #ff0000',
+        'padding: 20px 0',
+        'text-transform: uppercase',
+    ].join(';'),
 
-        tagline: [
-            'color: #14b8a6',
-            'font-size: 16px',
-            'font-weight: 600',
-            'font-family: system-ui, -apple-system, sans-serif',
-            'padding: 8px 0',
-            'letter-spacing: 0.5px',
-        ].join(';'),
+    // Warning Text (Neon Orange) -> Font: Modern Monospace
+    warningText: [
+        'color: #ff5500',
+        'font-size: 24px',
+        'font-family: "Menlo", "Consolas", "Monaco", "Courier New", monospace', // ฟอนต์โค้ดดิ้งเท่ๆ
+        'line-height: 1.5',
+        'font-weight: 700',
+        'text-shadow: 3px 3px 0 #000, 0 0 10px #ff5500, 0 0 25px #ff5500',
+    ].join(';'),
 
-        subTagline: [
-            'color: #64748b',
-            'font-size: 13px',
-            'font-family: system-ui, -apple-system, sans-serif',
-            'font-style: italic',
-        ].join(';'),
-    },
+    // Welcome Text (Neon Cyan) -> Font: Modern Sans
+    welcomeText: [
+        'color: #00ffff',
+        'font-size: 20px',
+        'font-family: "Helvetica Neue", "Segoe UI", "Arial", sans-serif', // ฟอนต์โมเดิร์นคลีนๆ
+        'line-height: 1.5',
+        'font-weight: 700',
+        'text-shadow: 3px 3px 0 #000, 0 0 10px #00ffff, 0 0 25px #00ffff',
+        'font-style: italic', // เพิ่มความพริ้ว
+    ].join(';'),
 
-    // ━━━ Warning Section (Facebook Style) ━━━
-    warning: {
-        stop: [
-            'color: #ef4444',
-            'font-size: 72px',
-            'font-weight: 900',
-            'font-family: system-ui, -apple-system, sans-serif',
-            'text-shadow: 2px 2px 0 #fca5a5, 4px 4px 0 #fecaca',
-            'letter-spacing: -3px',
-        ].join(';'),
+    // Collaboration Text (Neon Magenta) -> Font: Modern Bold
+    collabText: [
+        'color: #ff00ff',
+        'font-size: 24px',
+        'font-family: "Helvetica Neue", "Segoe UI", sans-serif',
+        'line-height: 1.5',
+        'font-weight: 900',
+        'text-shadow: 3px 3px 0 #000, 0 0 15px #ff00ff, 0 0 30px #ff00ff',
+        'letter-spacing: 1px',
+    ].join(';'),
 
-        title: [
-            createGradient(['#fbbf24', '#f59e0b', '#d97706']),
-            '-webkit-background-clip: text',
-            '-webkit-text-fill-color: transparent',
-            'background-clip: text',
-            'font-size: 20px',
-            'font-weight: 700',
-            'font-family: system-ui, -apple-system, sans-serif',
-        ].join(';'),
+    // Job Text (Neon Gold) -> Font: Modern Bold
+    jobText: [
+        'color: #ffaa00',
+        'font-size: 24px',
+        'font-family: "Helvetica Neue", "Segoe UI", sans-serif',
+        'line-height: 1.5',
+        'font-weight: 900',
+        'text-shadow: 3px 3px 0 #000, 0 0 15px #ffaa00, 0 0 30px #ffaa00',
+    ].join(';'),
 
-        body: [
-            'color: #94a3b8',
-            'font-size: 13px',
-            'font-family: system-ui, -apple-system, sans-serif',
-            'line-height: 1.8',
-        ].join(';'),
+    // Contact Label (Neon Blue) -> Font: Tech
+    contactLabel: [
+        'color: #0088ff',
+        'font-size: 22px',
+        'font-family: "Menlo", "Consolas", monospace',
+        'font-weight: 900',
+        'text-shadow: 2px 2px 0 #000, 0 0 15px #0088ff, 0 0 30px #0088ff',
+    ].join(';'),
 
-        danger: [
-            'color: #ef4444',
-            'font-size: 13px',
-            'font-weight: 600',
-            'font-family: system-ui, -apple-system, sans-serif',
-        ].join(';'),
-    },
+    // Email/Link (Super Neon Pink) -> Font: Geometric Sans
+    contactLink: [
+        'color: #ff00cc',
+        'font-size: 36px',
+        'font-family: "Futura", "Trebuchet MS", "Arial Black", sans-serif', // ฟอนต์ทรงเลขาคณิต
+        'font-weight: 900',
+        'text-shadow: 4px 4px 0 #000, 0 0 20px #ff00cc, 0 0 40px #ff00cc, 0 0 60px #ff00cc',
+        'background: #111',
+        'padding: 15px 30px', // เพิ่มพื้นที่กว้างขึ้น
+        'border-radius: 12px',
+        'border: 3px solid #ff00cc',
+        'box-shadow: 0 0 20px #ff00cc',
+        'display: inline-block',
+        'margin: 10px 0',
+    ].join(';'),
 
-    // ━━━ Info Section ━━━
-    info: {
-        badge: [
-            createGradient(['#3b82f6', '#2563eb']),
-            'color: white',
-            'font-size: 11px',
-            'font-weight: 600',
-            'padding: 4px 12px',
-            'border-radius: 100px',
-            'font-family: system-ui, -apple-system, sans-serif',
-        ].join(';'),
+    // ASCII Art (Bright Yellow) -> Font: Strict Monospace
+    asciiArt: [
+        'color: #ffff00',
+        'font-size: 16px',
+        'font-family: "Menlo", "Monaco", "Courier New", monospace', // ต้อง monospace เท่านั้นรูปถึงไม่เบี้ยว
+        'line-height: 1.1',
+        'font-weight: 700',
+        'text-shadow: 2px 2px 0 #000, 0 0 10px #ffff00, 0 0 20px #ffff00',
+    ].join(';'),
 
-        version: [
-            'color: #64748b',
-            'font-size: 12px',
-            'font-family: "SF Mono", Monaco, Consolas, monospace',
-        ].join(';'),
+    // Sparkles (White/Gold)
+    sparkles: [
+        'color: #ffffff',
+        'font-size: 24px',
+        'text-shadow: 0 0 10px #ffffff, 0 0 20px #ffff00',
+    ].join(';'),
 
-        link: [
-            'color: #3b82f6',
-            'font-size: 12px',
-            'font-family: system-ui, -apple-system, sans-serif',
-            'text-decoration: underline',
-        ].join(';'),
+    // Final CTA -> Font: Modern Condensed
+    finalCta: [
+        'color: #00ffff',
+        'font-size: 24px',
+        'font-family: "Impact", "Arial Narrow", sans-serif',
+        'font-weight: 700',
+        'text-shadow: 3px 3px 0 #000, 0 0 15px #00ffff, 0 0 30px #00ffff',
+        'letter-spacing: 2px',
+        'text-transform: uppercase',
+    ].join(';'),
 
-        careers: [
-            createGradient(['#8b5cf6', '#7c3aed', '#6d28d9']),
-            'color: white',
-            'font-size: 13px',
-            'font-weight: 600',
-            'padding: 8px 16px',
-            'border-radius: 8px',
-            'font-family: system-ui, -apple-system, sans-serif',
-        ].join(';'),
-    },
-
-    // ━━━ Dev Mode ━━━
-    dev: [
-        createGradient(['#14b8a6', '#0d9488']),
+    // Dev Mode
+    devMode: [
+        'background: linear-gradient(135deg, #14b8a6, #0d9488)',
         'color: white',
         'padding: 12px 24px',
         'border-radius: 8px',
         'font-weight: bold',
         'font-size: 14px',
         'font-family: system-ui, -apple-system, sans-serif',
-    ].join(';'),
-
-    // ━━━ Group Header ━━━
-    groupHeader: [
-        'color: #475569',
-        'font-size: 11px',
-        'font-weight: 600',
-        'text-transform: uppercase',
-        'letter-spacing: 1px',
-        'font-family: system-ui, -apple-system, sans-serif',
-    ].join(';'),
-
-    // ━━━ Separator ━━━
-    separator: [
-        'color: #334155',
-        'font-size: 10px',
-    ].join(';'),
-
-    // ━━━ System HUD ━━━
-    hud: [
-        'background: #0f172a',
-        'border: 1px solid #1e293b',
-        'color: #38bdf8',
-        'padding: 14px',
-        'line-height: 1.6',
-        'font-family: "SF Mono", Monaco, Consolas, monospace',
-        'border-radius: 8px',
-        'box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1)',
     ].join(';'),
 };
 
@@ -170,71 +136,92 @@ const styles = {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export function showConsoleBranding(): void {
-    const isProduction = import.meta.env.PROD;
-
-    if (!isProduction) {
-        _console.log('%c 🌿 Vita Wise AI — Development Mode ', styles.dev);
-        _console.log('%c   Hot reload enabled • API connected', 'color: #64748b; font-size: 11px;');
-        return;
-    }
+    // const isProduction = import.meta.env.PROD;
+    // ⚠️ TEMPORARY: Show full branding in dev mode for preview
+    // TODO: Uncomment the check above before deploying!
 
     try {
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // 📌 HERO SECTION
+        // 🔴 BIG WARNING BANNER
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-        _console.log('');
-        _console.log('%c 🌿 VITA WISE ', styles.hero.logo);
-        _console.log('');
-        _console.log('%c✨ AI-Powered Health & Wellness Platform', styles.hero.tagline);
-        _console.log('%c   "ดูแลสุขภาพครบวงจรด้วย AI อัจฉริยะ"', styles.hero.subTagline);
+        _console.log('%c!!! STOP !!!', styles.warningBanner);
+        _console.log('%c!!! WARNING !!!', styles.warningBanner);
         _console.log('');
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // ⚠️ SECURITY WARNING (Facebook Style)
+        // 🟠 WARNING TEXT
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-        _console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', styles.separator);
-        _console.log('');
-        _console.log('%cหยุด!', styles.warning.stop);
-        _console.log('');
-        _console.log('%c⚠️ นี่คือพื้นที่สำหรับนักพัฒนาเท่านั้น', styles.warning.title);
-        _console.log('');
         _console.log(
-            '%cหากมีคนบอกให้คุณ copy/paste อะไรที่นี่\n' +
-            'นั่นคือการหลอกลวง และอาจทำให้คุณถูกแฮ็กได้',
-            styles.warning.body
+            '%cนี่คือพื้นที่สำหรับนักพัฒนาเท่านั้น หากมีคนบอกให้คุณ\n' +
+            'copy/paste โค้ดอะไรที่นี่ นั่นคือการหลอกลวง!\n' +
+            'และอาจทำให้บัญชีของคุณถูกแฮ็กได้',
+            styles.warningText
         );
         _console.log('');
-        _console.log('%c🚨 อย่าพิมพ์หรือวางสิ่งใดที่คุณไม่เข้าใจ', styles.warning.danger);
-        _console.log('');
-        _console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', styles.separator);
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // 🔮 SYSTEM STATUS (Virtual HUD)
+        // 🟢 WELCOME TEXT
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-        _console.log('');
         _console.log(
-            `%c🔍 SYSTEM DIAGNOSTICS
-────────────────────────
- ●  System Status [ ONLINE ]   🟢
- ●  Security      [ ACTIVE ]   🛡️
- ●  Connection    [ SECURE ]   🔒
-────────────────────────
-💡 Type "vitawise.help()" for tools`,
-            styles.hud
+            '%cถ้าคุณเป็น Developer ยินดีต้อนรับครับ! 🌿\n' +
+            'หวังว่าจะชอบโค้ดของเรานะ :)',
+            styles.welcomeText
         );
-
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // 💼 CAREERS
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
         _console.log('');
-        _console.log('%c 💼 ร่วมงานกับเรา? ส่ง Resume มาได้เลย! ', styles.info.careers);
-        _console.log('%c    📧 ppansiun@outlook.co.th', styles.info.link);
-        _console.log('%c    🌐 vita-wise-ai.vercel.app', styles.info.link);
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // 🟣 COLLABORATION TEXT
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        _console.log(
+            '%cVita Wise AI - แพลตฟอร์ม AI ดูแลสุขภาพครบวงจร\n' +
+            'บันทึกอาหาร ออกกำลังกาย การนอน น้ำดื่ม พร้อม AI วิเคราะห์!',
+            styles.collabText
+        );
+        _console.log('');
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // 🟠 JOB TEXT
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        _console.log(
+            '%c💼 สนใจร่วมงานกับเรา?\n' +
+            'เรากำลังมองหา Developer ที่มีใจรักสุขภาพ!',
+            styles.jobText
+        );
+        _console.log('');
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // 🟡 CONTACT INFO
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        _console.log('%c📧 ติดต่อเราได้ที่:', styles.contactLabel);
+        _console.log('');
+        _console.log('%cppansiun@outlook.co.th', styles.contactLink);
+        _console.log('%cvita-wise-ai.vercel.app', styles.contactLink);
+        _console.log('');
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // 🌿 ASCII ART (Leaf Theme)
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        _console.log('%c    🌿', styles.asciiArt);
+        _console.log('%c   🌿🌿   Vita Wise AI', styles.asciiArt);
+        _console.log('%c  🌿🌿🌿  ดูแลสุขภาพด้วย AI', styles.asciiArt);
+        _console.log('%c   🌿🌿', styles.asciiArt);
+        _console.log('%c    🌿', styles.asciiArt);
+        _console.log('%c✨✨✨✨✨✨', styles.sparkles);
+        _console.log('');
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // 🌿 BRAND FOOTER
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        _console.log('%c    🍃        🍃        🍃        🍃', styles.sparkles);
+        _console.log('%c✨ สุขภาพดี เริ่มต้นที่นี่! ✨', styles.finalCta);
         _console.log('');
 
     } catch {

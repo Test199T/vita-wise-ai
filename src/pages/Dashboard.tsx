@@ -1455,6 +1455,8 @@ export default function Dashboard() {
           </AlertDescription>
         </Alert>
 
+
+
         {/* AI Insight สรุปรวม (ภาพรวม) */}
         <Card className="border-primary/20">
           <CardHeader className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
