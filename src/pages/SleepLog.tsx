@@ -51,9 +51,6 @@ export default function SleepLog() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('API Response:', data);
-        console.log('API Response type:', typeof data);
-        console.log('API Response keys:', Object.keys(data));
         
         // ตรวจสอบโครงสร้างข้อมูลจาก API
         let sleepLogs = [];
@@ -61,29 +58,20 @@ export default function SleepLog() {
         // ตรวจสอบทุกความเป็นไปได้
         if (Array.isArray(data)) {
           sleepLogs = data;
-          console.log('Data is array:', sleepLogs);
         } else if (data && data.data) {
-          console.log('Found data.data:', data.data);
-          console.log('data.data type:', typeof data.data);
-          console.log('data.data keys:', Object.keys(data.data));
           
           if (Array.isArray(data.data)) {
             sleepLogs = data.data;
-            console.log('Data.data is array:', sleepLogs);
           } else if (data.data && Array.isArray(data.data.sleep_logs)) {
             sleepLogs = data.data.sleep_logs;
-            console.log('Data.data.sleep_logs is array:', sleepLogs);
           } else if (data.data && Array.isArray(data.data.records)) {
             sleepLogs = data.data.records;
-            console.log('Data.data.records is array:', sleepLogs);
           } else if (data.data && Array.isArray(data.data.items)) {
             sleepLogs = data.data.items;
-            console.log('Data.data.items is array:', sleepLogs);
           } else {
             // ลองหาคีย์ที่มี array ใน data.data
             for (const key of Object.keys(data.data)) {
               if (Array.isArray(data.data[key])) {
-                console.log(`Found array in data.data.${key}:`, data.data[key]);
                 sleepLogs = data.data[key];
                 break;
               }
@@ -91,22 +79,16 @@ export default function SleepLog() {
           }
         } else if (data && Array.isArray(data.sleepLogs)) {
           sleepLogs = data.sleepLogs;
-          console.log('Data.sleepLogs is array:', sleepLogs);
         } else if (data && data.results && Array.isArray(data.results)) {
           sleepLogs = data.results;
-          console.log('Data.results is array:', sleepLogs);
         } else if (data && data.sleep_logs && Array.isArray(data.sleep_logs)) {
           sleepLogs = data.sleep_logs;
-          console.log('Data.sleep_logs is array:', sleepLogs);
         } else {
-          console.log('No array found in response, data structure:', data);
           // ลองดูว่ามีข้อมูลในรูปแบบอื่นหรือไม่
           if (data && typeof data === 'object') {
-            console.log('Available keys in data:', Object.keys(data));
             // ลองหาคีย์ที่มี array
             for (const key of Object.keys(data)) {
               if (Array.isArray(data[key])) {
-                console.log(`Found array in key '${key}':`, data[key]);
                 sleepLogs = data[key];
                 break;
               }
@@ -114,8 +96,6 @@ export default function SleepLog() {
           }
         }
         
-        console.log('Final sleepLogs array:', sleepLogs);
-        console.log('SleepLogs length:', sleepLogs.length);
         
         // ตรวจสอบว่า sleepLogs เป็น array และมีข้อมูล
         if (!Array.isArray(sleepLogs)) {
@@ -131,7 +111,6 @@ export default function SleepLog() {
         
         // แปลงข้อมูลให้ตรงกับ interface
         const formattedLogs = sleepLogs.map((log: any) => {
-          console.log('Processing log:', log);
           return {
             id: log.id || log._id || crypto.randomUUID(),
             date: log.sleep_date || log.date || new Date().toISOString().split('T')[0],
@@ -142,7 +121,6 @@ export default function SleepLog() {
           };
         });
         
-        console.log('Formatted logs:', formattedLogs);
         
         // เรียงลำดับตามวันที่ล่าสุด
         const sortedLogs = formattedLogs.sort((a, b) => 
@@ -150,7 +128,6 @@ export default function SleepLog() {
         );
         
         setLogs(sortedLogs);
-        console.log('Final sorted logs:', sortedLogs);
         
         // แสดงข้อความสำเร็จ
         if (sortedLogs.length > 0) {
@@ -474,7 +451,6 @@ export default function SleepLog() {
           title: 'เทส API สำเร็จ', 
           description: `บันทึกข้อมูลการนอนหลับเรียบร้อยแล้ว ID: ${result.id || 'N/A'}`,
         });
-        console.log('API Response:', result);
       } else {
         const errorData = await response.json().catch(() => ({}));
         toast({ 

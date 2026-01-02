@@ -11,7 +11,6 @@ import { aiService } from './aiService';
 export const checkAIServiceHealth = async () => {
   try {
     const response = await aiService.healthCheck();
-    console.log('AI Service Health:', response);
     return response;
   } catch (error) {
     console.error('AI Service health check failed:', error);
@@ -30,7 +29,6 @@ export const performHealthAnalysis = async (userId: number) => {
     });
 
     if (response.success) {
-      console.log('Health Analysis Results:', response.data);
       return response.data;
     } else {
       throw new Error(response.message || 'Analysis failed');
@@ -45,7 +43,6 @@ export const performHealthAnalysis = async (userId: number) => {
 export const getFoodRecommendationsExample = async (userId: number) => {
   try {
     const response = await aiService.getFoodRecommendations(userId);
-    console.log('Food Recommendations:', response);
     return response;
   } catch (error) {
     console.error('Food recommendations error:', error);
@@ -59,7 +56,6 @@ export const analyzeNutrition = async (userId: number, date?: string) => {
     const response = await aiService.analyzeNutrition(userId, date);
     
     if (response.success) {
-      console.log('Nutrition Analysis:', response.data);
       return response.data;
     } else {
       throw new Error(response.message || 'Nutrition analysis failed');
@@ -76,7 +72,6 @@ export const analyzeExercise = async (userId: number, date?: string) => {
     const response = await aiService.analyzeExercise(userId, date);
     
     if (response.success) {
-      console.log('Exercise Analysis:', response.data);
       return response.data;
     } else {
       throw new Error(response.message || 'Exercise analysis failed');
@@ -93,7 +88,6 @@ export const analyzeExercise = async (userId: number, date?: string) => {
 export const getExerciseRecommendations = async (userId: number) => {
   try {
     const response = await aiService.getExerciseRecommendations(userId);
-    console.log('Exercise Recommendations:', response);
     return response;
   } catch (error) {
     console.error('Exercise recommendations error:', error);
@@ -111,7 +105,6 @@ export const saveAIInsight = async (userId: number) => {
       confidence: 0.85
     });
 
-    console.log('Insight saved:', response);
     return response;
   } catch (error) {
     console.error('Insight save error:', error);

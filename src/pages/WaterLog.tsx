@@ -48,7 +48,6 @@ export default function WaterLog() {
       }));
       
       setLogs(convertedLogs);
-      console.log('✅ Water logs loaded from API for date:', targetDate, convertedLogs);
     } catch (error) {
       console.error('❌ Error loading water logs from API:', error);
       

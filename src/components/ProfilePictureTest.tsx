@@ -19,7 +19,6 @@ export const ProfilePictureTest: React.FC = () => {
     if (file) {
       const success = await uploadProfilePicture(file);
       if (success) {
-        console.log('Profile picture uploaded successfully');
       } else {
         console.error('Failed to upload profile picture');
       }

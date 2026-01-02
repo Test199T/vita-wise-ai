@@ -111,7 +111,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
         // ถ้ามีข้อมูลเก่าที่มีชื่อ "Methas" หรือ "Haha" ให้ล้างออก
         if (parsed.firstName === 'Methas' || parsed.lastName === 'Haha' || 
             parsed.firstName === 'methas' || parsed.lastName === 'haha') {
-          console.log('🧹 ล้างข้อมูลเก่าที่มีชื่อ Methas/Haha ออกจาก localStorage');
           localStorage.removeItem('onboardingData');
           localStorage.removeItem('user');
           localStorage.removeItem('accessToken');
@@ -125,7 +124,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
         // ถ้ามีข้อมูล user เก่าที่มีชื่อ "Methas" หรือ "Haha" ให้ล้างออก
         if (parsed.first_name === 'Methas' || parsed.last_name === 'Haha' || 
             parsed.first_name === 'methas' || parsed.last_name === 'haha') {
-          console.log('🧹 ล้างข้อมูล user เก่าที่มีชื่อ Methas/Haha ออกจาก localStorage');
           localStorage.removeItem('onboardingData');
           localStorage.removeItem('user');
           localStorage.removeItem('accessToken');
@@ -153,12 +151,10 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
   });
 
   const updateOnboardingData = (key: keyof OnboardingData, value: unknown) => {
-    console.log(`🔄 Updating onboarding data: ${key} =`, value);
     const newData = { ...onboardingData, [key]: value };
     setOnboardingDataState(newData);
     // Save to localStorage
     localStorage.setItem('onboardingData', JSON.stringify(newData));
-    console.log('📝 Updated onboarding data:', newData);
   };
 
   const setOnboardingData = (data: OnboardingData) => {
@@ -168,12 +164,10 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
 
   const completeOnboarding = async () => {
     try {
-      console.log('🎯 Completing onboarding and saving to database...');
       
       // Save onboarding data to backend database
       try {
         await apiService.saveOnboardingData(onboardingData as unknown as Record<string, unknown>);
-        console.log('✅ Onboarding data saved to database successfully!');
       } catch (error) {
         console.error('❌ Failed to save onboarding data to database:', error);
         // แสดงข้อความแจ้งเตือนให้ผู้ใช้ทราบ
@@ -185,7 +179,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
       setOnboardingDataState(completedData);
       localStorage.setItem('onboardingData', JSON.stringify(completedData));
       
-      console.log('✅ Onboarding completed successfully!');
     } catch (error) {
       console.error('❌ Failed to complete onboarding:', error);
       // Still mark as completed locally even if backend fails
