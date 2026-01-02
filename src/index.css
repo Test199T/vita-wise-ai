@@ -8,6 +8,7 @@
 
 @layer base {
   :root {
+    color-scheme: light;
     /* สีพื้นหลัง */
     --background: 0 0% 100%;
     --foreground: 210 12% 16%;
@@ -61,7 +62,7 @@
     --shadow-soft: 0 4px 6px -1px hsl(210 40% 96% / 0.1), 0 2px 4px -2px hsl(210 40% 96% / 0.1);
     --shadow-medium: 0 10px 15px -3px hsl(210 40% 96% / 0.1), 0 4px 6px -4px hsl(210 40% 96% / 0.1);
     --shadow-health: 0 8px 30px -12px hsl(197 76% 64% / 0.25);
-    
+
     --gradient-primary: linear-gradient(135deg, hsl(197 76% 64%), hsl(149 38% 76%));
     --gradient-success: linear-gradient(135deg, hsl(142 69% 58%), hsl(149 38% 76%));
     --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(210 40% 98%));
@@ -75,6 +76,11 @@
     --sidebar-accent-foreground: 210 12% 16%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 197 76% 64%;
+    --color-1: oklch(66.2% 0.225 25.9);
+    --color-2: oklch(60.4% 0.26 302);
+    --color-3: oklch(69.6% 0.165 251);
+    --color-4: oklch(80.2% 0.134 225);
+    --color-5: oklch(90.7% 0.231 133);
   }
 
   .dark {
@@ -113,6 +119,15 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    --color-1: oklch(66.2% 0.225 25.9);
+    --color-2: oklch(60.4% 0.26 302);
+    --color-3: oklch(69.6% 0.165 251);
+    --color-4: oklch(80.2% 0.134 225);
+    --color-5: oklch(90.7% 0.231 133);
+  }
+
+  .theme {
+    --animate-rainbow: rainbow var(--speed, 2s) infinite linear;
   }
 }
 
@@ -141,21 +156,18 @@
 }
 
 @layer components {
+
   /* Health App Components */
   .health-card {
     @apply bg-card border border-border rounded-lg p-6 shadow-soft;
   }
 
   .health-button {
-    @apply bg-gradient-to-r from-primary to-secondary text-primary-foreground 
-           px-6 py-3 rounded-lg font-medium transition-all duration-200
-           hover:shadow-health hover:scale-105 active:scale-95;
+    @apply bg-gradient-to-r from-primary to-secondary text-primary-foreground px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:shadow-health hover:scale-105 active:scale-95;
   }
 
   .health-input {
-    @apply bg-background border border-input rounded-lg px-4 py-3 
-           focus:border-primary focus:ring-1 focus:ring-primary
-           transition-colors duration-200;
+    @apply bg-background border border-input rounded-lg px-4 py-3 focus:border-primary focus:ring-1 focus:ring-primary transition-colors duration-200;
   }
 
   .health-gradient {
@@ -163,9 +175,7 @@
   }
 
   .health-stat-card {
-    @apply bg-gradient-to-br from-card to-muted border-0 
-           rounded-xl p-6 shadow-medium hover:shadow-health
-           transition-all duration-300;
+    @apply bg-gradient-to-br from-card to-muted border-0 rounded-xl p-6 shadow-medium hover:shadow-health transition-all duration-300;
   }
 
   .pulse-animation {
@@ -183,6 +193,60 @@
   .bounce-in {
     animation: bounceIn 0.6s ease-out;
   }
+
+  /* Custom Dashed Border Utilities - Consistent dash pattern */
+  .border-dashed-custom {
+    border-style: dashed !important;
+    border-width: 1px;
+  }
+
+  /* Horizontal dashed line (top/bottom) - longer dashes */
+  .border-t-dashed-wide {
+    border: none !important;
+    height: 1px !important;
+    background: repeating-linear-gradient(to right, #cbd5e1, #cbd5e1 20px, transparent 20px, transparent 32px);
+  }
+
+  .border-b-dashed-wide {
+    border: none !important;
+    height: 1px !important;
+    background: repeating-linear-gradient(to right, #cbd5e1, #cbd5e1 20px, transparent 20px, transparent 32px);
+  }
+
+  /* For elements that need both top and bottom dashed borders */
+  .border-y-dashed-custom {
+    background-image:
+      linear-gradient(to right, #cbd5e1 50%, transparent 50%),
+      linear-gradient(to right, #cbd5e1 50%, transparent 50%);
+    background-size: 12px 1px;
+    background-repeat: repeat-x;
+    background-position: top, bottom;
+  }
+
+  /* Vertical dashed lines positioned outward from container */
+  .border-x-dashed-wide {
+    border-left: none !important;
+    border-right: none !important;
+    position: relative;
+  }
+
+  .border-x-dashed-wide::before,
+  .border-x-dashed-wide::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    border-left: 1px dashed #cbd5e1;
+  }
+
+  .border-x-dashed-wide::before {
+    left: -65px;
+  }
+
+  .border-x-dashed-wide::after {
+    right: -65px;
+  }
 }
 
 @keyframes fadeIn {
@@ -190,6 +254,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -200,6 +265,7 @@
   from {
     transform: translateY(100%);
   }
+
   to {
     transform: translateY(0);
   }
@@ -210,12 +276,15 @@
     transform: scale(0.3);
     opacity: 0;
   }
+
   50% {
     transform: scale(1.05);
   }
+
   70% {
     transform: scale(0.9);
   }
+
   100% {
     transform: scale(1);
     opacity: 1;
@@ -229,6 +298,7 @@
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     height: var(--radix-collapsible-content-height);
     opacity: 1;
@@ -242,6 +312,7 @@
     opacity: 1;
     transform: translateY(0);
   }
+
   to {
     height: 0;
     opacity: 0;
@@ -262,92 +333,194 @@
   .prose {
     @apply text-foreground;
   }
-  
+
   .prose table {
     @apply w-full border-collapse border border-border bg-card rounded-lg overflow-hidden;
   }
-  
+
   .prose .table-container {
     @apply rounded-lg border border-border;
   }
-  
+
   .prose thead {
     @apply bg-muted;
   }
-  
+
   .prose th {
     @apply border border-border px-4 py-2 text-left text-sm font-medium text-foreground bg-muted;
   }
-  
+
   .prose td {
     @apply border border-border px-4 py-2 text-sm text-foreground;
   }
-  
+
   .prose tr:hover {
     @apply bg-muted/50 transition-colors duration-200;
   }
-  
+
   .prose tr:nth-child(even) {
     @apply bg-muted/20;
   }
-  
+
   .prose code {
     @apply bg-muted px-1 py-0.5 rounded text-sm font-mono text-foreground;
   }
-  
+
   .prose pre {
     @apply bg-muted p-3 rounded-lg overflow-x-auto;
   }
-  
+
   .prose pre code {
     @apply bg-transparent p-0;
   }
-  
+
   .prose blockquote {
     @apply border-l-4 border-primary pl-4 italic text-muted-foreground;
   }
-  
+
   .prose ul {
     @apply list-disc list-inside space-y-1;
   }
-  
+
   .prose ol {
     @apply list-decimal list-inside space-y-1;
   }
-  
+
   .prose li {
     @apply text-sm text-foreground;
   }
-  
+
   .prose strong {
     @apply font-semibold text-foreground;
   }
-  
+
   .prose em {
     @apply italic text-foreground;
   }
-  
-  .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+
+  .prose h1,
+  .prose h2,
+  .prose h3,
+  .prose h4,
+  .prose h5,
+  .prose h6 {
     @apply text-foreground font-semibold;
   }
-  
+
   .prose p {
     @apply text-foreground;
   }
-  
+
   /* Responsive table */
   @media (max-width: 768px) {
     .prose table {
       @apply text-xs;
     }
-    
+
     .prose th,
     .prose td {
       @apply px-2 py-1;
     }
-    
+
     .prose .table-container {
       @apply -mx-4;
     }
   }
+}
+
+/* Center digits inside native date input */
+@layer base {
+  input[type="date"].center-date {
+    text-align: center;
+  }
+
+  input[type="date"].center-date::-webkit-datetime-edit {
+    text-align: center;
+  }
+
+  input[type="date"].center-date::-webkit-datetime-edit-fields-wrapper {
+    display: inline-flex;
+    justify-content: center;
+  }
+
+  input[type="date"].center-date::-webkit-datetime-edit-year-field,
+  input[type="date"].center-date::-webkit-datetime-edit-month-field,
+  input[type="date"].center-date::-webkit-datetime-edit-day-field {
+    text-align: center;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@theme inline {
+  @keyframes rainbow {
+    0% {
+      background-position: 0%;
+    }
+
+    100% {
+      background-position: 200%;
+    }
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Marquee Animation */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(calc(-100% - var(--gap)));
+  }
+}
+
+@keyframes marquee-vertical {
+  from {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(calc(-100% - var(--gap)));
+  }
+}
+
+.animate-marquee {
+  animation: marquee var(--duration) linear infinite;
+}
+
+.animate-marquee-vertical {
+  animation: marquee-vertical var(--duration) linear infinite;
 }
