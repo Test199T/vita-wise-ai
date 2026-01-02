@@ -151,6 +151,18 @@ const styles = {
         'color: #334155',
         'font-size: 10px',
     ].join(';'),
+
+    // ━━━ System HUD ━━━
+    hud: [
+        'background: #0f172a',
+        'border: 1px solid #1e293b',
+        'color: #38bdf8',
+        'padding: 14px',
+        'line-height: 1.6',
+        'font-family: "SF Mono", Monaco, Consolas, monospace',
+        'border-radius: 8px',
+        'box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+    ].join(';'),
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -199,28 +211,25 @@ export function showConsoleBranding(): void {
         _console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', styles.separator);
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // 📊 BUILD INFO
+        // 🔮 SYSTEM STATUS (Virtual HUD)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
         _console.log('');
-        _console.groupCollapsed('%c ℹ️  BUILD INFO ', styles.info.badge);
+        _console.log(
+            `%c🔍 SYSTEM DIAGNOSTICS
+────────────────────────
+ ●  AI Core       [ ONLINE ]   🟢
+ ●  Neural Net    [ ACTIVE ]   ⚡
+ ●  Security      [ SECURE ]   🛡️
+ ●  Environment   [ PROD   ]   🚀
+────────────────────────
+💡 Type "vitawise.help()" for tools`,
+            styles.hud
+        );
 
-        const buildDate = new Date().toLocaleDateString('th-TH', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
-
-        _console.log('%c📦 Version:  1.0.0', styles.info.version);
-        _console.log('%c🗓️  Built:    ' + buildDate, styles.info.version);
-        _console.log('%c⚡ Runtime:  Vite + React', styles.info.version);
-        _console.log('%c🌐 Deploy:   Vercel', styles.info.version);
-        _console.groupEnd();
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // 💼 CAREERS
+        //  CAREERS
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
         _console.log('');
@@ -235,7 +244,7 @@ export function showConsoleBranding(): void {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🎯 BONUS: Easter Egg for Developers
+// � INTERACTIVE TOOLS (Pro Level)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export function showEasterEgg(): void {
@@ -252,7 +261,6 @@ export function showEasterEgg(): void {
     ⠀⠀⠀⠻⣿⣿⣿⣿⣿⣿⣆⠀⠀⠀⣰⣿⣿⣿⣿⣿⣿⠟⠀⠀⠀
     ⠀⠀⠀⠀⠙⢿⣿⣿⣿⣿⣿⣷⣴⣾⣿⣿⣿⣿⣿⡿⠋⠀⠀⠀⠀
     ⠀⠀⠀⠀⠀⠀⠙⠻⢿⣿⣿⣿⣿⣿⣿⣿⠿⠟⠋⠀⠀⠀⠀⠀⠀
-    ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
     `;
 
     _console.log(art);
@@ -262,11 +270,30 @@ export function showEasterEgg(): void {
     );
 }
 
-// Expose for curious developers
+const runDiagnostics = () => {
+    _console.log('%c🔄 Running System Scan...', 'color: #38bdf8');
+    setTimeout(() => _console.log('%c✅ Memory Integrity: OK', 'color: #34d399'), 300);
+    setTimeout(() => _console.log('%c✅ Network Latency: 24ms', 'color: #34d399'), 600);
+    setTimeout(() => _console.log('%c✅ AI Model: Loaded (Vita-v1)', 'color: #34d399'), 900);
+    setTimeout(() => _console.log('%c🚀 All Systems Operational', 'color: #34d399; font-weight: bold; font-size: 14px; margin-top: 8px;'), 1200);
+    return "Scan complete.";
+};
+
+const showHelp = () => {
+    _console.table({
+        'scan()': 'Run system diagnostics animation',
+        'easter()': 'Reveal secret artifact',
+        'version': '1.0.0'
+    });
+    return "Select a command to run.";
+};
+
+// Expose tools globally
 if (typeof window !== 'undefined') {
     (window as unknown as Record<string, unknown>).vitawise = {
+        scan: runDiagnostics,
+        help: showHelp,
         easter: showEasterEgg,
-        version: '1.0.0',
     };
 }
 
