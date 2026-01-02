@@ -2,77 +2,106 @@
  * Console Branding & Security Warning for Production
  * แสดงข้อความใน Console สำหรับ Production Environment
  * 
- * Note: ใช้ dynamic console access เพื่อหลีก terser drop_console
+ * ✨ Premium Console Experience - Responsive & Beautiful
  */
 
 // Dynamic console access - terser จะไม่ลบเพราะไม่ใช่ direct console.log call
 const _console = (typeof window !== 'undefined' ? window : globalThis).console;
 
-// ASCII Art Logo with gradient effect
-const LOGO_ART = `
-    ██╗   ██╗██╗████████╗ █████╗     ██╗    ██╗██╗███████╗███████╗
-    ██║   ██║██║╚══██╔══╝██╔══██╗    ██║    ██║██║██╔════╝██╔════╝
-    ██║   ██║██║   ██║   ███████║    ██║ █╗ ██║██║███████╗█████╗  
-    ╚██╗ ██╔╝██║   ██║   ██╔══██║    ██║███╗██║██║╚════██║██╔══╝  
-     ╚████╔╝ ██║   ██║   ██║  ██║    ╚███╔███╔╝██║███████║███████╗
-      ╚═══╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝     ╚══╝╚══╝ ╚═╝╚══════╝╚══════╝
-`;
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🎨 STYLES - Premium gradient & visual effects
+// ═══════════════════════════════════════════════════════════════════════════════
 
-const TAGLINE = `
-                    🌿 AI-Powered Health & Wellness Platform 🌿
-                      ดูแลสุขภาพครบวงจรด้วย AI อัจฉริยะ
-`;
-
-const DIVIDER = `
-════════════════════════════════════════════════════════════════════════════
-`;
-
-const SECURITY_TITLE = `
-    ⚠️  ข้อควรระวัง
-`;
-
-const SECURITY_BODY = `
-    นี่คือพื้นที่สำหรับนักพัฒนาเท่านั้น
-    
-    ❌ อย่า copy/paste โค้ดจากคนแปลกหน้าที่นี่
-    ❌ อาจทำให้บัญชีของคุณถูกโจมตีได้
-    
-    🔒 รักษาความปลอดภัยบัญชีของคุณ
-`;
-
-const BUILD_INFO = `    📦 v1.0.0  •  🗓️ ${new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}`;
-
-const FOOTER = `
-    💼 Join our team → ppansiun@outlook.co.th
-    🌐 Visit us → vita-wise-ai.vercel.app
-`;
-
-// Gradient style presets
 const styles = {
-    // Gold gradient for logo
-    logoGold: 'font-family: monospace; font-size: 10px; font-weight: bold; background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FF8C00 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-shadow: 0 0 20px rgba(255,215,0,0.5);',
+    // Logo box - gradient background
+    logoBox: [
+        'background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+        'border: 2px solid #14b8a6',
+        'border-radius: 12px',
+        'padding: 20px 30px',
+        'font-family: "SF Mono", Monaco, monospace',
+        'font-size: 14px',
+        'font-weight: bold',
+        'color: #14b8a6',
+        'text-shadow: 0 0 20px rgba(20, 184, 166, 0.5)',
+        'line-height: 1.4',
+    ].join(';'),
 
-    // Teal gradient for tagline
-    taglineTeal: 'font-family: system-ui; font-size: 13px; color: #14b8a6; font-weight: 500;',
+    // Brand name - gold gradient
+    brandName: [
+        'background: linear-gradient(90deg, #FFD700, #FFA500, #FF8C00)',
+        '-webkit-background-clip: text',
+        '-webkit-text-fill-color: transparent',
+        'background-clip: text',
+        'font-family: system-ui, -apple-system, sans-serif',
+        'font-size: 28px',
+        'font-weight: 800',
+        'letter-spacing: -0.5px',
+        'padding: 8px 0',
+    ].join(';'),
 
-    // Divider style
-    divider: 'color: #4a5568; font-size: 10px;',
+    // Tagline
+    tagline: [
+        'color: #14b8a6',
+        'font-family: system-ui, -apple-system, sans-serif',
+        'font-size: 14px',
+        'font-weight: 500',
+        'padding: 4px 0',
+    ].join(';'),
 
-    // Warning - amber/orange
-    warningTitle: 'font-size: 18px; font-weight: bold; color: #f59e0b; text-shadow: 0 0 10px rgba(245,158,11,0.3);',
+    // Badge style
+    badge: [
+        'background: linear-gradient(135deg, #14b8a6, #0d9488)',
+        'color: white',
+        'padding: 6px 14px',
+        'border-radius: 20px',
+        'font-size: 11px',
+        'font-weight: 600',
+        'font-family: system-ui, -apple-system, sans-serif',
+    ].join(';'),
 
-    // Warning body
-    warningBody: 'font-size: 12px; color: #9ca3af; line-height: 1.8;',
+    // Warning box
+    warningBox: [
+        'background: linear-gradient(135deg, #451a03 0%, #78350f 100%)',
+        'border: 1px solid #f59e0b',
+        'border-radius: 8px',
+        'padding: 12px 20px',
+        'color: #fbbf24',
+        'font-size: 13px',
+        'font-family: system-ui, -apple-system, sans-serif',
+        'line-height: 1.6',
+    ].join(';'),
 
-    // Build info - subtle gray
-    buildInfo: 'font-size: 11px; color: #6b7280;',
+    // Info text
+    info: [
+        'color: #94a3b8',
+        'font-size: 12px',
+        'font-family: system-ui, -apple-system, sans-serif',
+        'line-height: 1.6',
+    ].join(';'),
 
-    // Footer - blue accent
-    footer: 'font-size: 11px; color: #60a5fa;',
+    // Link style  
+    link: [
+        'color: #60a5fa',
+        'font-size: 12px',
+        'font-family: system-ui, -apple-system, sans-serif',
+    ].join(';'),
 
-    // Dev mode
-    devMode: 'background: linear-gradient(90deg, #14b8a6, #0d9488); color: white; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 14px;',
+    // Dev mode badge
+    devMode: [
+        'background: linear-gradient(90deg, #14b8a6, #0d9488)',
+        'color: white',
+        'padding: 10px 20px',
+        'border-radius: 8px',
+        'font-weight: bold',
+        'font-size: 14px',
+        'font-family: system-ui, -apple-system, sans-serif',
+    ].join(';'),
 };
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🚀 CONSOLE BRANDING - Main function
+// ═══════════════════════════════════════════════════════════════════════════════
 
 /**
  * แสดงข้อความ Branding และ Security Warning ใน Console
@@ -89,42 +118,74 @@ export function showConsoleBranding(): void {
     }
 
     try {
-        // Clear for clean slate (optional)
-        // _console.clear();
+        // ━━━ Compact Logo Box ━━━
+        _console.log(
+            `%c
+  ╭──────────────────────────────────────╮
+  │                                      │
+  │   ██╗   ██╗██╗████████╗ █████╗       │
+  │   ██║   ██║██║╚══██╔══╝██╔══██╗      │
+  │   ██║   ██║██║   ██║   ███████║      │
+  │   ╚██╗ ██╔╝██║   ██║   ██╔══██║      │
+  │    ╚████╔╝ ██║   ██║   ██║  ██║      │
+  │     ╚═══╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝      │
+  │                                      │
+  │   ██╗    ██╗██╗███████╗███████╗      │
+  │   ██║    ██║██║██╔════╝██╔════╝      │
+  │   ██║ █╗ ██║██║███████╗█████╗        │
+  │   ██║███╗██║██║╚════██║██╔══╝        │
+  │   ╚███╔███╔╝██║███████║███████╗      │
+  │    ╚══╝╚══╝ ╚═╝╚══════╝╚══════╝      │
+  │                                      │
+  ╰──────────────────────────────────────╯
+            `,
+            styles.logoBox
+        );
 
-        // 1. Main Logo with gold gradient
-        _console.log('%c' + LOGO_ART, 'color: #FFD700; font-family: monospace; font-size: 10px; font-weight: bold; text-shadow: 0 0 15px rgba(255,215,0,0.4);');
+        // ━━━ Brand Name ━━━
+        _console.log('%c✨ VITA WISE AI', styles.brandName);
 
-        // 2. Tagline
-        _console.log('%c' + TAGLINE, styles.taglineTeal);
+        // ━━━ Tagline ━━━
+        _console.log('%c🌿 AI-Powered Health & Wellness Platform', styles.tagline);
+        _console.log('%c   ดูแลสุขภาพครบวงจรด้วย AI อัจฉริยะ', styles.tagline);
 
-        // 3. Divider
-        _console.log('%c' + DIVIDER, styles.divider);
+        _console.log('');
 
-        // 4. Security Warning Title
-        _console.log('%c' + SECURITY_TITLE, styles.warningTitle);
+        // ━━━ Security Warning ━━━
+        _console.log(
+            `%c⚠️  ข้อควรระวัง — Developer Console Only
 
-        // 5. Security Warning Body
-        _console.log('%c' + SECURITY_BODY, styles.warningBody);
+   ❌  อย่า copy/paste โค้ดจากคนแปลกหน้า
+   ❌  อาจทำให้บัญชีถูกโจมตีได้
+   🔒  รักษาความปลอดภัยบัญชีของคุณ`,
+            styles.warningBox
+        );
 
-        // 6. Divider
-        _console.log('%c' + DIVIDER, styles.divider);
+        _console.log('');
 
-        // 7. Build Info
-        _console.log('%c' + BUILD_INFO, styles.buildInfo);
+        // ━━━ Build Info ━━━
+        const buildDate = new Date().toLocaleDateString('th-TH', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+        _console.log(`%c📦 Version 1.0.0  •  🗓️ ${buildDate}`, styles.info);
 
-        // 8. Footer
-        _console.log('%c' + FOOTER, styles.footer);
+        // ━━━ Links ━━━
+        _console.log('%c💼 Careers → ppansiun@outlook.co.th', styles.link);
+        _console.log('%c🌐 Website → vita-wise-ai.vercel.app', styles.link);
 
-        // 9. Final spacing
         _console.log('');
 
     } catch {
-        // Silent fail
+        // Silent fail - ไม่ทำอะไรหากเกิด error
     }
 }
 
-// Auto-execute
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🔄 AUTO-EXECUTE
+// ═══════════════════════════════════════════════════════════════════════════════
+
 if (typeof window !== 'undefined') {
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', showConsoleBranding);
