@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Routes, Route } from "react-router-dom";
 import { OnboardingProvider } from "./contexts/OnboardingContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import SmoothScroll from "./components/SmoothScroll";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -29,6 +30,7 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <SmoothScroll />
     <OnboardingProvider>
       <TooltipProvider>
         <Toaster />
