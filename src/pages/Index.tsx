@@ -998,6 +998,95 @@ const HeroSection = () => {
         <section className="relative min-h-[85vh] md:h-[900px] bg-gradient-to-b from-white via-slate-50 to-[#f9f9f9] overflow-hidden">
             {/* Light Theme Background Effects */}
             <div className="absolute inset-0 z-0">
+                {/* 🔥 Bold Premium Background - VitaWise Style */}
+                <div className="absolute inset-0 overflow-hidden">
+
+                    {/* === TOP SECTION - Hero Glow === */}
+                    {/* Main Top-Center Spotlight - Big and Bold */}
+                    <div
+                        className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[1200px] h-[800px]"
+                        style={{
+                            background: 'radial-gradient(ellipse 100% 80% at 50% 0%, rgba(56, 189, 248, 0.35) 0%, rgba(14, 165, 233, 0.15) 40%, transparent 70%)',
+                            animation: 'pulseGlow 8s ease-in-out infinite',
+                        }}
+                    />
+
+                    {/* Left Wing Glow - Emerald */}
+                    <div
+                        className="absolute top-[5%] left-[-10%] w-[700px] h-[600px]"
+                        style={{
+                            background: 'radial-gradient(ellipse 80% 60% at 30% 40%, rgba(16, 185, 129, 0.3) 0%, rgba(52, 211, 153, 0.1) 50%, transparent 70%)',
+                            animation: 'floatLeft 12s ease-in-out infinite',
+                        }}
+                    />
+
+                    {/* Right Wing Glow - Teal */}
+                    <div
+                        className="absolute top-[10%] right-[-10%] w-[700px] h-[600px]"
+                        style={{
+                            background: 'radial-gradient(ellipse 80% 60% at 70% 40%, rgba(20, 184, 166, 0.28) 0%, rgba(94, 234, 212, 0.1) 50%, transparent 70%)',
+                            animation: 'floatRight 14s ease-in-out infinite',
+                        }}
+                    />
+
+                    {/* === BOTTOM SECTION - Supporting Glows === */}
+                    {/* Bottom Left - Indigo accent */}
+                    <div
+                        className="absolute bottom-[-10%] left-[10%] w-[600px] h-[500px]"
+                        style={{
+                            background: 'radial-gradient(ellipse 70% 50% at 50% 80%, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.08) 50%, transparent 70%)',
+                            animation: 'floatUp 16s ease-in-out infinite',
+                        }}
+                    />
+
+                    {/* Bottom Right - Sky Blue accent */}
+                    <div
+                        className="absolute bottom-[-5%] right-[15%] w-[500px] h-[400px]"
+                        style={{
+                            background: 'radial-gradient(ellipse 60% 50% at 50% 70%, rgba(56, 189, 248, 0.18) 0%, transparent 60%)',
+                            animation: 'floatUp 18s ease-in-out infinite reverse',
+                        }}
+                    />
+
+                    {/* === ACCENT ELEMENTS === */}
+                    {/* Center Focus Ring - subtle */}
+                    <div
+                        className="absolute top-[30%] left-1/2 -translate-x-1/2 w-[400px] h-[400px] rounded-full"
+                        style={{
+                            background: 'radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, transparent 50%)',
+                            boxShadow: 'inset 0 0 100px 50px rgba(56, 189, 248, 0.03)',
+                        }}
+                    />
+
+                    {/* Noise Texture for premium feel */}
+                    <div
+                        className="absolute inset-0 opacity-[0.025] pointer-events-none"
+                        style={{
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+                        }}
+                    />
+                </div>
+
+                {/* Animation Keyframes */}
+                <style>{`
+                    @keyframes pulseGlow {
+                        0%, 100% { opacity: 1; transform: translateX(-50%) scale(1); }
+                        50% { opacity: 0.85; transform: translateX(-50%) scale(1.05); }
+                    }
+                    @keyframes floatLeft {
+                        0%, 100% { transform: translate(0, 0); }
+                        50% { transform: translate(40px, 30px); }
+                    }
+                    @keyframes floatRight {
+                        0%, 100% { transform: translate(0, 0); }
+                        50% { transform: translate(-40px, 25px); }
+                    }
+                    @keyframes floatUp {
+                        0%, 100% { transform: translateY(0); opacity: 1; }
+                        50% { transform: translateY(-30px); opacity: 0.8; }
+                    }
+                `}</style>
+
                 {/* Structure Grid - Startup Visuals Style */}
                 <svg
                     className="absolute inset-0 w-full h-full opacity-[0.03] pointer-events-none"

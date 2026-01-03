@@ -15,7 +15,12 @@ export function Header() {
 
     return (
         <div className="fixed top-4 left-0 right-0 z-[99] flex justify-center px-4">
-            <nav className="flex h-16 w-full max-w-[1240px] items-center justify-between rounded-2xl border border-dashed border-slate-300 bg-white/90 backdrop-blur-md px-4 shadow-sm transition-all hover:shadow-md">
+            <nav className={cn(
+                "flex h-16 w-full max-w-[1240px] items-center justify-between rounded-2xl px-4 transition-all duration-700 cubic-bezier(0.16, 1, 0.3, 1)",
+                scrolled
+                    ? "bg-white/75 backdrop-blur-2xl backdrop-saturate-200 border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.04),0_20px_40px_-10px_rgba(56,189,248,0.15),0_20px_40px_-10px_rgba(139,92,246,0.15)] ring-1 ring-white/60 supports-[backdrop-filter]:bg-white/50"
+                    : "bg-transparent border border-dashed border-slate-300/60 shadow-none hover:bg-sky-50/20 hover:border-sky-300/50 hover:shadow-[0_0_20px_-5px_rgba(14,165,233,0.15)] hover:backdrop-blur-sm"
+            )}>
                 <div className="flex items-center gap-4">
                     <Link to="/" className="flex items-center group">
                         <div className="relative w-11 h-11 flex items-center justify-center">
