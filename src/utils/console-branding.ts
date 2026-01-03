@@ -24,14 +24,14 @@ const styles = {
         'text-transform: uppercase',
     ].join(';'),
 
-    // Warning Text (Neon Orange) -> Font: Modern Monospace
+    // Warning Text (Refined for Readability - White Core + Orange Glow)
     warningText: [
-        'color: #ff5500',
-        'font-size: 24px',
-        'font-family: "Menlo", "Consolas", "Monaco", "Courier New", monospace', // ฟอนต์โค้ดดิ้งเท่ๆ
-        'line-height: 1.5',
-        'font-weight: 700',
-        'text-shadow: 3px 3px 0 #000, 0 0 10px #ff5500, 0 0 25px #ff5500',
+        'color: #ffffff', // เปลี่ยนเป็นสีขาวให้อ่านง่าย
+        'font-size: 20px', // ลดขนาดลงนิดนึงให้พอดี
+        'font-family: "Menlo", "Consolas", monospace',
+        'line-height: 1.6',
+        'font-weight: bold',
+        'text-shadow: 0 0 10px #ff5500, 0 0 20px #ff5500', // แสงฟุ้งสีส้ม ไม่มีขอบดำกวนตา
     ].join(';'),
 
     // Welcome Text (Neon Cyan) -> Font: Modern Sans
