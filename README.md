@@ -1,4 +1,4 @@
-# VITA WISE AI - แอปสุขภาพอัจฉริยะ
+# VITA WISE AI - แอปสุขภาพอัจฉริยะ.
 
 ## การใช้งาน Markdown ใน AI Response
 
