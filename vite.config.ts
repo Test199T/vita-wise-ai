@@ -38,6 +38,11 @@ export default defineConfig(({ mode }) => {
     server: {
       host: "::",
       port: 8080,
+      headers: {
+        "X-XSS-Protection": "1; mode=block",
+        "X-Frame-Options": "DENY",
+        "X-Content-Type-Options": "nosniff",
+      },
     },
     plugins: [react(), mode === "development" && componentTagger()].filter(
       Boolean,
@@ -87,6 +92,11 @@ export default defineConfig(({ mode }) => {
     preview: {
       port: 8080,
       host: "::",
+      headers: {
+        "X-XSS-Protection": "1; mode=block",
+        "X-Frame-Options": "DENY",
+        "X-Content-Type-Options": "nosniff",
+      },
     },
   };
 });
