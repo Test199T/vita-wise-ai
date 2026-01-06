@@ -1,8 +1,87 @@
 {
     "rewrites": [
         {
-            "source": "/((?!api|assets|favicon.ico).*)",
+            "source": "/",
             "destination": "/index.html"
+        },
+        {
+            "source": "/login",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/register",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/forgot-password",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/reset-password",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/onboarding",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/dashboard",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/health-goals",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/exercise-log",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/food-log",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/sleep-log",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/water-log",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/ai-insights",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/chat",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/profile",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/notifications",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/debug",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/demo/gradual-blur",
+            "destination": "/index.html"
+        }
+    ],
+    "headers": [
+        {
+            "source": "/404.html",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "no-cache"
+                }
+            ]
         }
     ]
 }
