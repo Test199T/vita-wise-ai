@@ -75,6 +75,23 @@
     ],
     "headers": [
         {
+            "source": "/(.*)",
+            "headers": [
+                {
+                    "key": "X-XSS-Protection",
+                    "value": "1; mode=block"
+                },
+                {
+                    "key": "X-Frame-Options",
+                    "value": "DENY"
+                },
+                {
+                    "key": "X-Content-Type-Options",
+                    "value": "nosniff"
+                }
+            ]
+        },
+        {
             "source": "/404.html",
             "headers": [
                 {
