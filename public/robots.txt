@@ -12,3 +12,5 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+Sitemap: https://vita-wise-ai.vercel.app/sitemap.xml
