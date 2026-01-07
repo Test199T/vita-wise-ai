@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, EyeOff, Mail, Lock, Activity } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, Activity, Loader2, Coffee } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { tokenUtils } from "@/lib/utils";
 import { apiConfig, authConfig } from "@/config/env";
@@ -15,9 +15,43 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showColdStartWarning, setShowColdStartWarning] = useState(false);
+  const [loadingDuration, setLoadingDuration] = useState(0);
   const [rememberMe, setRememberMe] = useState(false);
+  const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Cold start warning timer
+  useEffect(() => {
+    if (loading) {
+      // Start counting loading duration
+      const startTime = Date.now();
+      loadingTimerRef.current = setInterval(() => {
+        const duration = Math.floor((Date.now() - startTime) / 1000);
+        setLoadingDuration(duration);
+
+        // Show cold start warning after 3 seconds
+        if (duration >= 3 && !showColdStartWarning) {
+          setShowColdStartWarning(true);
+        }
+      }, 1000);
+    } else {
+      // Reset when not loading
+      if (loadingTimerRef.current) {
+        clearInterval(loadingTimerRef.current);
+        loadingTimerRef.current = null;
+      }
+      setShowColdStartWarning(false);
+      setLoadingDuration(0);
+    }
+
+    return () => {
+      if (loadingTimerRef.current) {
+        clearInterval(loadingTimerRef.current);
+      }
+    };
+  }, [loading]);
 
   useEffect(() => {
     if (tokenUtils.isLoggedIn()) {
