@@ -41,6 +41,7 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { NotificationBellIcon } from "@/components/ui/notification-bell-icon";
+import { StreamingText } from "@/components/chat/StreamingText";
 
 export default function Chat() {
   const navigate = useNavigate();
@@ -89,6 +90,7 @@ export default function Chat() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null); // ID of message currently streaming
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -114,6 +116,47 @@ export default function Chat() {
       description: "คำปรึกษาเรื่องสุขภาพทั่วไป",
     },
   ];
+
+  // Retry helper function for cold start handling
+  const fetchWithRetry = async (
+    url: string,
+    options: RequestInit,
+    maxRetries: number = 3,
+    onRetry?: (attempt: number, maxRetries: number) => void
+  ): Promise<Response> => {
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
+        const response = await fetch(url, {
+          ...options,
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+        return response;
+      } catch (error) {
+        lastError = error as Error;
+        console.warn(`Attempt ${attempt}/${maxRetries} failed:`, error);
+
+        if (attempt < maxRetries) {
+          // Notify user about retry
+          if (onRetry) {
+            onRetry(attempt, maxRetries);
+          }
+
+          // Exponential backoff: 1s, 2s, 4s
+          const delay = Math.pow(2, attempt - 1) * 1000;
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    throw lastError || new Error('Request failed after retries');
+  };
 
   // อัปโหลดและแสดงรูปภาพ (ไม่วิเคราะห์ทันที)
   const handleImageUpload = async (file: File) => {
@@ -476,17 +519,16 @@ export default function Chat() {
               timestamp: formatTimestamp(msg.timestamp),
               image: msg.image_url
                 ? (() => {
-                    const imagePath = msg.image_url.replace(/\\/g, "/");
-                    const fullUrl = imagePath.startsWith("http")
-                      ? imagePath
-                      : `${apiConfig.baseUrl}/${
-                          imagePath.startsWith("/")
-                            ? imagePath.slice(1)
-                            : imagePath
-                        }`;
-                    console.log("Message image URL constructed:", fullUrl);
-                    return fullUrl;
-                  })()
+                  const imagePath = msg.image_url.replace(/\\/g, "/");
+                  const fullUrl = imagePath.startsWith("http")
+                    ? imagePath
+                    : `${apiConfig.baseUrl}/${imagePath.startsWith("/")
+                      ? imagePath.slice(1)
+                      : imagePath
+                    }`;
+                  console.log("Message image URL constructed:", fullUrl);
+                  return fullUrl;
+                })()
                 : null,
             };
           });
@@ -840,16 +882,33 @@ export default function Chat() {
         console.warn("Could not inspect FormData entries", e);
       }
 
-      const response = await fetch(
-        `${apiConfig.baseUrl}/api/chat/sessions/${validSessionId}/messages`,
-        {
+      let response: Response;
+      const baseUrl = `${apiConfig.baseUrl}/api/chat/sessions/${validSessionId}/messages`;
+
+      if (fileToSend) {
+        // กรณีมีรูปภาพ ต้องส่งไปที่ endpoint /multipart
+        response = await fetch(`${baseUrl}/multipart`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
           },
           body: formData,
-        },
-      );
+        });
+      } else {
+        // กรณีข้อความธรรมดา ส่งเป็น JSON ไปที่ endpoint ปกติ
+        response = await fetch(baseUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            message: messageText,
+            session_id: validSessionId.toString(),
+            timestamp: new Date().toISOString(),
+          }),
+        });
+      }
 
       let data: any = null;
       try {
@@ -869,34 +928,43 @@ export default function Chat() {
         data: data,
       });
 
-      if (response.ok && data.success) {
+      // Fix: Accept response if HTTP status is OK (2xx) AND we have AI response data
+      // Backend sometimes returns success: false but still provides valid AI response
+      const hasAiResponse = data?.data?.aiMessage || data?.message;
+
+      if (response.ok && (data.success || hasAiResponse)) {
         // สร้าง message ฝั่ง AI (ตอบกลับ)
         const aiText =
           data.data?.aiMessage?.message_text ||
           data.data?.aiMessage?.text ||
           data.data?.aiMessage?.content ||
+          data.data?.response ||
           data.message ||
           "";
         const aiImage = data.data?.aiMessage?.image_url
           ? (() => {
-              const imagePath = data.data.aiMessage.image_url.replace(
-                /\\/g,
-                "/",
-              );
-              const fullUrl = imagePath.startsWith("http")
-                ? imagePath
-                : `${apiConfig.baseUrl}/${
-                    imagePath.startsWith("/") ? imagePath.slice(1) : imagePath
-                  }`;
-              console.log("AI image URL constructed:", fullUrl);
-              return fullUrl;
-            })()
+            const imagePath = data.data.aiMessage.image_url.replace(
+              /\\/g,
+              "/",
+            );
+            const fullUrl = imagePath.startsWith("http")
+              ? imagePath
+              : `${apiConfig.baseUrl}/${imagePath.startsWith("/") ? imagePath.slice(1) : imagePath
+              }`;
+            console.log("AI image URL constructed:", fullUrl);
+            return fullUrl;
+          })()
           : null;
         if (aiText || aiImage) {
+          const newMessageId = (Date.now() + 1).toString();
+
+          // Set streaming ID before adding message for typing effect
+          setStreamingMessageId(newMessageId);
+
           setMessages((prev) => [
             ...prev,
             {
-              id: (Date.now() + 1).toString(),
+              id: newMessageId,
               text: aiText,
               isUser: false,
               timestamp: new Date().toLocaleTimeString("th-TH", {
@@ -1270,7 +1338,7 @@ export default function Chat() {
       </div>
 
       {/* Chat History - Scrollable only */}
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div className="flex-1 overflow-y-auto min-h-0" data-lenis-prevent>
         {isLoadingSessions ? (
           <div className="flex items-center justify-center p-4">
             <div className="flex space-x-1">
@@ -1297,65 +1365,64 @@ export default function Chat() {
               const sessionDate = new Date(session.createdAt);
               return sessionDate.toDateString() === today.toDateString();
             }).length > 0 && (
-              <div className="mb-4">
-                <button
-                  onClick={() => setIsTodayExpanded(!isTodayExpanded)}
-                  className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide mb-3 px-2 font-semibold hover:text-gray-700 transition-colors w-full text-left"
-                >
-                  <Clock className="h-3 w-3" />
-                  <span>ประวัติการสนทนา</span>
-                  {isTodayExpanded ? (
-                    <ChevronDown className="h-3 w-3 ml-auto" />
-                  ) : (
-                    <ChevronRight className="h-3 w-3 ml-auto" />
-                  )}
-                </button>
-                {isTodayExpanded && (
-                  <div className="space-y-1">
-                    {chatSessions
-                      .filter((session) => {
-                        const today = new Date();
-                        const sessionDate = new Date(session.createdAt);
-                        return (
-                          sessionDate.toDateString() === today.toDateString()
-                        );
-                      })
-                      .map((session) => (
-                        <div
-                          key={session.id}
-                          className={`group px-3 py-3 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer ${
-                            selectedSessionId === session.id
+                <div className="mb-4">
+                  <button
+                    onClick={() => setIsTodayExpanded(!isTodayExpanded)}
+                    className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide mb-3 px-2 font-semibold hover:text-gray-700 transition-colors w-full text-left"
+                  >
+                    <Clock className="h-3 w-3" />
+                    <span>ประวัติการสนทนา</span>
+                    {isTodayExpanded ? (
+                      <ChevronDown className="h-3 w-3 ml-auto" />
+                    ) : (
+                      <ChevronRight className="h-3 w-3 ml-auto" />
+                    )}
+                  </button>
+                  {isTodayExpanded && (
+                    <div className="space-y-1">
+                      {chatSessions
+                        .filter((session) => {
+                          const today = new Date();
+                          const sessionDate = new Date(session.createdAt);
+                          return (
+                            sessionDate.toDateString() === today.toDateString()
+                          );
+                        })
+                        .map((session) => (
+                          <div
+                            key={session.id}
+                            className={`group px-3 py-3 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer ${selectedSessionId === session.id
                               ? "bg-blue-100 border border-blue-200"
                               : ""
-                          }`}
-                          onClick={() => setSelectedSessionId(session.id)}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm text-gray-800 font-medium truncate">
-                                {session.title}
+                              }`}
+                            onClick={() => setSelectedSessionId(session.id)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm text-gray-800 font-medium truncate">
+                                  {session.title}
+                                </div>
+                                <div className="text-xs text-gray-500 truncate mt-1">
+                                  {session.lastMessage}
+                                </div>
                               </div>
-                              <div className="text-xs text-gray-500 truncate mt-1">
-                                {session.lastMessage}
-                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteSession(session.id);
+                                }}
+                                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100 transition-all"
+                                title="ลบการสนทนา"
+                              >
+                                <Trash2 className="h-3 w-3 text-gray-500" />
+                              </button>
                             </div>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteSession(session.id);
-                              }}
-                              className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100 transition-all"
-                              title="ลบการสนทนา"
-                            >
-                              <Trash2 className="h-3 w-3 text-gray-500" />
-                            </button>
                           </div>
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </div>
-            )}
+                        ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
             {/* Previous Sessions */}
             {chatSessions.filter((session) => {
@@ -1363,65 +1430,64 @@ export default function Chat() {
               const sessionDate = new Date(session.createdAt);
               return sessionDate.toDateString() !== today.toDateString();
             }).length > 0 && (
-              <div>
-                <button
-                  onClick={() => setIsPreviousExpanded(!isPreviousExpanded)}
-                  className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide mb-3 px-2 font-semibold hover:text-gray-700 transition-colors w-full text-left"
-                >
-                  <History className="h-3 w-3" />
-                  <span>ก่อนหน้า</span>
-                  {isPreviousExpanded ? (
-                    <ChevronDown className="h-3 w-3 ml-auto" />
-                  ) : (
-                    <ChevronRight className="h-3 w-3 ml-auto" />
-                  )}
-                </button>
-                {isPreviousExpanded && (
-                  <div className="space-y-1">
-                    {chatSessions
-                      .filter((session) => {
-                        const today = new Date();
-                        const sessionDate = new Date(session.createdAt);
-                        return (
-                          sessionDate.toDateString() !== today.toDateString()
-                        );
-                      })
-                      .map((session) => (
-                        <div
-                          key={session.id}
-                          className={`group px-3 py-3 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer ${
-                            selectedSessionId === session.id
+                <div>
+                  <button
+                    onClick={() => setIsPreviousExpanded(!isPreviousExpanded)}
+                    className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide mb-3 px-2 font-semibold hover:text-gray-700 transition-colors w-full text-left"
+                  >
+                    <History className="h-3 w-3" />
+                    <span>ก่อนหน้า</span>
+                    {isPreviousExpanded ? (
+                      <ChevronDown className="h-3 w-3 ml-auto" />
+                    ) : (
+                      <ChevronRight className="h-3 w-3 ml-auto" />
+                    )}
+                  </button>
+                  {isPreviousExpanded && (
+                    <div className="space-y-1">
+                      {chatSessions
+                        .filter((session) => {
+                          const today = new Date();
+                          const sessionDate = new Date(session.createdAt);
+                          return (
+                            sessionDate.toDateString() !== today.toDateString()
+                          );
+                        })
+                        .map((session) => (
+                          <div
+                            key={session.id}
+                            className={`group px-3 py-3 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer ${selectedSessionId === session.id
                               ? "bg-blue-100 border border-blue-200"
                               : ""
-                          }`}
-                          onClick={() => setSelectedSessionId(session.id)}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm text-gray-800 font-medium truncate">
-                                {session.title}
+                              }`}
+                            onClick={() => setSelectedSessionId(session.id)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm text-gray-800 font-medium truncate">
+                                  {session.title}
+                                </div>
+                                <div className="text-xs text-gray-500 truncate mt-1">
+                                  {session.lastMessage}
+                                </div>
                               </div>
-                              <div className="text-xs text-gray-500 truncate mt-1">
-                                {session.lastMessage}
-                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteSession(session.id);
+                                }}
+                                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100 transition-all"
+                                title="ลบการสนทนา"
+                              >
+                                <Trash2 className="h-3 w-3 text-gray-500" />
+                              </button>
                             </div>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteSession(session.id);
-                              }}
-                              className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100 transition-all"
-                              title="ลบการสนทนา"
-                            >
-                              <Trash2 className="h-3 w-3 text-gray-500" />
-                            </button>
                           </div>
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </div>
-            )}
+                        ))}
+                    </div>
+                  )}
+                </div>
+              )}
           </div>
         )}
       </div>
@@ -1461,11 +1527,10 @@ export default function Chat() {
         <div className="flex-1 flex">
           {/* Left Sidebar - Collapsible with Animation - Fixed width */}
           <div
-            className={`transition-all duration-500 ease-in-out transform ${
-              isSidebarOpen
-                ? "w-64 flex-shrink-0 translate-x-0 opacity-100"
-                : "w-0 flex-shrink-0 -translate-x-full opacity-0 pointer-events-none overflow-hidden"
-            }`}
+            className={`transition-all duration-500 ease-in-out transform ${isSidebarOpen
+              ? "w-64 flex-shrink-0 translate-x-0 opacity-100"
+              : "w-0 flex-shrink-0 -translate-x-full opacity-0 pointer-events-none overflow-hidden"
+              }`}
           >
             {LeftSidebar}
           </div>
@@ -1474,11 +1539,10 @@ export default function Chat() {
           <div className="flex-1 flex flex-col bg-white transition-all duration-300 ease-in-out relative min-w-0">
             {/* Floating Sidebar Toggle Button when sidebar is closed */}
             <div
-              className={`fixed bottom-6 left-6 z-50 transition-all duration-500 ease-in-out transform ${
-                !isSidebarOpen
-                  ? "translate-y-0 opacity-100 scale-100"
-                  : "translate-y-4 opacity-0 scale-95"
-              }`}
+              className={`fixed bottom-6 left-6 z-50 transition-all duration-500 ease-in-out transform ${!isSidebarOpen
+                ? "translate-y-0 opacity-100 scale-100"
+                : "translate-y-4 opacity-0 scale-95"
+                }`}
             >
               <button
                 onClick={() => setIsSidebarOpen(true)}
@@ -1490,7 +1554,7 @@ export default function Chat() {
             </div>
             <div className="flex-1 flex flex-col min-h-0">
               {/* Messages Area - Only this part scrolls */}
-              <div className="flex-1 overflow-y-auto min-h-0">
+              <div className="flex-1 overflow-y-auto min-h-0" data-lenis-prevent>
                 {messages.length === 1 && !isTyping ? (
                   <div className="h-full flex items-center justify-center px-6 py-12">
                     <div className="text-center w-full max-w-2xl">
@@ -1502,9 +1566,8 @@ export default function Chat() {
                     {messages.map((message) => (
                       <div
                         key={message.id}
-                        className={`w-full ${
-                          message.isUser ? "flex justify-end" : ""
-                        }`}
+                        className={`w-full ${message.isUser ? "flex justify-end" : ""
+                          }`}
                       >
                         {message.isUser ? (
                           // User message - align with AI message
@@ -1557,160 +1620,175 @@ export default function Chat() {
                               {/* Message Content - Full Width */}
                               <div className="w-full">
                                 <div className="prose prose-lg max-w-none">
-                                  <ReactMarkdown
-                                    remarkPlugins={[remarkGfm]}
-                                    components={{
-                                      // Headings with beautiful styling
-                                      h1: ({ children }) => (
-                                        <h1 className="text-2xl font-bold text-gray-900 mb-6 mt-8 pb-3 ">
-                                          {children}
-                                        </h1>
-                                      ),
-                                      h2: ({ children }) => (
-                                        <h2 className="text-xl font-semibold text-gray-900 mb-4 mt-6 flex items-center">
-                                          <span className="w-1 h-6 bg-blue-500 rounded-full mr-3"></span>
-                                          {children}
-                                        </h2>
-                                      ),
-                                      h3: ({ children }) => (
-                                        <h3 className="text-lg font-semibold text-gray-800 mb-3 mt-5 flex items-center">
-                                          <span className="w-1 h-4 bg-blue-400 rounded-full mr-2"></span>
-                                          {children}
-                                        </h3>
-                                      ),
-                                      h4: ({ children }) => (
-                                        <h4 className="text-base font-semibold text-gray-800 mb-2 mt-4">
-                                          {children}
-                                        </h4>
-                                      ),
+                                  {/* Streaming effect for new AI messages */}
+                                  {streamingMessageId === message.id ? (
+                                    <div className="text-gray-700 leading-relaxed text-base">
+                                      <StreamingText
+                                        text={message.text}
+                                        speed={8}
+                                        showCursor={true}
+                                        onComplete={() => {
+                                          setStreamingMessageId(null);
+                                          scrollToBottom();
+                                        }}
+                                      />
+                                    </div>
+                                  ) : (
+                                    <ReactMarkdown
+                                      remarkPlugins={[remarkGfm]}
+                                      components={{
+                                        // Headings with beautiful styling
+                                        h1: ({ children }) => (
+                                          <h1 className="text-2xl font-bold text-gray-900 mb-6 mt-8 pb-3 ">
+                                            {children}
+                                          </h1>
+                                        ),
+                                        h2: ({ children }) => (
+                                          <h2 className="text-xl font-semibold text-gray-900 mb-4 mt-6 flex items-center">
+                                            <span className="w-1 h-6 bg-blue-500 rounded-full mr-3"></span>
+                                            {children}
+                                          </h2>
+                                        ),
+                                        h3: ({ children }) => (
+                                          <h3 className="text-lg font-semibold text-gray-800 mb-3 mt-5 flex items-center">
+                                            <span className="w-1 h-4 bg-blue-400 rounded-full mr-2"></span>
+                                            {children}
+                                          </h3>
+                                        ),
+                                        h4: ({ children }) => (
+                                          <h4 className="text-base font-semibold text-gray-800 mb-2 mt-4">
+                                            {children}
+                                          </h4>
+                                        ),
 
-                                      // Paragraphs with better spacing
-                                      p: ({ children }) => (
-                                        <p className="mb-4 text-gray-700 leading-relaxed text-base">
-                                          {children}
-                                        </p>
-                                      ),
+                                        // Paragraphs with better spacing
+                                        p: ({ children }) => (
+                                          <p className="mb-4 text-gray-700 leading-relaxed text-base">
+                                            {children}
+                                          </p>
+                                        ),
 
-                                      // Lists with beautiful styling
-                                      ul: ({ children }) => (
-                                        <ul className="list-none mb-6 space-y-3">
-                                          {children}
-                                        </ul>
-                                      ),
-                                      ol: ({ children }) => (
-                                        <ol className="list-none mb-6 space-y-3">
-                                          {children}
-                                        </ol>
-                                      ),
-                                      li: ({ children, ...props }) => {
-                                        const isOrdered =
-                                          props.className?.includes(
-                                            "task-list-item",
+                                        // Lists with beautiful styling
+                                        ul: ({ children }) => (
+                                          <ul className="list-none mb-6 space-y-3">
+                                            {children}
+                                          </ul>
+                                        ),
+                                        ol: ({ children }) => (
+                                          <ol className="list-none mb-6 space-y-3">
+                                            {children}
+                                          </ol>
+                                        ),
+                                        li: ({ children, ...props }) => {
+                                          const isOrdered =
+                                            props.className?.includes(
+                                              "task-list-item",
+                                            );
+                                          return (
+                                            <li className="flex items-start text-gray-700 leading-relaxed text-base mb-2">
+                                              {!isOrdered && (
+                                                <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                              )}
+                                              <div className="flex-1">
+                                                {children}
+                                              </div>
+                                            </li>
                                           );
-                                        return (
-                                          <li className="flex items-start text-gray-700 leading-relaxed text-base mb-2">
-                                            {!isOrdered && (
-                                              <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                                            )}
-                                            <div className="flex-1">
+                                        },
+
+                                        // Text formatting
+                                        strong: ({ children }) => (
+                                          <strong className="font-semibold text-gray-900 bg-blue-50 px-1.5 py-0.5 rounded">
+                                            {children}
+                                          </strong>
+                                        ),
+                                        em: ({ children }) => (
+                                          <em className="italic text-gray-600 bg-gray-50 px-1.5 py-0.5 rounded">
+                                            {children}
+                                          </em>
+                                        ),
+
+                                        // Code blocks
+                                        code: ({ children, className }) => {
+                                          const isInline = !className;
+                                          return isInline ? (
+                                            <code className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm font-mono border">
                                               {children}
-                                            </div>
-                                          </li>
-                                        );
-                                      },
-
-                                      // Text formatting
-                                      strong: ({ children }) => (
-                                        <strong className="font-semibold text-gray-900 bg-blue-50 px-1.5 py-0.5 rounded">
-                                          {children}
-                                        </strong>
-                                      ),
-                                      em: ({ children }) => (
-                                        <em className="italic text-gray-600 bg-gray-50 px-1.5 py-0.5 rounded">
-                                          {children}
-                                        </em>
-                                      ),
-
-                                      // Code blocks
-                                      code: ({ children, className }) => {
-                                        const isInline = !className;
-                                        return isInline ? (
-                                          <code className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm font-mono border">
+                                            </code>
+                                          ) : (
+                                            <code className={className}>
+                                              {children}
+                                            </code>
+                                          );
+                                        },
+                                        pre: ({ children }) => (
+                                          <pre className="bg-gray-900 text-gray-100 p-6 rounded-lg overflow-x-auto text-sm font-mono my-6 border border-gray-700">
                                             {children}
-                                          </code>
-                                        ) : (
-                                          <code className={className}>
+                                          </pre>
+                                        ),
+
+                                        // Blockquotes
+                                        blockquote: ({ children }) => (
+                                          <blockquote className="border-l-4 border-blue-400 bg-blue-50 pl-6 py-4 my-6 text-gray-700 italic rounded-r-lg">
                                             {children}
-                                          </code>
-                                        );
-                                      },
-                                      pre: ({ children }) => (
-                                        <pre className="bg-gray-900 text-gray-100 p-6 rounded-lg overflow-x-auto text-sm font-mono my-6 border border-gray-700">
-                                          {children}
-                                        </pre>
-                                      ),
+                                          </blockquote>
+                                        ),
 
-                                      // Blockquotes
-                                      blockquote: ({ children }) => (
-                                        <blockquote className="border-l-4 border-blue-400 bg-blue-50 pl-6 py-4 my-6 text-gray-700 italic rounded-r-lg">
-                                          {children}
-                                        </blockquote>
-                                      ),
-
-                                      // Tables
-                                      table: ({ children }) => (
-                                        <div className="overflow-x-auto my-6 rounded-lg border border-gray-200">
-                                          <table className="min-w-full divide-y divide-gray-200">
+                                        // Tables
+                                        table: ({ children }) => (
+                                          <div className="overflow-x-auto my-6 rounded-lg border border-gray-200">
+                                            <table className="min-w-full divide-y divide-gray-200">
+                                              {children}
+                                            </table>
+                                          </div>
+                                        ),
+                                        thead: ({ children }) => (
+                                          <thead className="bg-gray-50">
                                             {children}
-                                          </table>
-                                        </div>
-                                      ),
-                                      thead: ({ children }) => (
-                                        <thead className="bg-gray-50">
-                                          {children}
-                                        </thead>
-                                      ),
-                                      tbody: ({ children }) => (
-                                        <tbody className="bg-white divide-y divide-gray-200">
-                                          {children}
-                                        </tbody>
-                                      ),
-                                      tr: ({ children }) => (
-                                        <tr className="hover:bg-gray-50">
-                                          {children}
-                                        </tr>
-                                      ),
-                                      th: ({ children }) => (
-                                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
-                                          {children}
-                                        </th>
-                                      ),
-                                      td: ({ children }) => (
-                                        <td className="px-6 py-4 text-sm text-gray-700">
-                                          {children}
-                                        </td>
-                                      ),
+                                          </thead>
+                                        ),
+                                        tbody: ({ children }) => (
+                                          <tbody className="bg-white divide-y divide-gray-200">
+                                            {children}
+                                          </tbody>
+                                        ),
+                                        tr: ({ children }) => (
+                                          <tr className="hover:bg-gray-50">
+                                            {children}
+                                          </tr>
+                                        ),
+                                        th: ({ children }) => (
+                                          <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                                            {children}
+                                          </th>
+                                        ),
+                                        td: ({ children }) => (
+                                          <td className="px-6 py-4 text-sm text-gray-700">
+                                            {children}
+                                          </td>
+                                        ),
 
-                                      // Horizontal rules
-                                      hr: () => (
-                                        <hr className="my-8 border-0 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
-                                      ),
+                                        // Horizontal rules
+                                        hr: () => (
+                                          <hr className="my-8 border-0 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
+                                        ),
 
-                                      // Links
-                                      a: ({ children, href }) => (
-                                        <a
-                                          href={href}
-                                          className="text-blue-600 hover:text-blue-800 underline decoration-blue-300 hover:decoration-blue-500 transition-colors"
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                        >
-                                          {children}
-                                        </a>
-                                      ),
-                                    }}
-                                  >
-                                    {message.text}
-                                  </ReactMarkdown>
+                                        // Links
+                                        a: ({ children, href }) => (
+                                          <a
+                                            href={href}
+                                            className="text-blue-600 hover:text-blue-800 underline decoration-blue-300 hover:decoration-blue-500 transition-colors"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                          >
+                                            {children}
+                                          </a>
+                                        ),
+                                      }}
+                                    >
+                                      {message.text}
+                                    </ReactMarkdown>
+                                  )}
                                 </div>
 
                                 {/* แสดงรูปภาพของ AI ถ้ามี */}
@@ -1921,11 +1999,10 @@ export default function Chat() {
                       <button
                         onClick={() => handleSendMessage()}
                         disabled={!inputMessage.trim() || isTyping}
-                        className={`p-2 rounded-full transition-all duration-200 ${
-                          inputMessage.trim() && !isTyping
-                            ? "bg-blue-500 text-white hover:bg-blue-600"
-                            : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                        }`}
+                        className={`p-2 rounded-full transition-all duration-200 ${inputMessage.trim() && !isTyping
+                          ? "bg-blue-500 text-white hover:bg-blue-600"
+                          : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                          }`}
                       >
                         <Send className="h-4 w-4" />
                       </button>
