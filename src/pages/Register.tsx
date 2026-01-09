@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity, Eye, EyeOff, Mail, Lock, User, Timer } from "lucide-react";
+import { Activity, Eye, EyeOff, Mail, Lock, User, Timer, AlertCircle, LogIn, KeyRound } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { tokenUtils } from "@/lib/utils";
 import { apiConfig, authConfig } from "@/config/env";
@@ -24,9 +24,78 @@ export default function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [rateLimitCountdown, setRateLimitCountdown] = useState(0);
+  const [fieldErrors, setFieldErrors] = useState<{
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+    age?: string;
+    gender?: string;
+  }>({});
+  const [registerError, setRegisterError] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    suggestions: string[];
+    showAuthLinks: boolean;
+  } | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Validation functions
+  const validateField = (field: string, value: string): string | undefined => {
+    switch (field) {
+      case 'firstName':
+      case 'lastName': {
+        if (!value.trim()) return undefined; // Don't show error if empty (required will handle)
+        // Check if contains only Thai, English letters and spaces
+        const nameRegex = /^[\u0E00-\u0E7Fa-zA-Z\s]+$/;
+        if (!nameRegex.test(value)) {
+          return field === 'firstName'
+            ? 'ชื่อต้องเป็นตัวอักษรภาษาไทยหรืออังกฤษเท่านั้น'
+            : 'นามสกุลต้องเป็นตัวอักษรภาษาไทยหรืออังกฤษเท่านั้น';
+        }
+        if (value.length < 2) {
+          return field === 'firstName' ? 'ชื่อต้องมีอย่างน้อย 2 ตัวอักษร' : 'นามสกุลต้องมีอย่างน้อย 2 ตัวอักษร';
+        }
+        return undefined;
+      }
+      case 'email': {
+        if (!value.trim()) return undefined;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) {
+          return 'รูปแบบอีเมลไม่ถูกต้อง (เช่น example@email.com)';
+        }
+        return undefined;
+      }
+      case 'password': {
+        if (!value) return undefined;
+        if (value.length < 6) {
+          return 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร';
+        }
+        return undefined;
+      }
+      case 'confirmPassword': {
+        if (!value) return undefined;
+        if (value !== formData.password) {
+          return 'รหัสผ่านไม่ตรงกัน';
+        }
+        return undefined;
+      }
+      case 'age': {
+        if (!value) return undefined;
+        const age = parseInt(value);
+        if (isNaN(age) || age < 1 || age > 150) {
+          return 'อายุต้องอยู่ระหว่าง 1-150 ปี';
+        }
+        return undefined;
+      }
+      default:
+        return undefined;
+    }
+  };
 
   // Countdown timer for rate limiting
   useEffect(() => {
@@ -281,11 +350,66 @@ export default function Register() {
           });
         }
 
-        toast({
-          title: "ข้อผิดพลาด",
-          description: errorMessage,
-          variant: "destructive",
-        });
+        // Clear previous error
+        setRegisterError(null);
+
+        // Determine error type and show appropriate message
+        const isEmailDuplicate =
+          response.status === 409 ||
+          (data.message && (
+            data.message.toLowerCase().includes('email') &&
+            (data.message.toLowerCase().includes('already') || data.message.toLowerCase().includes('duplicate') || data.message.toLowerCase().includes('exists'))
+          ));
+
+        if (isEmailDuplicate) {
+          // Secure approach: Don't reveal if email exists
+          setRegisterError({
+            show: true,
+            title: 'ไม่สามารถสมัครสมาชิกได้',
+            message: 'ไม่สามารถใช้อีเมลนี้สมัครสมาชิกได้',
+            suggestions: [
+              'หากมีบัญชีอยู่แล้ว ลองเข้าสู่ระบบ',
+              'ลืมรหัสผ่าน? รีเซ็ตรหัสผ่าน',
+              'หรือลองใช้อีเมลอื่น'
+            ],
+            showAuthLinks: true
+          });
+        } else if (response.status === 429) {
+          const retryAfterSeconds = typeof data.retryAfter === 'number' ? data.retryAfter : 60;
+          setRateLimitCountdown(retryAfterSeconds);
+          setRegisterError({
+            show: true,
+            title: 'ทำรายการบ่อยเกินไป',
+            message: `กรุณารอ ${retryAfterSeconds} วินาที แล้วลองใหม่อีกครั้ง`,
+            suggestions: [
+              'ระบบตรวจพบการพยายามสมัครบ่อยเกินไป',
+              'กรุณารอสักครู่แล้วลองใหม่'
+            ],
+            showAuthLinks: false
+          });
+        } else if (response.status === 500) {
+          setRegisterError({
+            show: true,
+            title: 'เกิดข้อผิดพลาด',
+            message: 'เซิร์ฟเวอร์มีปัญหา กรุณาลองใหม่อีกครั้ง',
+            suggestions: [
+              'ลองรีเฟรชหน้าแล้วลองใหม่',
+              'หากยังไม่ได้ กรุณาติดต่อฝ่ายสนับสนุน'
+            ],
+            showAuthLinks: false
+          });
+        } else {
+          setRegisterError({
+            show: true,
+            title: 'สมัครสมาชิกไม่สำเร็จ',
+            message: 'กรุณาตรวจสอบข้อมูลที่กรอก',
+            suggestions: [
+              'ตรวจสอบรูปแบบอีเมล',
+              'ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต'
+            ],
+            showAuthLinks: false
+          });
+        }
       }
     } catch (error) {
       console.error('Network/Connection error:', {
@@ -294,23 +418,15 @@ export default function Register() {
         stack: error instanceof Error ? error.stack : undefined
       });
 
-      let errorDescription = "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต";
-
-      // ตรวจสอบข้อผิดพลาดที่เฉพาะเจาะจง
-      if (error instanceof Error) {
-        if (error.message.includes('fetch') || error.message.includes('network')) {
-          errorDescription = "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต";
-        } else if (error.message.includes('timeout')) {
-          errorDescription = "การเชื่อมต่อใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง";
-        } else if (error.message.includes('cors')) {
-          errorDescription = "เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง";
-        }
-      }
-
-      toast({
-        title: "ข้อผิดพลาด",
-        description: errorDescription,
-        variant: "destructive",
+      setRegisterError({
+        show: true,
+        title: 'ไม่สามารถเชื่อมต่อได้',
+        message: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้',
+        suggestions: [
+          'ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต',
+          'ลองรีเฟรชหน้าแล้วลองใหม่'
+        ],
+        showAuthLinks: false
       });
     } finally {
       setLoading(false);
@@ -319,7 +435,20 @@ export default function Register() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+
+    // Real-time validation
+    const error = validateField(field, value);
+    setFieldErrors(prev => ({ ...prev, [field]: error }));
+
+    // Special case: revalidate confirmPassword when password changes
+    if (field === 'password' && formData.confirmPassword) {
+      const confirmError = value !== formData.confirmPassword ? 'รหัสผ่านไม่ตรงกัน' : undefined;
+      setFieldErrors(prev => ({ ...prev, confirmPassword: confirmError }));
+    }
   };
+
+  // Check if form has errors
+  const hasErrors = Object.values(fieldErrors).some(error => error !== undefined);
 
   return (
     <div className="h-screen bg-gradient-to-br from-primary-light to-secondary-light flex flex-col items-center justify-center p-4 relative overflow-hidden">
@@ -350,6 +479,60 @@ export default function Register() {
         <div className="w-full relative">
           <Card className="w-full shadow-health border-0 rounded-3xl overflow-hidden bg-white/90 backdrop-blur-sm relative z-10">
             <CardContent className="p-6 pt-6">
+              {/* Register Error Panel - Secure UX */}
+              {registerError?.show && (
+                <div className="mb-5 bg-red-50 border border-red-200 rounded-2xl p-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-red-100 p-2 rounded-full shrink-0">
+                      <AlertCircle className="h-5 w-5 text-red-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-red-800">{registerError.title}</p>
+                      <p className="text-sm text-red-700 mt-1">{registerError.message}</p>
+
+                      {/* Suggestions */}
+                      <ul className="mt-3 space-y-1.5">
+                        {registerError.suggestions.map((suggestion, index) => (
+                          <li key={index} className="text-xs text-red-600 flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 bg-red-400 rounded-full shrink-0" />
+                            {suggestion}
+                          </li>
+                        ))}
+                      </ul>
+
+                      {/* Quick Links - Only show for email duplicate case */}
+                      {registerError.showAuthLinks && (
+                        <div className="mt-4 pt-3 border-t border-red-200 flex items-center gap-4">
+                          <Link
+                            to="/login"
+                            className="text-xs font-medium text-red-700 hover:text-red-900 flex items-center gap-1.5 transition-colors"
+                          >
+                            <LogIn className="h-3.5 w-3.5" />
+                            เข้าสู่ระบบ
+                          </Link>
+                          <span className="text-red-300">|</span>
+                          <Link
+                            to="/forgot-password"
+                            className="text-xs font-medium text-red-700 hover:text-red-900 flex items-center gap-1.5 transition-colors"
+                          >
+                            <KeyRound className="h-3.5 w-3.5" />
+                            ลืมรหัสผ่าน?
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setRegisterError(null)}
+                      className="text-red-400 hover:text-red-600 transition-colors shrink-0"
+                    >
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -364,10 +547,16 @@ export default function Register() {
                         placeholder="ชื่อ"
                         value={formData.firstName}
                         onChange={(e) => handleInputChange("firstName", e.target.value)}
-                        className="pl-10 health-input"
+                        className={`pl-10 health-input ${fieldErrors.firstName ? 'border-red-400 focus:border-red-500 focus:ring-red-200' : ''}`}
                         required
                       />
                     </div>
+                    {fieldErrors.firstName && (
+                      <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {fieldErrors.firstName}
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="lastName" className="text-sm font-medium">
@@ -379,9 +568,15 @@ export default function Register() {
                       placeholder="นามสกุล"
                       value={formData.lastName}
                       onChange={(e) => handleInputChange("lastName", e.target.value)}
-                      className="health-input"
+                      className={`health-input ${fieldErrors.lastName ? 'border-red-400 focus:border-red-500 focus:ring-red-200' : ''}`}
                       required
                     />
+                    {fieldErrors.lastName && (
+                      <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {fieldErrors.lastName}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -397,10 +592,16 @@ export default function Register() {
                       placeholder="อีเมลของคุณ"
                       value={formData.email}
                       onChange={(e) => handleInputChange("email", e.target.value)}
-                      className="pl-10 health-input"
+                      className={`pl-10 health-input ${fieldErrors.email ? 'border-red-400 focus:border-red-500 focus:ring-red-200' : ''}`}
                       required
                     />
                   </div>
+                  {fieldErrors.email && (
+                    <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {fieldErrors.email}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -415,7 +616,7 @@ export default function Register() {
                       placeholder="รหัสผ่าน"
                       value={formData.password}
                       onChange={(e) => handleInputChange("password", e.target.value)}
-                      className="pl-10 pr-10 health-input"
+                      className={`pl-10 pr-10 health-input ${fieldErrors.password ? 'border-red-400 focus:border-red-500 focus:ring-red-200' : ''}`}
                       required
                     />
                     <button
@@ -430,6 +631,12 @@ export default function Register() {
                       )}
                     </button>
                   </div>
+                  {fieldErrors.password && (
+                    <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {fieldErrors.password}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -444,7 +651,7 @@ export default function Register() {
                       placeholder="ยืนยันรหัสผ่าน"
                       value={formData.confirmPassword}
                       onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                      className="pl-10 pr-10 health-input"
+                      className={`pl-10 pr-10 health-input ${fieldErrors.confirmPassword ? 'border-red-400 focus:border-red-500 focus:ring-red-200' : ''}`}
                       required
                     />
                     <button
@@ -459,6 +666,12 @@ export default function Register() {
                       )}
                     </button>
                   </div>
+                  {fieldErrors.confirmPassword && (
+                    <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {fieldErrors.confirmPassword}
+                    </p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -472,9 +685,15 @@ export default function Register() {
                       placeholder="อายุ"
                       value={formData.age}
                       onChange={(e) => handleInputChange("age", e.target.value)}
-                      className="health-input"
+                      className={`health-input ${fieldErrors.age ? 'border-red-400 focus:border-red-500 focus:ring-red-200' : ''}`}
                       required
                     />
+                    {fieldErrors.age && (
+                      <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {fieldErrors.age}
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="gender" className="text-sm font-medium">
