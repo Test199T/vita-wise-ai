@@ -203,15 +203,15 @@ class APIService {
   private canMakeRequest(endpoint: string): boolean {
     const now = Date.now();
     const lastTime = this.lastRequestTime.get(endpoint) || 0;
-    
+
     // Reduce rate limiting interval for profile requests to improve UX
     const interval = endpoint === 'profile-get' ? 0 : this.MIN_REQUEST_INTERVAL;
-    
+
     if (now - lastTime < interval) {
       console.log(`⏳ Rate limiting: Please wait ${interval}ms between requests for ${endpoint}`);
       return false;
     }
-    
+
     return true;
   }
 
@@ -259,12 +259,26 @@ class APIService {
     return headers;
   }
 
-  // Helper method to handle API responses
+  // Helper method to handle API responses with session error interception
   private async handleResponse<T>(response: Response): Promise<T> {
     try {
       const data = await response.json();
-      
+
       if (!response.ok) {
+        // Check for session errors (AccountNotFound, AccountDeactivated)
+        if (response.status === 401 && data.error) {
+          const { isSessionError, handleSessionError } = await import('@/lib/utils');
+          if (isSessionError(response.status, data.error)) {
+            handleSessionError({
+              statusCode: response.status,
+              error: data.error,
+              message: data.message
+            });
+            // Throw error to prevent further execution
+            throw new Error('Session terminated');
+          }
+        }
+
         const error: APIError = {
           message: data.message || 'An error occurred',
           errors: data.errors,
@@ -286,14 +300,14 @@ class APIService {
   // Get current user profile with smart endpoint caching
   async getCurrentUserProfile(): Promise<UserProfile> {
     console.log('Fetching current user profile...');
-    
+
     // Check for existing request first
     const existingRequest = this.requestQueue.get('profile-get');
     if (existingRequest) {
       console.log('⏳ Using existing profile request...');
       return existingRequest as Promise<UserProfile>;
     }
-    
+
     const token = tokenUtils.getValidToken();
     if (!token) {
       throw new Error('No valid authentication token found');
@@ -361,7 +375,7 @@ class APIService {
     for (const endpoint of endpoints) {
       try {
         console.log(`Trying endpoint: ${endpoint}`);
-        
+
         const response = await fetch(`${this.baseURL}${endpoint}`, {
           method: 'GET',
           headers: this.getHeaders(),
@@ -373,9 +387,9 @@ class APIService {
           // Cache this working endpoint for future use
           this.workingEndpoints.set('profile-get', endpoint);
           this.saveCachedEndpoints(); // Save to localStorage
-          
+
           const result = await this.handleResponse<APIResponse<UserProfile>>(response);
-          
+
           if (result.data) {
             console.log('Profile data received:', {
               id: result.data.id,
@@ -402,7 +416,7 @@ class APIService {
     // If all endpoints failed, check if API is available at all
     try {
       const apiAvailable = await this.checkConnection();
-      
+
       if (!apiAvailable) {
         console.error('❌ Backend API not available at:', this.baseURL);
         throw new Error('Backend API is not running. Please start the backend server.');
@@ -420,7 +434,7 @@ class APIService {
     console.error('- GET /profile');
     console.error('- GET /me');
     console.error('- GET /user/me');
-    
+
     throw new Error(`Profile endpoint not found. Backend needs to implement one of the profile endpoints. Current backend URL: ${this.baseURL}`);
   }
 
@@ -439,7 +453,7 @@ class APIService {
     if (cachedEndpoint) {
       const [method, path] = cachedEndpoint.split(' ');
       console.log(`Using cached update endpoint: ${method} ${path}`);
-      
+
       try {
         const response = await fetch(`${this.baseURL}${path}`, {
           method: method,
@@ -483,7 +497,7 @@ class APIService {
     for (const endpoint of endpoints) {
       try {
         console.log(`Trying ${endpoint.method} ${endpoint.path}`);
-        
+
         const response = await fetch(`${this.baseURL}${endpoint.path}`, {
           method: endpoint.method,
           headers: this.getHeaders(),
@@ -496,9 +510,9 @@ class APIService {
           // Cache this working endpoint for future use
           this.workingEndpoints.set('profile-update', `${endpoint.method} ${endpoint.path}`);
           this.saveCachedEndpoints(); // Save to localStorage
-          
+
           const result = await this.handleResponse<APIResponse<UserProfile>>(response);
-          
+
           if (result.data) {
             console.log('Profile updated successfully:', {
               id: result.data.id,
@@ -533,7 +547,7 @@ class APIService {
     console.error('- PUT /me');
     console.error('- PATCH /me');
     console.error('- POST /user/profile/update');
-    
+
     throw new Error(`Profile update endpoint not found. Backend needs to implement PUT /users/profile endpoint. Current backend URL: ${this.baseURL}`);
   }
 
@@ -549,7 +563,7 @@ class APIService {
     // Convert onboarding data to user profile format
     const profileData = this.convertOnboardingToProfile(onboardingData);
     console.log('📝 Converted profile data:', profileData);
-    
+
     // ตรวจสอบข้อมูลชื่อ - เพิ่มการตรวจสอบที่เข้มงวด
     console.log('🔍 Name data check:', {
       firstName: profileData.first_name,
@@ -560,11 +574,11 @@ class APIService {
       lastNameLength: profileData.last_name?.length,
       source: 'API Service'
     });
-    
+
     // Validate that we have valid names before proceeding
-    if (!profileData.first_name || !profileData.last_name || 
-        typeof profileData.first_name !== 'string' || typeof profileData.last_name !== 'string' ||
-        profileData.first_name.trim() === '' || profileData.last_name.trim() === '') {
+    if (!profileData.first_name || !profileData.last_name ||
+      typeof profileData.first_name !== 'string' || typeof profileData.last_name !== 'string' ||
+      profileData.first_name.trim() === '' || profileData.last_name.trim() === '') {
       console.error('❌ Invalid name data detected:', {
         first_name: profileData.first_name,
         last_name: profileData.last_name
@@ -585,10 +599,10 @@ class APIService {
   // Convert onboarding data to user profile format
   private convertOnboardingToProfile(onboardingData: Record<string, unknown>): Partial<UserProfile> {
     // ใช้ Logic เดียวกับ Profile page ที่อัพเดตชื่อได้
-    const firstName = (onboardingData.firstName as string)?.trim() || 
-                     (onboardingData.registrationFirstName as string)?.trim() || '';
-    const lastName = (onboardingData.lastName as string)?.trim() || 
-                    (onboardingData.registrationLastName as string)?.trim() || '';
+    const firstName = (onboardingData.firstName as string)?.trim() ||
+      (onboardingData.registrationFirstName as string)?.trim() || '';
+    const lastName = (onboardingData.lastName as string)?.trim() ||
+      (onboardingData.registrationLastName as string)?.trim() || '';
 
     console.log('🔍 Name data in convertOnboardingToProfile:', {
       firstName,
@@ -610,7 +624,7 @@ class APIService {
       height_cm: onboardingData.height as number,
       weight_kg: onboardingData.weight as number,
       activity_level: this.mapActivityLevel(onboardingData.activityLevel as string),
-      
+
       // เพิ่มข้อมูล 5 ตัวที่ขาดหายไป
       health_data: {
         blood_pressure_systolic: this.extractBloodPressure(onboardingData.bloodPressure as string, 'systolic'),
@@ -619,7 +633,7 @@ class APIService {
         bmi: bmi,
         waist_circumference: onboardingData.waist as number,
       },
-      
+
       health_goals: {
         goal_type: this.mapHealthGoal(onboardingData.healthGoal as string),
         title: this.getHealthGoalTitle(onboardingData.healthGoal as string),
@@ -631,7 +645,7 @@ class APIService {
         status: 'active',
         priority: 'medium',
       },
-      
+
       nutrition_goals: {
         daily_calories: 2000, // ค่าเริ่มต้น
         protein_g: 60,
@@ -641,7 +655,7 @@ class APIService {
         sodium_mg: 2300,
         water_liters: (onboardingData as unknown as Record<string, unknown>).waterIntakeGlasses as number || 6,
       },
-      
+
       daily_behavior: {
         exercise_frequency: onboardingData.exerciseFrequency as 'never' | '1-2' | '3-5' | 'daily',
         sleep_hours: onboardingData.sleepHours as number,
@@ -653,7 +667,7 @@ class APIService {
         stress_level: (onboardingData as unknown as Record<string, unknown>).stressLevel as 'low' | 'medium' | 'high' || 'medium',
         water_intake_glasses: (onboardingData as unknown as Record<string, unknown>).waterIntakeGlasses as number || 6,
       },
-      
+
       medical_history: {
         conditions: onboardingData.medicalConditions as string[] || [],
         surgeries: onboardingData.surgeries as string || '',
@@ -681,10 +695,10 @@ class APIService {
     if (!bloodPressure || !bloodPressure.includes('/')) return undefined;
     const parts = bloodPressure.split('/');
     if (parts.length !== 2) return undefined;
-    
+
     const systolic = parseInt(parts[0]);
     const diastolic = parseInt(parts[1]);
-    
+
     return type === 'systolic' ? systolic : diastolic;
   }
 
@@ -755,11 +769,11 @@ class APIService {
     const birth = new Date(birthDate);
     let age = today.getFullYear() - birth.getFullYear();
     const monthDiff = today.getMonth() - birth.getMonth();
-    
+
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
       age--;
     }
-    
+
     return age;
   }
 
@@ -784,7 +798,7 @@ class APIService {
     for (const endpoint of endpoints) {
       try {
         console.log(`Trying ${endpoint.method} ${endpoint.path}`);
-        
+
         const response = await fetch(`${this.baseURL}${endpoint.path}`, {
           method: endpoint.method,
           headers: this.getHeaders(),
@@ -795,7 +809,7 @@ class APIService {
         if (response.ok) {
           console.log(`✅ Profile created with ${endpoint.method} ${endpoint.path}`);
           const result = await this.handleResponse<APIResponse<UserProfile>>(response);
-          
+
           if (result.data) {
             console.log('Profile created successfully:', result.data);
             return result.data;
@@ -839,7 +853,7 @@ class APIService {
       });
 
       const result = await this.handleResponse<APIResponse<HealthData>>(response);
-      
+
       if (result.data) {
         console.log('Health data received successfully');
         return result.data;
@@ -875,7 +889,7 @@ class APIService {
       });
 
       const result = await this.handleResponse<APIResponse<HealthData>>(response);
-      
+
       if (result.data) {
         console.log('Health data updated successfully');
         return result.data;
@@ -891,7 +905,7 @@ class APIService {
   // Check API connection and discover available endpoints
   async checkConnection(): Promise<boolean> {
     const endpoints = ['/health', '/api/health', '/status', '/ping'];
-    
+
     for (const endpoint of endpoints) {
       try {
         const response = await fetch(`${this.baseURL}${endpoint}`, {
@@ -911,7 +925,7 @@ class APIService {
         continue;
       }
     }
-    
+
     console.error('No health check endpoints available');
     return false;
   }
@@ -920,7 +934,7 @@ class APIService {
   async discoverEndpoints(): Promise<string[]> {
     const commonEndpoints = [
       '/user/profile',
-      '/users/profile', 
+      '/users/profile',
       '/profile',
       '/me',
       '/user/me',
@@ -931,7 +945,7 @@ class APIService {
     ];
 
     const availableEndpoints: string[] = [];
-    
+
     for (const endpoint of commonEndpoints) {
       try {
         const response = await fetch(`${this.baseURL}${endpoint}`, {
@@ -959,7 +973,7 @@ class APIService {
   async getMockProfile(): Promise<UserProfile> {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     return {
       id: 1,
       username: "testuser",
@@ -1007,10 +1021,10 @@ class APIService {
   // Forgot Password - Send reset email
   async forgotPassword(email: string): Promise<void> {
     console.log('Sending forgot password email to:', email);
-    
+
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1500));
-    
+
     // Mock validation - check if email exists
     // รองรับอีเมลที่มีอยู่ในฐานข้อมูลจริง
     const validEmails = [
@@ -1023,7 +1037,7 @@ class APIService {
       "postman_test@gmail.com",
       "ppansiun@gmail.com"
     ];
-    
+
     if (validEmails.includes(email)) {
       console.log('✅ Forgot password email sent successfully');
       return;
@@ -1035,10 +1049,10 @@ class APIService {
   // Validate Reset Token
   async validateResetToken(token: string): Promise<boolean> {
     console.log('Validating reset token:', token);
-    
+
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     // Mock validation - check if token is valid
     if (token && token.length > 10) {
       console.log('✅ Reset token is valid');
@@ -1051,19 +1065,19 @@ class APIService {
   // Reset Password
   async resetPassword(token: string, newPassword: string): Promise<void> {
     console.log('Resetting password with token:', token);
-    
+
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1500));
-    
+
     // Mock validation - check if token is valid and password meets requirements
     if (!token || token.length < 10) {
       throw new Error('Invalid or expired token');
     }
-    
+
     if (newPassword.length < 8) {
       throw new Error('Password too short');
     }
-    
+
     console.log('✅ Password reset successfully');
     return;
   }
@@ -1096,7 +1110,7 @@ class APIService {
       }
 
       const result = await this.handleResponse<ExerciseLogResponse>(response);
-      
+
       if (result.data) {
         console.log('Exercise log created successfully');
         return result.data;
@@ -1136,7 +1150,7 @@ class APIService {
       }
 
       const result = await this.handleResponse<{ data?: ExerciseLog[] }>(response);
-      
+
       if (result.data) {
         console.log('Exercise logs fetched successfully');
         return result.data;
@@ -1178,14 +1192,14 @@ class APIService {
 
       if (!response.ok) {
         let errorMessage = `HTTP error! status: ${response.status}`;
-        
+
         try {
           const errorData = await response.json();
           errorMessage = errorData.message || errorData.error || errorMessage;
         } catch (parseError) {
           console.log('Could not parse error response:', parseError);
         }
-        
+
         // แยกประเภท error ตาม HTTP status code
         switch (response.status) {
           case 401:
@@ -1214,17 +1228,17 @@ class APIService {
       console.log('✅ Exercise log deleted successfully from backend');
     } catch (error) {
       console.error('❌ Error deleting exercise log:', error);
-      
+
       // ถ้าเป็น network error หรือ timeout
       if (error instanceof TypeError && error.message.includes('fetch')) {
         throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
       }
-      
+
       // ถ้าเป็น timeout error
       if (error instanceof Error && error.name === 'AbortError') {
         throw new Error('การลบข้อมูลใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง');
       }
-      
+
       throw error;
     }
   }
@@ -1259,14 +1273,14 @@ class APIService {
 
       if (!response.ok) {
         let errorMessage = `HTTP error! status: ${response.status}`;
-        
+
         try {
           const errorData = await response.json();
           errorMessage = errorData.message || errorData.error || errorMessage;
         } catch (parseError) {
           console.log('Could not parse error response:', parseError);
         }
-        
+
         // แยกประเภท error ตาม HTTP status code
         switch (response.status) {
           case 400:
@@ -1286,7 +1300,7 @@ class APIService {
 
       // อ่าน response body
       const result = await this.handleResponse<ExerciseLogResponse>(response);
-      
+
       if (result.data) {
         console.log('✅ Exercise log updated successfully from backend');
         console.log('📄 Updated data:', result.data);
@@ -1296,17 +1310,17 @@ class APIService {
       }
     } catch (error) {
       console.error('❌ Error updating exercise log:', error);
-      
+
       // ถ้าเป็น network error หรือ timeout
       if (error instanceof TypeError && error.message.includes('fetch')) {
         throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
       }
-      
+
       // ถ้าเป็น timeout error
       if (error instanceof Error && error.name === 'AbortError') {
         throw new Error('การอัปเดตข้อมูลใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง');
       }
-      
+
       throw error;
     }
   }
@@ -1314,17 +1328,17 @@ class APIService {
   // ฟังก์ชันสำหรับ Dashboard - Exercise Statistics
   async getExerciseStats(date?: string): Promise<any> {
     console.log('📊 Getting exercise stats...');
-    
+
     const token = tokenUtils.getValidToken();
     if (!token) {
       throw new Error('No valid authentication token found');
     }
 
     try {
-      const url = date 
+      const url = date
         ? `${this.baseURL}${exerciseConfig.statsEndpoint}?date=${date}`
         : `${this.baseURL}${exerciseConfig.statsEndpoint}`;
-        
+
       const response = await fetch(url, {
         method: 'GET',
         headers: this.getHeaders(),
@@ -1339,7 +1353,7 @@ class APIService {
         } catch (parseError) {
           console.log('Could not parse error response:', parseError);
         }
-        
+
         switch (response.status) {
           case 401:
             throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
@@ -1362,7 +1376,7 @@ class APIService {
   // ฟังก์ชันสำหรับ Dashboard - Calories Summary
   async getCaloriesSummary(startDate?: string, endDate?: string): Promise<any> {
     console.log('🔥 Getting calories summary...');
-    
+
     const token = tokenUtils.getValidToken();
     if (!token) {
       throw new Error('No valid authentication token found');
@@ -1371,14 +1385,14 @@ class APIService {
     try {
       let url = `${this.baseURL}${exerciseConfig.caloriesEndpoint}`;
       const params = new URLSearchParams();
-      
+
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
-      
+
       if (params.toString()) {
         url += `?${params.toString()}`;
       }
-        
+
       const response = await fetch(url, {
         method: 'GET',
         headers: this.getHeaders(),
@@ -1393,7 +1407,7 @@ class APIService {
         } catch (parseError) {
           console.log('Could not parse error response:', parseError);
         }
-        
+
         switch (response.status) {
           case 401:
             throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
@@ -1416,17 +1430,17 @@ class APIService {
   // ฟังก์ชันสำหรับ Dashboard - Nutrition Analysis
   async getNutritionAnalysis(date?: string): Promise<any> {
     console.log('🥗 Getting nutrition analysis...');
-    
+
     const token = tokenUtils.getValidToken();
     if (!token) {
       throw new Error('No valid authentication token found');
     }
 
     try {
-      const url = date 
+      const url = date
         ? `${this.baseURL}${foodConfig.nutritionEndpoint}?date=${date}`
         : `${this.baseURL}${foodConfig.nutritionEndpoint}`;
-        
+
       const response = await fetch(url, {
         method: 'GET',
         headers: this.getHeaders(),
@@ -1441,7 +1455,7 @@ class APIService {
         } catch (parseError) {
           console.log('Could not parse error response:', parseError);
         }
-        
+
         switch (response.status) {
           case 401:
             throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
@@ -1464,7 +1478,7 @@ class APIService {
   // ฟังก์ชันสำหรับ Dashboard - Food Log Summary
   async getFoodLogSummary(period: string = 'day', startDate?: string, endDate?: string): Promise<any> {
     console.log('📋 Getting food log summary...');
-    
+
     const token = tokenUtils.getValidToken();
     if (!token) {
       throw new Error('No valid authentication token found');
@@ -1473,14 +1487,14 @@ class APIService {
     try {
       let url = `${this.baseURL}${foodConfig.summaryEndpoint}?period=${period}`;
       const params = new URLSearchParams();
-      
+
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
-      
+
       if (params.toString()) {
         url += `&${params.toString()}`;
       }
-        
+
       const response = await fetch(url, {
         method: 'GET',
         headers: this.getHeaders(),
@@ -1495,7 +1509,7 @@ class APIService {
         } catch (parseError) {
           console.log('Could not parse error response:', parseError);
         }
-        
+
         switch (response.status) {
           case 401:
             throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
@@ -1518,7 +1532,7 @@ class APIService {
   // ฟังก์ชันสำหรับ Dashboard - Food Log Dashboard
   async getFoodLogDashboard(): Promise<any> {
     console.log('📊 Getting food log dashboard data...');
-    
+
     const token = tokenUtils.getValidToken();
     if (!token) {
       throw new Error('No valid authentication token found');
@@ -1526,7 +1540,7 @@ class APIService {
 
     try {
       const url = `${this.baseURL}${foodConfig.dashboardEndpoint}`;
-        
+
       const response = await fetch(url, {
         method: 'GET',
         headers: this.getHeaders(),
@@ -1541,7 +1555,7 @@ class APIService {
         } catch (parseError) {
           console.log('Could not parse error response:', parseError);
         }
-        
+
         switch (response.status) {
           case 401:
             throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
@@ -1564,7 +1578,7 @@ class APIService {
   // ฟังก์ชันสำหรับ Dashboard - Exercise Streak
   async getExerciseStreak(): Promise<any> {
     console.log('🔥 Getting exercise streak...');
-    
+
     const token = tokenUtils.getValidToken();
     if (!token) {
       throw new Error('No valid authentication token found');
@@ -1585,7 +1599,7 @@ class APIService {
         } catch (parseError) {
           console.log('Could not parse error response:', parseError);
         }
-        
+
         switch (response.status) {
           case 401:
             throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
@@ -1608,7 +1622,7 @@ class APIService {
   // ฟังก์ชันสำหรับบันทึก Food Log
   async createFoodLog(foodLogData: FoodLogItem): Promise<FoodLogResponse> {
     console.log('🍽️ Creating food log...', foodLogData);
-    
+
     const token = tokenUtils.getValidToken();
     if (!token) {
       throw new Error('No valid authentication token found');
@@ -1630,7 +1644,7 @@ class APIService {
         } catch (parseError) {
           console.log('Could not parse error response:', parseError);
         }
-        
+
         switch (response.status) {
           case 400:
             throw new Error('Bad Request: ข้อมูลไม่ถูกต้อง');
@@ -1655,7 +1669,7 @@ class APIService {
   // ฟังก์ชันสำหรับดึงข้อมูล Food Logs ทั้งหมด
   async getFoodLogs(date?: string): Promise<FoodLogItem[]> {
     console.log('📋 Fetching food logs...', date ? `for date: ${date}` : 'for all dates');
-    
+
     const token = tokenUtils.getValidToken();
     if (!token) {
       throw new Error('No valid authentication token found');
@@ -1683,7 +1697,7 @@ class APIService {
         } catch (parseError) {
           console.log('Could not parse error response:', parseError);
         }
-        
+
         switch (response.status) {
           case 400:
             throw new Error('Bad Request: ข้อมูลไม่ถูกต้อง');
@@ -1709,15 +1723,15 @@ class APIService {
   // ฟังก์ชันสำหรับดึงข้อมูล Food Logs ของ User เฉพาะ
   async getUserFoodLogs(): Promise<FoodLogItem[]> {
     console.log('📋 Fetching current user food logs...');
-    
+
     try {
       // ดึงข้อมูล profile ของ user ปัจจุบันเพื่อหา user ID
       const userProfile = await this.getCurrentUserProfile();
       console.log('👤 Current user profile:', { id: userProfile.id, email: userProfile.email });
-      
+
       // ดึงข้อมูล food logs ทั้งหมดจาก API
       const allFoodLogs = await this.getFoodLogs();
-      
+
       // กรองเฉพาะข้อมูลของ user ปัจจุบัน
       // หมายเหตุ: ข้อมูลจาก API ควรมี user_id field แต่ถ้าไม่มี เราจะใช้ email เป็น fallback
       const userFoodLogs = allFoodLogs.filter(log => {
@@ -1732,11 +1746,11 @@ class APIService {
         // ถ้าไม่มีข้อมูล user ให้แสดงเฉพาะข้อมูลที่ไม่มี user_id (fallback)
         return !('user_id' in log) && !('user_email' in log);
       });
-      
+
       console.log(`✅ Filtered ${userFoodLogs.length} food logs for user ${userProfile.id} from total ${allFoodLogs.length}`);
       console.log('🔍 Sample user food log structure:', userFoodLogs.length > 0 ? JSON.stringify(userFoodLogs[0], null, 2) : 'No logs found');
       return userFoodLogs;
-      
+
     } catch (error) {
       console.error('❌ Error fetching user food logs:', error);
       // ถ้าไม่สามารถดึง profile ได้ ให้ fallback ไปใช้ getFoodLogs() แบบเดิม
@@ -1749,7 +1763,7 @@ class APIService {
   async deleteFoodLog(foodLogId: string): Promise<{ message: string }> {
     console.log('🗑️ Deleting food log...', foodLogId);
     console.log('🔗 DELETE URL:', `${this.baseURL}/food-log/${foodLogId}`);
-    
+
     const token = tokenUtils.getValidToken();
     if (!token) {
       throw new Error('No valid authentication token found');
@@ -1772,7 +1786,7 @@ class APIService {
         } catch (parseError) {
           console.log('Could not parse error response:', parseError);
         }
-        
+
         switch (response.status) {
           case 400:
             throw new Error('Bad Request: ข้อมูลไม่ถูกต้อง');
@@ -1801,7 +1815,7 @@ class APIService {
   async updateFoodLog(foodLogId: string, foodLogData: Partial<FoodLogItem>): Promise<FoodLogResponse> {
     console.log('✏️ Updating food log...', { foodLogId, foodLogData });
     console.log('🔗 PUT URL:', `${this.baseURL}/food-log/${foodLogId}`);
-    
+
     const token = tokenUtils.getValidToken();
     if (!token) {
       throw new Error('No valid authentication token found');
@@ -1825,7 +1839,7 @@ class APIService {
         } catch (parseError) {
           console.log('Could not parse error response:', parseError);
         }
-        
+
         switch (response.status) {
           case 400:
             throw new Error('Bad Request: ข้อมูลไม่ถูกต้อง');
@@ -1878,7 +1892,7 @@ class APIService {
       }
 
       const result = await this.handleResponse<{ data?: HealthGoals }>(response);
-      
+
       if (result.data) {
         console.log('✅ Health goal created successfully');
         return result.data;
@@ -1919,14 +1933,14 @@ class APIService {
 
       // ใช้ handleResponse แบบ generic เพื่อให้ได้ raw response
       const result = await this.handleResponse<any>(response);
-      
+
       console.log('🔍 Raw API result:', result);
       console.log('🔍 Result type:', typeof result);
       console.log('🔍 Is result array?', Array.isArray(result));
-      
+
       // ตรวจสอบและแปลงข้อมูลให้เป็น array
       let goals: HealthGoals[] = [];
-      
+
       if (Array.isArray(result)) {
         // ถ้า result เป็น array อยู่แล้ว
         goals = result;
@@ -1953,10 +1967,10 @@ class APIService {
           console.log('⚠️ Single object converted to array - this might be wrong!');
         }
       }
-      
+
       console.log('✅ Health goals processed successfully:', goals);
       console.log('📊 Goals count:', goals.length);
-      
+
       return goals;
     } catch (error) {
       console.error('❌ Error fetching health goals:', error);
@@ -1992,13 +2006,13 @@ class APIService {
       }
 
       const result = await this.handleResponse<any>(response);
-      
+
       console.log('🔍 Update API result:', result);
       console.log('🔍 Result type:', typeof result);
-      
+
       // ตรวจสอบ response structure หลายแบบ
       let updatedGoal: HealthGoals | null = null;
-      
+
       if (result.data) {
         updatedGoal = result.data;
         console.log('✅ Found updated goal in result.data');
@@ -2013,7 +2027,7 @@ class APIService {
         updatedGoal = result;
         console.log('✅ Found updated goal as direct result');
       }
-      
+
       if (updatedGoal) {
         console.log('✅ Health goal updated successfully:', updatedGoal);
         return updatedGoal;
@@ -2092,14 +2106,14 @@ class APIService {
 
       if (!response.ok) {
         let errorMessage = `HTTP error! status: ${response.status}`;
-        
+
         try {
           const errorData = await response.json();
           errorMessage = errorData.message || errorData.error || errorMessage;
         } catch (parseError) {
           console.log('Could not parse error response:', parseError);
         }
-        
+
         // แยกประเภท error ตาม HTTP status code
         switch (response.status) {
           case 400:
@@ -2116,7 +2130,7 @@ class APIService {
       }
 
       const result = await this.handleResponse<WaterLogResponse>(response);
-      
+
       if (result.data) {
         console.log('✅ Water log created successfully from backend');
         console.log('📄 Created data:', result.data);
@@ -2126,17 +2140,17 @@ class APIService {
       }
     } catch (error) {
       console.error('❌ Error creating water log:', error);
-      
+
       // ถ้าเป็น network error หรือ timeout
       if (error instanceof TypeError && error.message.includes('fetch')) {
         throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
       }
-      
+
       // ถ้าเป็น timeout error
       if (error instanceof Error && error.name === 'AbortError') {
         throw new Error('การสร้างข้อมูลใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง');
       }
-      
+
       throw error;
     }
   }
@@ -2144,7 +2158,7 @@ class APIService {
   // Get water logs for current user
   async getWaterLogs(date?: string): Promise<WaterLogItem[]> {
     console.log('💧 Fetching water logs...', date ? `for date: ${date}` : 'for all dates');
-    
+
     const token = tokenUtils.getValidToken();
     if (!token) {
       throw new Error('No valid authentication token found');
@@ -2178,7 +2192,7 @@ class APIService {
         } catch (parseError) {
           console.log('Could not parse error response:', parseError);
         }
-        
+
         switch (response.status) {
           case 401:
             throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
@@ -2225,14 +2239,14 @@ class APIService {
 
       if (!response.ok) {
         let errorMessage = `HTTP error! status: ${response.status}`;
-        
+
         try {
           const errorData = await response.json();
           errorMessage = errorData.message || errorData.error || errorMessage;
         } catch (parseError) {
           console.log('Could not parse error response:', parseError);
         }
-        
+
         switch (response.status) {
           case 400:
             throw new Error('Bad Request: ข้อมูลที่ส่งไปไม่ถูกต้อง');
@@ -2250,7 +2264,7 @@ class APIService {
       }
 
       const result = await this.handleResponse<WaterLogResponse>(response);
-      
+
       if (result.data) {
         console.log('✅ Water log updated successfully from backend');
         console.log('📄 Updated data:', result.data);
@@ -2260,15 +2274,15 @@ class APIService {
       }
     } catch (error) {
       console.error('❌ Error updating water log:', error);
-      
+
       if (error instanceof TypeError && error.message.includes('fetch')) {
         throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
       }
-      
+
       if (error instanceof Error && error.name === 'AbortError') {
         throw new Error('การอัปเดตข้อมูลใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง');
       }
-      
+
       throw error;
     }
   }
@@ -2298,14 +2312,14 @@ class APIService {
 
       if (!response.ok) {
         let errorMessage = `HTTP error! status: ${response.status}`;
-        
+
         try {
           const errorData = await response.json();
           errorMessage = errorData.message || errorData.error || errorMessage;
         } catch (parseError) {
           console.log('Could not parse error response:', parseError);
         }
-        
+
         switch (response.status) {
           case 401:
             throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
@@ -2323,15 +2337,15 @@ class APIService {
       console.log('✅ Water log deleted successfully from backend');
     } catch (error) {
       console.error('❌ Error deleting water log:', error);
-      
+
       if (error instanceof TypeError && error.message.includes('fetch')) {
         throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
       }
-      
+
       if (error instanceof Error && error.name === 'AbortError') {
         throw new Error('การลบข้อมูลใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง');
       }
-      
+
       throw error;
     }
   }
@@ -2341,7 +2355,7 @@ class APIService {
   // Get sleep logs for current user
   async getSleepLogs(date?: string): Promise<any[]> {
     console.log('😴 Fetching sleep logs...', date ? `for date: ${date}` : 'for all dates');
-    
+
     const token = tokenUtils.getValidToken();
     if (!token) {
       throw new Error('No valid authentication token found');
@@ -2375,7 +2389,7 @@ class APIService {
         } catch (parseError) {
           console.log('Could not parse error response:', parseError);
         }
-        
+
         switch (response.status) {
           case 401:
             throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
@@ -2389,7 +2403,7 @@ class APIService {
       const result = await this.handleResponse<any>(response);
       console.log('✅ Sleep logs fetched successfully');
       console.log('🔍 Raw API response structure:', JSON.stringify(result, null, 2));
-      
+
       // Handle different response structures
       let sleepLogs: any[] = [];
       if (Array.isArray(result)) {
@@ -2401,7 +2415,7 @@ class APIService {
       } else if (result && result.sleep_logs && Array.isArray(result.sleep_logs)) {
         sleepLogs = result.sleep_logs;
       }
-      
+
       console.log('🔍 Parsed sleep logs:', sleepLogs.length, 'items');
       return sleepLogs;
     } catch (error) {
@@ -2413,7 +2427,7 @@ class APIService {
   // Get sleep statistics for dashboard
   async getSleepStats(period: string = 'week'): Promise<any> {
     console.log('📊 Getting sleep stats...');
-    
+
     const token = tokenUtils.getValidToken();
     if (!token) {
       throw new Error('No valid authentication token found');
@@ -2421,7 +2435,7 @@ class APIService {
 
     try {
       const url = `${this.baseURL}${sleepConfig.statsEndpoint}?period=${period}`;
-        
+
       const response = await fetch(url, {
         method: 'GET',
         headers: this.getHeaders(),
@@ -2436,7 +2450,7 @@ class APIService {
         } catch (parseError) {
           console.log('Could not parse error response:', parseError);
         }
-        
+
         switch (response.status) {
           case 401:
             throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
@@ -2459,7 +2473,7 @@ class APIService {
   // Get sleep overview stats for specific date
   async getSleepOverviewStats(date: string): Promise<any> {
     console.log('📊 Getting sleep overview stats for date:', date);
-    
+
     const token = tokenUtils.getValidToken();
     if (!token) {
       throw new Error('No valid authentication token found');
@@ -2468,7 +2482,7 @@ class APIService {
     try {
       const url = `${this.baseURL}${sleepConfig.overviewEndpoint}?date=${date}`;
       console.log('🌐 API URL:', url);
-        
+
       const response = await fetch(url, {
         method: 'GET',
         headers: this.getHeaders(),
@@ -2489,7 +2503,7 @@ class APIService {
         } catch (parseError) {
           console.log('Could not parse error response:', parseError);
         }
-        
+
         switch (response.status) {
           case 401:
             throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
@@ -2512,7 +2526,7 @@ class APIService {
   // Get sleep data for the last 7 days (using existing sleep logs)
   async getSleepWeeklyData(): Promise<any[]> {
     console.log('📊 Getting sleep weekly data...');
-    
+
     const token = tokenUtils.getValidToken();
     if (!token) {
       throw new Error('No valid authentication token found');
@@ -2522,7 +2536,7 @@ class APIService {
       // ใช้ API endpoint ที่มีอยู่จริง
       const url = `${this.baseURL}${sleepConfig.trendsEndpoint}?days=7`;
       console.log('🌐 API URL:', url);
-      
+
       const response = await fetch(url, {
         method: 'GET',
         headers: this.getHeaders(),
@@ -2543,7 +2557,7 @@ class APIService {
         } catch (parseError) {
           console.log('Could not parse error response:', parseError);
         }
-        
+
         switch (response.status) {
           case 401:
             throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
@@ -2556,7 +2570,7 @@ class APIService {
 
       const result = await this.handleResponse<any>(response);
       console.log('✅ Sleep trends loaded successfully:', result);
-      
+
       // Handle API response structure: { success: true, data: { trends: [...] } }
       let trendsData: any[] = [];
       if (result && result.success && result.data && result.data.trends) {
@@ -2565,7 +2579,7 @@ class APIService {
       } else {
         console.log('⚠️ No trends data found in response');
       }
-      
+
       return trendsData;
     } catch (error) {
       console.error('❌ Error getting sleep weekly data:', error);
@@ -2583,18 +2597,18 @@ class APIService {
     // สร้างข้อมูล 7 วันล่าสุด
     const last7Days = [];
     const today = new Date();
-    
+
     for (let i = 6; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(today.getDate() - i);
       const dateString = date.toISOString().split('T')[0];
-      
+
       // หาข้อมูลการนอนของวันนี้
       const dayLog = sleepLogs.find(log => {
         const logDate = log.sleep_date || log.date;
         return logDate === dateString;
       });
-      
+
       if (dayLog) {
         last7Days.push({
           date: dateString,
@@ -2614,7 +2628,7 @@ class APIService {
         });
       }
     }
-    
+
     return last7Days;
   }
 
@@ -2622,12 +2636,12 @@ class APIService {
   private getMockSleepWeeklyData(): any[] {
     const last7Days = [];
     const today = new Date();
-    
+
     for (let i = 6; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(today.getDate() - i);
       const dateString = date.toISOString().split('T')[0];
-      
+
       // สร้างข้อมูลตัวอย่าง
       const mockData = {
         date: dateString,
@@ -2636,17 +2650,17 @@ class APIService {
         sleep_quality: ['excellent', 'good', 'fair', 'poor'][Math.floor(Math.random() * 4)],
         sleep_efficiency_percentage: Math.floor(Math.random() * 20) + 80 // 80-100%
       };
-      
+
       last7Days.push(mockData);
     }
-    
+
     return last7Days;
   }
 
   // Get water statistics for dashboard
   async getWaterStats(period: string = 'week'): Promise<any> {
     console.log('💧 Getting water stats...');
-    
+
     const token = tokenUtils.getValidToken();
     if (!token) {
       throw new Error('No valid authentication token found');
@@ -2654,7 +2668,7 @@ class APIService {
 
     try {
       const url = `${this.baseURL}${waterConfig.statsEndpoint}?period=${period}`;
-        
+
       const response = await fetch(url, {
         method: 'GET',
         headers: this.getHeaders(),
@@ -2669,7 +2683,7 @@ class APIService {
         } catch (parseError) {
           console.log('Could not parse error response:', parseError);
         }
-        
+
         switch (response.status) {
           case 401:
             throw new Error('Unauthorized: กรุณาเข้าสู่ระบบใหม่');
