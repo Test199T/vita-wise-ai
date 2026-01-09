@@ -18,6 +18,7 @@ export default function Login() {
   const [showColdStartWarning, setShowColdStartWarning] = useState(false);
   const [loadingDuration, setLoadingDuration] = useState(0);
   const [rememberMe, setRememberMe] = useState(false);
+  const [sessionExpiredMessage, setSessionExpiredMessage] = useState<string | null>(null);
   const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -57,6 +58,15 @@ export default function Login() {
     if (tokenUtils.isLoggedIn()) {
       console.log('✅ Login: User already logged in - Redirecting to Dashboard');
       navigate('/dashboard');
+    }
+
+    // ตรวจสอบว่ามีข้อความจาก Session Expired หรือไม่
+    const authMessage = sessionStorage.getItem('auth_message');
+    if (authMessage) {
+      // แสดงข้อความแจ้งเตือน
+      setSessionExpiredMessage(authMessage);
+      // ลบข้อความออกจาก sessionStorage
+      sessionStorage.removeItem('auth_message');
     }
   }, [navigate]);
 
@@ -179,6 +189,29 @@ export default function Login() {
             </p>
           </div>
         </div>
+
+        {/* Session Expired Alert */}
+        {sessionExpiredMessage && (
+          <div className="w-full bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="bg-amber-100 p-2 rounded-full shrink-0">
+              <svg className="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-amber-800">แจ้งเตือน</p>
+              <p className="text-sm text-amber-700 mt-0.5">{sessionExpiredMessage}</p>
+            </div>
+            <button 
+              onClick={() => setSessionExpiredMessage(null)}
+              className="text-amber-400 hover:text-amber-600 transition-colors shrink-0"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
 
         {/* Card Section */}
         <div className="w-full relative">

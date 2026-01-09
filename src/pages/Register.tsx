@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity, Eye, EyeOff, Mail, Lock, User } from "lucide-react";
+import { Activity, Eye, EyeOff, Mail, Lock, User, Timer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { tokenUtils } from "@/lib/utils";
 import { apiConfig, authConfig } from "@/config/env";
@@ -23,8 +23,28 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [rateLimitCountdown, setRateLimitCountdown] = useState(0);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Countdown timer for rate limiting
+  useEffect(() => {
+    if (rateLimitCountdown > 0) {
+      countdownRef.current = setInterval(() => {
+        setRateLimitCountdown(prev => {
+          if (prev <= 1) {
+            if (countdownRef.current) clearInterval(countdownRef.current);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, [rateLimitCountdown > 0]);
 
   // ตรวจสอบว่าผู้ใช้ล็อกอินแล้วหรือไม่
   useEffect(() => {
@@ -180,6 +200,8 @@ export default function Register() {
             errorMessage = "มีผู้ใช้อีเมลนี้แล้ว กรุณาใช้อีเมลอื่น";
           } else if (data.message && data.message.toLowerCase().includes('duplicate')) {
             errorMessage = "มีบัญชีนี้แล้ว กรุณาใช้อีเมลอื่น";
+          } else if (data.message && data.message.toLowerCase().includes('rate limit')) {
+            errorMessage = "คุณทำรายการบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่อีกครั้ง (Rate Limit Exceeded)";
           } else {
             errorMessage = "ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบข้อมูลที่กรอก";
           }
@@ -217,6 +239,18 @@ export default function Register() {
           console.warn('Validation error:', {
             email: formData.email,
             validationErrors: data.errors,
+            backendMessage: data.message
+          });
+        } else if (response.status === 429) {
+          // จัดการกรณี Rate Limit Exceeded (429)
+          const retryAfterSeconds = typeof data.retryAfter === 'number' ? data.retryAfter : 60;
+          setRateLimitCountdown(retryAfterSeconds);
+          errorMessage = `คุณทำรายการบ่อยเกินไป กรุณารอ ${retryAfterSeconds} วินาที แล้วลองใหม่อีกครั้ง`;
+
+          console.warn('Rate limit exceeded:', {
+            email: formData.email,
+            status: 429,
+            retryAfter: retryAfterSeconds,
             backendMessage: data.message
           });
         } else if (response.status === 500) {
@@ -462,9 +496,18 @@ export default function Register() {
                 <Button
                   type="submit"
                   className="health-button w-full h-12 text-base font-semibold shadow-lg shadow-health/30 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-                  disabled={loading}
+                  disabled={loading || rateLimitCountdown > 0}
                 >
-                  {loading ? "กำลังสมัครสมาชิก..." : "สมัครสมาชิก"}
+                  {rateLimitCountdown > 0 ? (
+                    <span className="flex items-center gap-2">
+                      <Timer className="h-4 w-4 animate-pulse" />
+                      รอ {rateLimitCountdown} วินาที
+                    </span>
+                  ) : loading ? (
+                    "กำลังสมัครสมาชิก..."
+                  ) : (
+                    "สมัครสมาชิก"
+                  )}
                 </Button>
 
                 <div className="text-center mt-2">
