@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, EyeOff, Mail, Lock, Activity, Loader2, Coffee } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, Activity, Loader2, Coffee, AlertCircle, KeyRound, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { tokenUtils } from "@/lib/utils";
 import { apiConfig, authConfig } from "@/config/env";
@@ -19,6 +19,12 @@ export default function Login() {
   const [loadingDuration, setLoadingDuration] = useState(0);
   const [rememberMe, setRememberMe] = useState(false);
   const [sessionExpiredMessage, setSessionExpiredMessage] = useState<string | null>(null);
+  const [loginError, setLoginError] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    suggestions: string[];
+  } | null>(null);
   const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -134,31 +140,64 @@ export default function Login() {
           navigate("/dashboard");
         }, 1000);
       } else {
-        let errorMessage = "Login failed";
+        // Clear any previous error first
+        setLoginError(null);
 
         if (response.status === 401) {
-          errorMessage = "Invalid email or password";
-        } else if (response.status === 404) {
-          errorMessage = "User not found";
+          // Secure UX - show helpful error without revealing if email exists
+          setLoginError({
+            show: true,
+            title: 'เข้าสู่ระบบไม่สำเร็จ',
+            message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
+            suggestions: [
+              'ตรวจสอบการพิมพ์อีเมลและรหัสผ่าน',
+              'ลองรีเซ็ตรหัสผ่าน หากจำไม่ได้',
+              'หากยังไม่มีบัญชี สามารถสมัครสมาชิกได้'
+            ]
+          });
+        } else if (response.status === 429) {
+          const retryAfter = data.retryAfter || 60;
+          setLoginError({
+            show: true,
+            title: 'ทำรายการบ่อยเกินไป',
+            message: `กรุณารอ ${retryAfter} วินาที แล้วลองใหม่อีกครั้ง`,
+            suggestions: [
+              'ระบบตรวจพบการพยายามเข้าสู่ระบบบ่อยเกินไป',
+              'กรุณารอสักครู่แล้วลองใหม่'
+            ]
+          });
         } else if (response.status === 500) {
-          errorMessage = "Server error";
-        } else if (response.status === 422) {
-          errorMessage = "Validation error";
+          setLoginError({
+            show: true,
+            title: 'เกิดข้อผิดพลาด',
+            message: 'เซิร์ฟเวอร์มีปัญหา กรุณาลองใหม่อีกครั้ง',
+            suggestions: [
+              'ลองรีเฟรชหน้าแล้วลองใหม่',
+              'หากยังไม่ได้ กรุณาติดต่อฝ่ายสนับสนุน'
+            ]
+          });
+        } else {
+          setLoginError({
+            show: true,
+            title: 'เข้าสู่ระบบไม่สำเร็จ',
+            message: 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง',
+            suggestions: [
+              'ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต'
+            ]
+          });
         }
-
-        toast({
-          title: "Login Failed",
-          description: errorMessage,
-          variant: "destructive",
-        });
       }
     } catch (error) {
       console.error('Network/Connection error:', error);
 
-      toast({
-        title: "Connection Error",
-        description: "Could not connect to the server. Please check your internet connection.",
-        variant: "destructive",
+      setLoginError({
+        show: true,
+        title: 'ไม่สามารถเชื่อมต่อได้',
+        message: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้',
+        suggestions: [
+          'ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต',
+          'ลองรีเฟรชหน้าแล้วลองใหม่'
+        ]
       });
     } finally {
       setLoading(false);
@@ -202,7 +241,7 @@ export default function Login() {
               <p className="text-sm font-semibold text-amber-800">แจ้งเตือน</p>
               <p className="text-sm text-amber-700 mt-0.5">{sessionExpiredMessage}</p>
             </div>
-            <button 
+            <button
               onClick={() => setSessionExpiredMessage(null)}
               className="text-amber-400 hover:text-amber-600 transition-colors shrink-0"
             >
@@ -217,6 +256,58 @@ export default function Login() {
         <div className="w-full relative">
           <Card className="w-full shadow-health border-0 rounded-3xl overflow-hidden bg-white/90 backdrop-blur-sm relative z-10">
             <CardContent className="p-8 pt-8">
+              {/* Login Error Panel - Secure UX */}
+              {loginError?.show && (
+                <div className="mb-6 bg-red-50 border border-red-200 rounded-2xl p-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-red-100 p-2 rounded-full shrink-0">
+                      <AlertCircle className="h-5 w-5 text-red-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-red-800">{loginError.title}</p>
+                      <p className="text-sm text-red-700 mt-1">{loginError.message}</p>
+
+                      {/* Suggestions */}
+                      <ul className="mt-3 space-y-1.5">
+                        {loginError.suggestions.map((suggestion, index) => (
+                          <li key={index} className="text-xs text-red-600 flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 bg-red-400 rounded-full shrink-0" />
+                            {suggestion}
+                          </li>
+                        ))}
+                      </ul>
+
+                      {/* Quick Links */}
+                      <div className="mt-4 pt-3 border-t border-red-200 flex items-center gap-4">
+                        <Link
+                          to="/forgot-password"
+                          className="text-xs font-medium text-red-700 hover:text-red-900 flex items-center gap-1.5 transition-colors"
+                        >
+                          <KeyRound className="h-3.5 w-3.5" />
+                          ลืมรหัสผ่าน?
+                        </Link>
+                        <span className="text-red-300">|</span>
+                        <Link
+                          to="/register"
+                          className="text-xs font-medium text-red-700 hover:text-red-900 flex items-center gap-1.5 transition-colors"
+                        >
+                          <UserPlus className="h-3.5 w-3.5" />
+                          สมัครสมาชิก
+                        </Link>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setLoginError(null)}
+                      className="text-red-400 hover:text-red-600 transition-colors shrink-0"
+                    >
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-sm font-semibold text-foreground flex">
