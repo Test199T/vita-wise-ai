@@ -588,6 +588,48 @@
   .ai-message-content .typing-cursor {
     @apply inline-block w-0.5 h-4 bg-emerald-500 ml-0.5 animate-pulse;
   }
+
+  /* Streaming text container - smooth rendering */
+  .streaming-text-container {
+    @apply transition-all duration-100 ease-out;
+  }
+
+  .streaming-text-container p,
+  .streaming-text-container li,
+  .streaming-text-container span {
+    @apply transition-opacity duration-75 ease-in;
+  }
+}
+
+/* Cursor blink animation for streaming */
+@keyframes cursor-blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
+.animate-cursor-blink {
+  animation: cursor-blink 1s ease-in-out infinite;
+}
+
+/* Smooth bounce for thinking indicator */
+@keyframes thinking-bounce {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+/* Override default bounce for thinking dots */
+.animate-bounce {
+  animation: thinking-bounce 0.6s ease-in-out infinite;
 }
 
 /* Center digits inside native date input */
