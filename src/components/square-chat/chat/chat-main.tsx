@@ -12,7 +12,9 @@ export function ChatMain() {
         messages,
         selectedSessionId,
         isSending,
-        sendMessage,
+        isStreaming,
+        streamingMessageId,
+        sendMessageStream,
         resetConversation,
     } = useChatStore();
 
@@ -32,7 +34,8 @@ export function ChatMain() {
         if (!messageText.trim() && !file) return;
 
         setMessage("");
-        await sendMessage(messageText, file);
+        // Use streaming API
+        await sendMessageStream(messageText, file);
     };
 
     const handleReset = () => {
@@ -41,7 +44,8 @@ export function ChatMain() {
     };
 
     const handleSendMessage = async (content: string, file?: File) => {
-        await sendMessage(content, file);
+        // Use streaming API
+        await sendMessageStream(content, file);
         setMessage("");
     };
 
@@ -55,6 +59,8 @@ export function ChatMain() {
                     onSend={handleSendMessage}
                     onReset={handleReset}
                     isLoading={isSending}
+                    isStreaming={isStreaming}
+                    streamingMessageId={streamingMessageId}
                 />
             ) : (
                 <ChatWelcomeScreen

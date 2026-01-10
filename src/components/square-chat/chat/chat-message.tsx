@@ -16,6 +16,7 @@ interface Message {
 
 interface ChatMessageProps {
     message: Message;
+    isStreaming?: boolean;
 }
 
 // Custom Markdown Components for professional AI message rendering
@@ -225,7 +226,7 @@ function TypewriterContent({ content, messageType }: { content: string; messageT
     );
 }
 
-export function ChatMessage({ message }: ChatMessageProps) {
+export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) {
     const isAi = message.sender === "ai";
     const [copied, setCopied] = useState(false);
     
@@ -234,8 +235,9 @@ export function ChatMessage({ message }: ChatMessageProps) {
     const markdownComponents = createMarkdownComponents(messageType);
     
     // Check if message is "new" (created within last 5 seconds) to apply animation
+    // Don't animate if this is a streaming message (we handle that differently)
     const isNewMessage = useRef(new Date().getTime() - new Date(message.timestamp).getTime() < 5000).current;
-    const shouldAnimate = isAi && isNewMessage;
+    const shouldAnimate = isAi && isNewMessage && !isStreaming;
 
     const handleCopy = async () => {
         try {
@@ -264,7 +266,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
                 )}
             >
                 {/* Message Type Indicator for AI messages */}
-                {isAi && messageType !== 'general' && messageType !== 'greeting' && (
+                {isAi && messageType !== 'general' && messageType !== 'greeting' && !isStreaming && message.content && (
                     <div className="flex items-center gap-1.5 mb-2 pb-2 border-b border-gray-100 dark:border-gray-700">
                         <span className="text-sm">{MESSAGE_EMOJIS[messageType]}</span>
                         <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -291,7 +293,22 @@ export function ChatMessage({ message }: ChatMessageProps) {
                 {/* Render message with enhanced markdown for AI, plain for user */}
                 {isAi ? (
                     <div className="text-sm leading-relaxed ai-message-content">
-                        {shouldAnimate ? (
+                        {/* Streaming: show content directly with cursor */}
+                        {isStreaming ? (
+                            <>
+                                {message.content ? (
+                                    <ReactMarkdown 
+                                        remarkPlugins={[remarkGfm]}
+                                        components={markdownComponents}
+                                    >
+                                        {message.content}
+                                    </ReactMarkdown>
+                                ) : (
+                                    <span className="text-gray-400 dark:text-gray-500">กำลังคิด...</span>
+                                )}
+                                <span className="inline-block w-0.5 h-4 bg-emerald-500 ml-1 animate-pulse" />
+                            </>
+                        ) : shouldAnimate ? (
                             <TypewriterContent content={message.content} messageType={messageType} />
                         ) : (
                             <ReactMarkdown 
@@ -306,8 +323,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
                     <p className="text-sm leading-relaxed">{message.content}</p>
                 )}
 
-                {/* Copy Button for AI messages */}
-                {isAi && !shouldAnimate && (
+                {/* Copy Button for AI messages - hide during streaming */}
+                {isAi && !shouldAnimate && !isStreaming && message.content && (
                     <button
                         onClick={handleCopy}
                         className={cn(
