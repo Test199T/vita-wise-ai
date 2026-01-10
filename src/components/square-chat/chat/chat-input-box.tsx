@@ -153,8 +153,13 @@ export function ChatInputBox({
                 </div>
             )}
 
-            {/* Main Capsule Input with Glassmorphism */}
-            <div className="relative flex items-end gap-2 bg-white/40 dark:bg-black/40 backdrop-blur-xl p-2 rounded-[32px] border border-white/20 dark:border-white/10 shadow-lg hover:shadow-xl transition-all duration-300 ring-1 ring-white/5">
+            {/* Main Capsule Input - Glassmorphism with Micro-interactions */}
+            <div className="group relative">
+                {/* Hover glow effect - appears on hover */}
+                <div className="absolute -inset-1 rounded-[36px] bg-gradient-to-r from-emerald-500/20 via-cyan-500/20 to-emerald-500/20 opacity-0 blur-xl transition-all duration-500 group-hover:opacity-100 group-focus-within:opacity-100" />
+                
+                {/* Glassmorphism container */}
+                <div className="relative flex items-end gap-2 bg-white/60 dark:bg-gray-900/60 backdrop-blur-2xl p-2 rounded-[32px] border border-white/30 dark:border-white/10 shadow-lg shadow-black/5 dark:shadow-black/20 transition-all duration-300 ease-out group-hover:bg-white/70 dark:group-hover:bg-gray-900/70 group-hover:border-emerald-500/30 group-hover:shadow-xl group-hover:shadow-emerald-500/10 group-focus-within:border-emerald-500/50 group-focus-within:shadow-emerald-500/20 group-focus-within:bg-white/80 dark:group-focus-within:bg-gray-900/80">
                 <input
                     type="file"
                     ref={fileInputRef}
@@ -176,15 +181,15 @@ export function ChatInputBox({
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="size-10 rounded-full shrink-0 text-muted-foreground hover:bg-white/50 dark:hover:bg-white/10 hover:text-foreground mb-0.5 ml-1 transition-all duration-200 hover:scale-110"
+                        className="size-10 rounded-full shrink-0 text-muted-foreground hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20 hover:text-emerald-600 dark:hover:text-emerald-400 mb-0.5 ml-1 transition-all duration-300 ease-out hover:scale-110 hover:rotate-90 active:scale-95"
                         onClick={() => setShowFileMenu(!showFileMenu)}
                     >
-                        <PlusIcon className="size-5" />
+                        <PlusIcon className="size-5 transition-transform duration-300" />
                     </Button>
 
-                    {/* File Menu Dropdown */}
+                    {/* File Menu Dropdown - Glassmorphism */}
                     {showFileMenu && (
-                        <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-border overflow-hidden min-w-[180px] z-50">
+                        <div className="absolute bottom-full left-0 mb-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-xl shadow-xl shadow-black/10 dark:shadow-black/30 border border-white/30 dark:border-white/10 overflow-hidden min-w-[180px] z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
                             <button
                                 onClick={() => {
                                     fileInputRef.current?.click();
@@ -278,19 +283,20 @@ export function ChatInputBox({
                         onClick={message.trim() || uploadedFile ? handleSendClick : toggleListening}
                         disabled={!message.trim() && !uploadedFile && !isListening && !('webkitSpeechRecognition' in window)}
                         className={cn(
-                            "size-10 rounded-full shrink-0 mb-0.5 mr-1 transition-all duration-300 shadow-md",
+                            "size-10 rounded-full shrink-0 mb-0.5 mr-1 transition-all duration-300 ease-out shadow-lg",
                             (message.trim() || uploadedFile)
-                                ? "bg-black dark:bg-white text-white dark:text-black hover:opacity-90 transform hover:scale-105"
-                                : "bg-black/5 dark:bg-white/10 text-muted-foreground hover:bg-black/10 dark:hover:bg-white/20"
+                                ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white hover:from-emerald-600 hover:to-cyan-600 hover:scale-110 hover:shadow-emerald-500/40 active:scale-95"
+                                : "bg-white/50 dark:bg-white/10 text-muted-foreground hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400 hover:scale-105"
                         )}
                     >
                         {(message.trim() || uploadedFile) ? (
-                            <ArrowUpIcon className="size-5" />
+                            <ArrowUpIcon className="size-5 transition-transform duration-200 group-hover:translate-y-[-2px]" />
                         ) : (
                             <Mic className="size-5" />
                         )}
                     </Button>
                 )}
+            </div>
             </div>
 
             {/* Bottom Tools & Model Selection (Optional) */}
