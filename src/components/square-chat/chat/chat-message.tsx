@@ -2,8 +2,8 @@ import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import ReactMarkdown, { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { useState, useEffect, useRef } from "react";
-import { Check, Copy, AlertTriangle, Info, Lightbulb, CheckCircle2 } from "lucide-react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { Check, Copy, AlertTriangle, Info, Lightbulb, CheckCircle2, Sparkles } from "lucide-react";
 import { detectMessageType, MESSAGE_EMOJIS, type MessageType } from "@/utils/aiMessageFormatter";
 
 interface Message {
@@ -17,6 +17,43 @@ interface Message {
 interface ChatMessageProps {
     message: Message;
     isStreaming?: boolean;
+}
+
+// Minimal Thinking Indicator - Just 3 dots
+function ThinkingIndicator() {
+    return (
+        <div className="flex items-center gap-1.5 py-1">
+            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+        </div>
+    );
+}
+
+// Smooth Streaming Text Component with fade-in effect
+function StreamingContent({ 
+    content, 
+    messageType 
+}: { 
+    content: string; 
+    messageType: MessageType;
+}) {
+    const markdownComponents = useMemo(() => createMarkdownComponents(messageType), [messageType]);
+    
+    return (
+        <div className="streaming-text-container animate-in fade-in duration-150">
+            <ReactMarkdown 
+                remarkPlugins={[remarkGfm]}
+                components={markdownComponents}
+            >
+                {content}
+            </ReactMarkdown>
+            {/* Smooth blinking cursor */}
+            <span className="inline-flex items-center ml-0.5">
+                <span className="w-0.5 h-4 bg-emerald-500 rounded-full animate-cursor-blink" />
+            </span>
+        </div>
+    );
 }
 
 // Custom Markdown Components for professional AI message rendering
@@ -259,10 +296,12 @@ export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) 
             {/* Message Bubble */}
             <div
                 className={cn(
-                    "relative rounded-2xl px-5 py-4 max-w-[80%] shadow-sm",
+                    "relative rounded-2xl max-w-[80%]",
                     message.sender === "user"
-                        ? "bg-blue-500 text-white rounded-tr-md"
-                        : "bg-white dark:bg-gray-800 text-foreground rounded-tl-md border border-gray-100 dark:border-gray-700"
+                        ? "bg-blue-500 text-white rounded-tr-md px-5 py-4 shadow-sm"
+                        : isStreaming && !message.content
+                            ? "px-3 py-2" // Minimal padding, no border for thinking state
+                            : "bg-white dark:bg-gray-800 text-foreground rounded-tl-md border border-gray-100 dark:border-gray-700 px-5 py-4 shadow-sm"
                 )}
             >
                 {/* Message Type Indicator for AI messages */}
@@ -293,21 +332,13 @@ export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) 
                 {/* Render message with enhanced markdown for AI, plain for user */}
                 {isAi ? (
                     <div className="text-sm leading-relaxed ai-message-content">
-                        {/* Streaming: show content directly with cursor */}
+                        {/* Streaming: show content with smooth animation */}
                         {isStreaming ? (
-                            <>
-                                {message.content ? (
-                                    <ReactMarkdown 
-                                        remarkPlugins={[remarkGfm]}
-                                        components={markdownComponents}
-                                    >
-                                        {message.content}
-                                    </ReactMarkdown>
-                                ) : (
-                                    <span className="text-gray-400 dark:text-gray-500">กำลังคิด...</span>
-                                )}
-                                <span className="inline-block w-0.5 h-4 bg-emerald-500 ml-1 animate-pulse" />
-                            </>
+                            message.content ? (
+                                <StreamingContent content={message.content} messageType={messageType} />
+                            ) : (
+                                <ThinkingIndicator />
+                            )
                         ) : shouldAnimate ? (
                             <TypewriterContent content={message.content} messageType={messageType} />
                         ) : (
