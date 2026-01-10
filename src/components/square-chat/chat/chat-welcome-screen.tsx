@@ -8,6 +8,7 @@ import {
     MoonIcon,
 } from "lucide-react";
 import { ChatInputBox } from "./chat-input-box";
+import DecryptedText from "@/components/DecryptedText";
 
 const suggestions = [
     {
@@ -66,10 +67,28 @@ export function ChatWelcomeScreen({
 
                 <div className="space-y-4 text-center">
                     <h1 className="text-2xl font-semibold tracking-tight">
-                        สวัสดี! ฉันคือผู้ช่วย AI สุขภาพของคุณ
+                        <DecryptedText
+                            text="สวัสดี! ฉันคือผู้ช่วย AI สุขภาพของคุณ"
+                            animateOn="view"
+                            speed={40}
+                            maxIterations={15}
+                            sequential={true}
+                            revealDirection="start"
+                            className="text-foreground"
+                            encryptedClassName="text-foreground"
+                        />
                     </h1>
                     <p className="text-2xl text-foreground">
-                        วันนี้ให้ฉันช่วยดูแลเรื่องอะไรดี?
+                        <DecryptedText
+                            text="วันนี้ให้ฉันช่วยดูแลเรื่องอะไรดี?"
+                            animateOn="view"
+                            speed={35}
+                            maxIterations={12}
+                            sequential={true}
+                            revealDirection="start"
+                            className="text-foreground"
+                            encryptedClassName="text-foreground"
+                        />
                     </p>
                 </div>
 

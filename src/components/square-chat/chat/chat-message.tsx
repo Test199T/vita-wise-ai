@@ -5,6 +5,7 @@ import remarkGfm from "remark-gfm";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Check, Copy, AlertTriangle, Info, Lightbulb, CheckCircle2, Sparkles } from "lucide-react";
 import { detectMessageType, MESSAGE_EMOJIS, type MessageType } from "@/utils/aiMessageFormatter";
+import DecryptedText from "@/components/DecryptedText";
 
 interface Message {
     id: string;
@@ -30,7 +31,7 @@ function ThinkingIndicator() {
     );
 }
 
-// Smooth Streaming Text Component with fade-in effect
+// Smooth Streaming Text Component with DecryptedText effect
 function StreamingContent({ 
     content, 
     messageType 
@@ -40,6 +41,31 @@ function StreamingContent({
 }) {
     const markdownComponents = useMemo(() => createMarkdownComponents(messageType), [messageType]);
     
+    // For short messages (like greetings), use DecryptedText effect
+    const isShortMessage = content.length < 150 && !content.includes('\n') && !content.includes('*');
+    
+    if (isShortMessage) {
+        return (
+            <div className="streaming-text-container">
+                <DecryptedText
+                    text={content}
+                    animateOn="view"
+                    speed={30}
+                    maxIterations={8}
+                    sequential={true}
+                    revealDirection="start"
+                    className="text-gray-700 dark:text-gray-300"
+                    encryptedClassName="text-emerald-500/60 dark:text-emerald-400/60"
+                />
+                {/* Smooth blinking cursor */}
+                <span className="inline-flex items-center ml-0.5">
+                    <span className="w-0.5 h-4 bg-emerald-500 rounded-full animate-cursor-blink" />
+                </span>
+            </div>
+        );
+    }
+    
+    // For longer messages with markdown, use standard rendering
     return (
         <div className="streaming-text-container animate-in fade-in duration-150">
             <ReactMarkdown 
