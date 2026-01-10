@@ -20,6 +20,8 @@ interface ChatConversationViewProps {
     onSend: (content: string, file?: File) => void;
     onReset: () => void;
     isLoading?: boolean;
+    isStreaming?: boolean;
+    streamingMessageId?: string | null;
 }
 
 export function ChatConversationView({
@@ -29,6 +31,8 @@ export function ChatConversationView({
     onSend,
     onReset,
     isLoading = false,
+    isStreaming = false,
+    streamingMessageId = null,
 }: ChatConversationViewProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -153,9 +157,13 @@ export function ChatConversationView({
             >
                 <div className="max-w-[720px] mx-auto space-y-6 pb-4">
                     {messages.map((msg) => (
-                        <ChatMessage key={msg.id} message={msg} />
+                        <ChatMessage 
+                            key={msg.id} 
+                            message={msg} 
+                            isStreaming={isStreaming && msg.id === streamingMessageId}
+                        />
                     ))}
-                    {isLoading && (
+                    {isLoading && !isStreaming && (
                         <div className="flex justify-start px-2 py-2">
                             <div className="size-3 rounded-full bg-black dark:bg-white animate-pulse"></div>
                         </div>
