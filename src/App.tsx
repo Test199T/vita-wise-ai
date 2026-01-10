@@ -12,7 +12,7 @@ import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
-import Chat from "./pages/Chat";
+import SquareChat from "./pages/SquareChat";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import HealthGoals from "./pages/HealthGoals";
@@ -109,7 +109,7 @@ const App = () => (
               path="/chat"
               element={
                 <ProtectedRoute>
-                  <Chat />
+                  <SquareChat />
                 </ProtectedRoute>
               }
             />
