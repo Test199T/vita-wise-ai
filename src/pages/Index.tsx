@@ -548,7 +548,7 @@ const ExpandableHealthCard = () => {
                             marginTop: isExpanded ? '8px' : '0px'
                         }}
                     >
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                             {workflowSteps.map((step, index) => (
                                 <div
                                     key={index}
@@ -1001,62 +1001,86 @@ const HeroSection = () => {
                 {/* 🔥 Bold Premium Background - VitaWise Style */}
                 <div className="absolute inset-0 overflow-hidden">
 
-                    {/* === TOP SECTION - Hero Glow === */}
-                    {/* Main Top-Center Spotlight - Big and Bold */}
-                    <div
-                        className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[1200px] h-[800px]"
-                        style={{
-                            background: 'radial-gradient(ellipse 100% 80% at 50% 0%, rgba(56, 189, 248, 0.35) 0%, rgba(14, 165, 233, 0.15) 40%, transparent 70%)',
-                            animation: 'pulseGlow 8s ease-in-out infinite',
-                        }}
-                    />
+                    {/* === MOBILE BACKGROUND: Soft Aurora === */}
+                    <div className="md:hidden absolute inset-0">
+                        {/* Orb 1: Blue - Top Left - Drifting */}
+                        <div
+                            className="absolute -top-[10%] -left-[20%] w-[120%] h-[60%] rounded-full bg-sky-200/40 blur-[80px] mix-blend-multiply animate-pulse-slow"
+                            style={{ animationDuration: '6s' }}
+                        />
 
-                    {/* Left Wing Glow - Emerald */}
-                    <div
-                        className="absolute top-[5%] left-[-10%] w-[700px] h-[600px]"
-                        style={{
-                            background: 'radial-gradient(ellipse 80% 60% at 30% 40%, rgba(16, 185, 129, 0.3) 0%, rgba(52, 211, 153, 0.1) 50%, transparent 70%)',
-                            animation: 'floatLeft 12s ease-in-out infinite',
-                        }}
-                    />
+                        {/* Orb 2: Emerald - Top Right - Breathing */}
+                        <div
+                            className="absolute top-[5%] -right-[20%] w-[100%] h-[50%] rounded-full bg-emerald-200/40 blur-[80px] mix-blend-multiply animate-pulse-slow"
+                            style={{ animationDelay: '1s', animationDuration: '8s' }}
+                        />
 
-                    {/* Right Wing Glow - Teal */}
-                    <div
-                        className="absolute top-[10%] right-[-10%] w-[700px] h-[600px]"
-                        style={{
-                            background: 'radial-gradient(ellipse 80% 60% at 70% 40%, rgba(20, 184, 166, 0.28) 0%, rgba(94, 234, 212, 0.1) 50%, transparent 70%)',
-                            animation: 'floatRight 14s ease-in-out infinite',
-                        }}
-                    />
+                        {/* Bottom Light - Subtle */}
+                        <div
+                            className="absolute top-[40%] left-1/2 -translate-x-1/2 w-[120%] h-[40%] rounded-full bg-indigo-100/30 blur-[60px]"
+                        />
+                    </div>
 
-                    {/* === BOTTOM SECTION - Supporting Glows === */}
-                    {/* Bottom Left - Indigo accent */}
-                    <div
-                        className="absolute bottom-[-10%] left-[10%] w-[600px] h-[500px]"
-                        style={{
-                            background: 'radial-gradient(ellipse 70% 50% at 50% 80%, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.08) 50%, transparent 70%)',
-                            animation: 'floatUp 16s ease-in-out infinite',
-                        }}
-                    />
+                    {/* === DESKTOP BACKGROUND: Full Experience === */}
+                    <div className="hidden md:block absolute inset-0">
+                        {/* === TOP SECTION - Hero Glow === */}
+                        {/* Main Top-Center Spotlight - Big and Bold */}
+                        <div
+                            className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[1200px] h-[800px]"
+                            style={{
+                                background: 'radial-gradient(ellipse 100% 80% at 50% 0%, rgba(56, 189, 248, 0.35) 0%, rgba(14, 165, 233, 0.15) 40%, transparent 70%)',
+                                animation: 'pulseGlow 8s ease-in-out infinite',
+                            }}
+                        />
 
-                    {/* Bottom Right - Sky Blue accent */}
-                    <div
-                        className="absolute bottom-[-5%] right-[15%] w-[500px] h-[400px]"
-                        style={{
-                            background: 'radial-gradient(ellipse 60% 50% at 50% 70%, rgba(56, 189, 248, 0.18) 0%, transparent 60%)',
-                            animation: 'floatUp 18s ease-in-out infinite reverse',
-                        }}
-                    />
+                        {/* Left Wing Glow - Emerald */}
+                        <div
+                            className="absolute top-[5%] left-[-10%] w-[700px] h-[600px]"
+                            style={{
+                                background: 'radial-gradient(ellipse 80% 60% at 30% 40%, rgba(16, 185, 129, 0.3) 0%, rgba(52, 211, 153, 0.1) 50%, transparent 70%)',
+                                animation: 'floatLeft 12s ease-in-out infinite',
+                            }}
+                        />
 
-                    {/* === ACCENT ELEMENTS === */}
-                    {/* Center Focus Ring - subtle */}
-                    <div
-                        className="absolute top-[30%] left-1/2 -translate-x-1/2 w-[400px] h-[400px] rounded-full"
-                        style={{
-                            background: 'radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, transparent 50%)',
-                            boxShadow: 'inset 0 0 100px 50px rgba(56, 189, 248, 0.03)',
-                        }}
-                    />
+                        {/* Right Wing Glow - Teal */}
+                        <div
+                            className="absolute top-[10%] right-[-10%] w-[700px] h-[600px]"
+                            style={{
+                                background: 'radial-gradient(ellipse 80% 60% at 70% 40%, rgba(20, 184, 166, 0.28) 0%, rgba(94, 234, 212, 0.1) 50%, transparent 70%)',
+                                animation: 'floatRight 14s ease-in-out infinite',
+                            }}
+                        />
+
+                        {/* === BOTTOM SECTION - Supporting Glows === */}
+                        {/* Bottom Left - Indigo accent */}
+                        <div
+                            className="absolute bottom-[-10%] left-[10%] w-[600px] h-[500px]"
+                            style={{
+                                background: 'radial-gradient(ellipse 70% 50% at 50% 80%, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.08) 50%, transparent 70%)',
+                                animation: 'floatUp 16s ease-in-out infinite',
+                            }}
+                        />
+
+                        {/* Bottom Right - Sky Blue accent */}
+                        <div
+                            className="absolute bottom-[-5%] right-[15%] w-[500px] h-[400px]"
+                            style={{
+                                background: 'radial-gradient(ellipse 60% 50% at 50% 70%, rgba(56, 189, 248, 0.18) 0%, transparent 60%)',
+                                animation: 'floatUp 18s ease-in-out infinite reverse',
+                            }}
+                        />
+
+                        {/* === ACCENT ELEMENTS === */}
+                        {/* Center Focus Ring - subtle */}
+                        <div
+                            className="absolute top-[30%] left-1/2 -translate-x-1/2 w-[400px] h-[400px] rounded-full"
+                            style={{
+                                background: 'radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, transparent 50%)',
+                                boxShadow: 'inset 0 0 100px 50px rgba(56, 189, 248, 0.03)',
+                            }}
+                        />
+                    </div>
+
 
                     {/* Noise Texture for premium feel */}
                     <div
@@ -1105,8 +1129,8 @@ const HeroSection = () => {
                 <div className="absolute top-40 right-1/4 w-[400px] h-[400px] bg-emerald-300/20 rounded-full blur-[100px] pointer-events-none mix-blend-multiply" />
                 <div className="absolute bottom-0 left-1/3 w-[600px] h-[300px] bg-indigo-200/20 rounded-full blur-[100px] pointer-events-none" />
 
-                {/* LaserFlow Beam Effect */}
-                <div className="absolute inset-0 opacity-70 mix-blend-multiply pointer-events-none">
+                {/* LaserFlow Beam Effect - Hide on Mobile */}
+                <div className="hidden md:block absolute inset-0 opacity-70 mix-blend-multiply pointer-events-none">
                     <LaserFlow
                         color="#0ea5e9"
                         flowSpeed={0.4}

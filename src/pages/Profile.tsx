@@ -53,23 +53,23 @@ export default function Profile() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { onboardingData } = useOnboarding();
   const { toast } = useToast();
-  
+
   // Use profile hook for real data
-  const { 
-    profile, 
-    loading: profileLoading, 
-    error: profileError, 
-    refreshProfile, 
+  const {
+    profile,
+    loading: profileLoading,
+    error: profileError,
+    refreshProfile,
     updateProfile,
-    isLoggedIn 
+    isLoggedIn
   } = useProfile();
 
   // Use profile picture hook
-  const { 
-    profilePicture, 
-    loading: uploadingPicture, 
-    uploadProfilePicture, 
-    removeProfilePicture 
+  const {
+    profilePicture,
+    loading: uploadingPicture,
+    uploadProfilePicture,
+    removeProfilePicture
   } = useProfilePicture();
 
   // Local form data state
@@ -120,8 +120,8 @@ export default function Profile() {
         gender: profile.gender || "female",
         weight: profile.weight_kg?.toString() || prev.weight,
         height: profile.height_cm?.toString() || prev.height,
-        age: profile.date_of_birth ? 
-          Math.floor((new Date().getTime() - new Date(profile.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)).toString() 
+        age: profile.date_of_birth ?
+          Math.floor((new Date().getTime() - new Date(profile.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)).toString()
           : prev.age,
       }));
     }
@@ -172,12 +172,12 @@ export default function Profile() {
           <div className="text-center">
             <h2 className="text-xl font-semibold mb-2">กรุณาเข้าสู่ระบบ</h2>
             <p className="text-muted-foreground">คุณต้องเข้าสู่ระบบเพื่อดูข้อมูลโปรไฟล์</p>
-                          <Button 
-                onClick={() => navigate("/login")} 
-                className="mt-4 health-button"
-              >
-                เข้าสู่ระบบ
-              </Button>
+            <Button
+              onClick={() => navigate("/login")}
+              className="mt-4 health-button"
+            >
+              เข้าสู่ระบบ
+            </Button>
           </div>
         </div>
       </MainLayout>
@@ -209,15 +209,15 @@ export default function Profile() {
             <h2 className="text-xl font-semibold mb-2">เกิดข้อผิดพลาด</h2>
             <p className="text-muted-foreground mb-4">{profileError}</p>
             <div className="space-x-2">
-              <Button 
-                onClick={refreshProfile} 
+              <Button
+                onClick={refreshProfile}
                 className="health-button"
                 disabled={profileLoading}
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
                 ลองอีกครั้ง
               </Button>
-              <Button 
+              <Button
                 variant="outline"
                 onClick={() => tokenUtils.logout()}
               >
@@ -235,7 +235,7 @@ export default function Profile() {
   const calculateBMI = () => {
     const height = profile?.height_cm || parseFloat(profileData.height);
     const weight = profile?.weight_kg || parseFloat(profileData.weight);
-    
+
     if (height > 0 && weight > 0) {
       const heightInMeters = height / 100;
       return (weight / (heightInMeters * heightInMeters)).toFixed(1);
@@ -255,7 +255,7 @@ export default function Profile() {
 
   const healthGoals = {
     "weight-loss": "ลดน้ำหนัก",
-    "muscle-gain": "เพิ่มกล้ามเนื้อ", 
+    "muscle-gain": "เพิ่มกล้ามเนื้อ",
     "healthy-diet": "คุมอาหารเพื่อสุขภาพ",
     "fitness": "เพิ่มพลังงาน / ความฟิต",
     "other": "อื่น ๆ"
@@ -301,7 +301,7 @@ export default function Profile() {
 
   const handleSave = async () => {
     setLoading(true);
-    
+
     try {
       // Map form data to API format
       const updateData: Partial<UserProfile> = {
@@ -313,8 +313,8 @@ export default function Profile() {
         gender: profileData.gender as 'male' | 'female' | 'other',
         height_cm: parseFloat(profileData.height) || undefined,
         weight_kg: parseFloat(profileData.weight) || undefined,
-        date_of_birth: profileData.age ? 
-          new Date(new Date().getFullYear() - parseInt(profileData.age), 0, 1).toISOString().split('T')[0] 
+        date_of_birth: profileData.age ?
+          new Date(new Date().getFullYear() - parseInt(profileData.age), 0, 1).toISOString().split('T')[0]
           : undefined,
       };
 
@@ -369,14 +369,14 @@ export default function Profile() {
       {/* Main Profile Content */}
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-2">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-lg">
                 <User className="h-6 w-6 text-primary" />
               </div>
               <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-bold text-foreground">
+                <h2 className="text-xl sm:text-2xl font-bold text-foreground">
                   โปรไฟล์ของคุณ
                 </h2>
                 {profileLoading && (
@@ -384,7 +384,7 @@ export default function Profile() {
                 )}
               </div>
             </div>
-            <p className="text-muted-foreground ml-12">
+            <p className="text-muted-foreground text-sm sm:ml-12">
               จัดการข้อมูลส่วนตัวและการตั้งค่าสุขภาพ
               {profile && (
                 <span className="block text-xs mt-1 text-muted-foreground">
@@ -398,43 +398,47 @@ export default function Profile() {
               )}
             </p>
             {profileError && (
-              <div className="flex items-center gap-1 mt-2 text-muted-foreground ml-12">
+              <div className="flex items-center gap-1 mt-2 text-muted-foreground sm:ml-12">
                 <AlertTriangle className="h-4 w-4" />
                 <span className="text-xs">
-                  {profileError.includes('mock data') ? 
-                    'ใช้ข้อมูลจำลอง - Backend ยังไม่พร้อม' : 
+                  {profileError.includes('mock data') ?
+                    'ใช้ข้อมูลจำลอง - Backend ยังไม่พร้อม' :
                     'ใช้ข้อมูลแคชชั่วคราว'
                   }
                 </span>
               </div>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {!isEditing ? (
               <>
-                <Button 
+                <Button
                   onClick={refreshProfile}
                   disabled={profileLoading}
                   variant="outline"
-                  className="gap-2"
+                  className="gap-2 text-sm"
+                  size="sm"
                 >
                   <RefreshCw className={`h-4 w-4 ${profileLoading ? 'animate-spin' : ''}`} />
-                  {profileLoading ? 'กำลังโหลด...' : 'รีเฟรช'}
+                  <span className="hidden xs:inline">{profileLoading ? 'กำลังโหลด...' : 'รีเฟรช'}</span>
                 </Button>
-                <Button 
-                  onClick={() => setIsEditing(true)} 
-                  className="gap-2"
+                <Button
+                  onClick={() => setIsEditing(true)}
+                  className="gap-2 text-sm"
+                  size="sm"
                 >
                   <Edit className="h-4 w-4" />
-                  แก้ไขโปรไฟล์
+                  แก้ไข
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => navigate("/onboarding")}
-                  className="gap-2"
+                  className="gap-2 text-sm"
+                  size="sm"
                 >
                   <Settings className="h-4 w-4" />
-                  อัปเดตข้อมูลสุขภาพ
+                  <span className="hidden sm:inline">อัปเดตข้อมูลสุขภาพ</span>
+                  <span className="sm:hidden">สุขภาพ</span>
                 </Button>
               </>
             ) : (
@@ -443,6 +447,7 @@ export default function Profile() {
                   variant="outline"
                   onClick={() => setIsEditing(false)}
                   disabled={loading}
+                  size="sm"
                 >
                   ยกเลิก
                 </Button>
@@ -450,6 +455,7 @@ export default function Profile() {
                   onClick={handleSave}
                   disabled={loading || profileLoading}
                   className="gap-2"
+                  size="sm"
                 >
                   <Save className="h-4 w-4" />
                   {loading ? "กำลังบันทึก..." : "บันทึก"}
@@ -506,9 +512,9 @@ export default function Profile() {
                   </div>
                   {isEditing && (
                     <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={handleChangePictureClick}
                         disabled={uploadingPicture}
                         className="gap-2"
@@ -521,8 +527,8 @@ export default function Profile() {
                         เปลี่ยนรูป
                       </Button>
                       {profilePicture && (
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={handleRemoveProfilePicture}
                           className="gap-2"
@@ -532,7 +538,7 @@ export default function Profile() {
                       )}
                     </div>
                   )}
-                  
+
                   {/* Hidden file input */}
                   <input
                     ref={fileInputRef}
@@ -941,25 +947,25 @@ export default function Profile() {
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label className="text-sm font-semibold text-foreground">แอลกอฮอล์</Label>
                     <div className="p-3 bg-muted/30 rounded-lg border">
                       <span className="text-sm font-medium text-foreground">
-                        {onboardingData.alcoholFrequency ? 
-                          alcoholFrequencyLabels[onboardingData.alcoholFrequency as keyof typeof alcoholFrequencyLabels] : 
+                        {onboardingData.alcoholFrequency ?
+                          alcoholFrequencyLabels[onboardingData.alcoholFrequency as keyof typeof alcoholFrequencyLabels] :
                           "ไม่ระบุ"
                         }
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label className="text-sm font-semibold text-foreground">ออกกำลังกาย</Label>
                     <div className="p-3 bg-muted/30 rounded-lg border">
                       <span className="text-sm font-medium text-foreground">
-                        {onboardingData.exerciseFrequency ? 
-                          exerciseFrequencyLabels[onboardingData.exerciseFrequency as keyof typeof exerciseFrequencyLabels] : 
+                        {onboardingData.exerciseFrequency ?
+                          exerciseFrequencyLabels[onboardingData.exerciseFrequency as keyof typeof exerciseFrequencyLabels] :
                           "ไม่ระบุ"
                         }
                       </span>
@@ -988,8 +994,8 @@ export default function Profile() {
                     <Label className="text-sm font-semibold text-foreground">ดื่มน้ำ</Label>
                     <div className="p-3 bg-muted/30 rounded-lg border">
                       <span className="text-sm font-medium text-foreground">
-                        {onboardingData.waterIntakeGlasses ? 
-                          `${onboardingData.waterIntakeGlasses} แก้ว` : 
+                        {onboardingData.waterIntakeGlasses ?
+                          `${onboardingData.waterIntakeGlasses} แก้ว` :
                           "ไม่ระบุ"
                         }
                       </span>
