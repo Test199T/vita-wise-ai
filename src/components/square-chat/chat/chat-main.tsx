@@ -23,6 +23,7 @@ export function ChatMain() {
         sendMessageStream,
         sendMessageStreamWithSession,
         createSessionOnly,
+        updateSessionTitle,
         resetConversation,
         loadMoreMessages,
     } = useChatStore();
@@ -46,15 +47,40 @@ export function ChatMain() {
         setMessage("");
 
         // If no session yet (welcome screen), create one (Client-side UUID) and send message
+        // If no session yet (welcome screen), create one
         if (!urlSessionId && !selectedSessionId) {
-            // Generate UUID locally
-            const newSessionId = crypto.randomUUID();
+            setIsCreatingSession(true);
+            try {
+                // Determine initial title from message content
+                const initialTitle = messageText.trim().slice(0, 40) + (messageText.length > 40 ? "..." : "");
 
-            // Navigate immediately
-            navigate(`/chat/${newSessionId}`, { replace: true });
+                // Create session on server first to ensure title is set correctly
+                // This prevents the "default title" issue on refresh
+                const newSessionId = await createSessionOnly(initialTitle);
 
-            // Send message with new Session ID (Backend will auto-create session)
-            sendMessageStreamWithSession(newSessionId, messageText, imageData);
+                if (newSessionId) {
+                    // Navigate to the new session
+                    navigate(`/chat/${newSessionId}`, { replace: true });
+
+                    // Send the message
+                    await sendMessageStreamWithSession(newSessionId, messageText, imageData);
+
+                    // FORCE UPDATE TITLE: Ensure backend has the correct title
+                    // This creates a "belt and suspenders" fix in case POST creation ignored the title
+                    await updateSessionTitle(newSessionId, initialTitle);
+                } else {
+                    // Fallback to client-side ID if server creation fails (unlikely)
+                    const tempId = crypto.randomUUID();
+                    navigate(`/chat/${tempId}`, { replace: true });
+                    await sendMessageStreamWithSession(tempId, messageText, imageData);
+                    // Also try to update title here if it eventually syncs
+                    updateSessionTitle(tempId, initialTitle);
+                }
+            } catch (error) {
+                console.error("Failed to create session:", error);
+            } finally {
+                setIsCreatingSession(false);
+            }
         } else {
             // Use existing session
             await sendMessageStream(messageText, imageData);

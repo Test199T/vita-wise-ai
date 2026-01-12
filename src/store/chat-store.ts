@@ -161,7 +161,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 if (data.success && data.data) {
                     const sessions: ChatSession[] = data.data.map((session: any) => ({
                         id: session.id, // UUID is already a string
-                        title: session.title || `AI สุขภาพ (${new Date(session.created_at).toLocaleDateString("th-TH")})`,
+                        // Prioritize server title, fallback to New Chat only if completely missing
+                        title: session.session_title || session.title || "New Chat",
                         icon: "message-circle-dashed",
                         messages: [],
                         createdAt: formatTimestamp(session.created_at),
@@ -192,7 +193,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
-                    title: title || `AI สุขภาพ (${new Date().toLocaleDateString("th-TH")})`,
+                    title: title, // Use provided title or let backend handle default (if any)
                 }),
             });
 
@@ -201,7 +202,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 if (data.success && data.data) {
                     const newSession: ChatSession = {
                         id: data.data.id, // UUID is already a string
-                        title: data.data.title || `AI สุขภาพ (${new Date().toLocaleDateString("th-TH")})`,
+                        title: data.data.title || title || "New Chat",
                         icon: "message-circle-dashed",
                         messages: [],
                         createdAt: new Date(),
@@ -237,7 +238,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
-                    title: title || `AI สุขภาพ (${new Date().toLocaleDateString("th-TH")})`,
+                    title: title, // Let backend handle default if title is undefined
                 }),
             });
 
@@ -246,7 +247,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 if (data.success && data.data) {
                     const newSession: ChatSession = {
                         id: data.data.id, // UUID is already a string
-                        title: data.data.title || `AI สุขภาพ (${new Date().toLocaleDateString("th-TH")})`,
+                        title: data.data.title || title || "New Chat",
                         icon: "message-circle-dashed",
                         messages: [],
                         createdAt: new Date(),
@@ -285,14 +286,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
         // Update backend (fire and forget, don't block UI)
         try {
             await fetch(`${apiConfig.baseUrl}/api/chat/sessions/${sessionId}`, {
-                method: "PATCH",
+                method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({ title }),
             });
-            console.log("✅ Session title updated:", { sessionId, title });
         } catch (error) {
             console.error("Error updating session title:", error);
             // Could revert optimistic update here if needed
@@ -643,14 +643,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
         const currentState = get();
         const existingSession = currentState.sessions.find(s => s.id === sessionId);
 
+        // Track if this is a new session so we can update title after streaming
+        let isNewSession = false;
+        let generatedTitle = "";
+
         if (!existingSession) {
+            isNewSession = true;
+            generatedTitle = generateTitleFromMessage(content) || "New Chat";
             const newSession: ChatSession = {
                 id: sessionId,
-                title: generateTitleFromMessage(content) || "New Chat",
+                title: generatedTitle,
                 createdAt: new Date(),
                 updatedAt: new Date(),
                 lastMessage: content,
-                messages: [], // Optimistic update will push message to store state anyway
+                messages: [],
                 isArchived: false,
                 icon: "MessagesSquare"
             };
@@ -690,15 +696,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
             streamingMessageId: streamingMsgId,
         }));
 
-        // Auto-generate title from first message (if this is the first message in the session)
-        // Note: We already generated title optimistically above, but we might want to update it if backend returns differently later
-        // For now, removing the duplicate title generation check here to avoid conflict
-        const session = get().sessions.find(s => s.id === sessionId);
-        const isDefaultTitle = session?.title?.startsWith('AI สุขภาพ') || !session?.title || session?.title === "New Chat";
-        if (isDefaultTitle && content) {
-            const generatedTitle = generateTitleFromMessage(content);
-            get().updateSessionTitle(sessionId, generatedTitle);
-        }
+        // We will update the title later if this is a new session
+        // This prevents the race condition where we try to update a session that might not exist yet on backend
+        // or before the first message is successfully sent
 
         try {
             let response: Response;
@@ -779,7 +779,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                             const data = JSON.parse(jsonStr);
 
                             if (data.done) {
-                                console.log("Stream complete:", fullMessage);
+                                // Stream complete
                             } else if (data.token) {
                                 fullMessage += data.token;
 
@@ -792,14 +792,25 @@ export const useChatStore = create<ChatState>((set, get) => ({
                                     ),
                                 }));
                             } else if (data.error) {
-                                console.error("Stream error:", data.error);
                                 throw new Error(data.error);
                             }
-                        } catch (parseError) {
-                            console.warn("Failed to parse SSE data:", trimmedLine);
+                        } catch (e) {
+                            console.error("Error parsing stream data:", e);
                         }
                     }
                 }
+            }
+
+            // After stream is complete, if this was a new session, update the title
+            if (isNewSession && content) {
+                // Generate title from the first message content
+                const finalTitle = generateTitleFromMessage(content);
+
+                // Call the update title function to sync with backend
+                // We wait a bit to ensure backend has processed the message creation
+                setTimeout(() => {
+                    get().updateSessionTitle(sessionId, finalTitle);
+                }, 500);
             }
 
             // Finalize the message

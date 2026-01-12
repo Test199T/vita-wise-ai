@@ -137,8 +137,6 @@ const styles = {
 
 export function showConsoleBranding(): void {
     // const isProduction = import.meta.env.PROD;
-    // ⚠️ TEMPORARY: Show full branding in dev mode for preview
-    // TODO: Uncomment the check above before deploying!
 
     try {
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

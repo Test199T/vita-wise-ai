@@ -190,6 +190,12 @@ export function ChatSidebar() {
                             </Link>
                         </Button>
                         <Button variant="ghost" className="w-full justify-start gap-2 px-2" asChild>
+                            <Link to="/chat/analytics">
+                                <BarChart3 className="size-4" />
+                                <span className="text-sm">Chat Analytics</span>
+                            </Link>
+                        </Button>
+                        <Button variant="ghost" className="w-full justify-start gap-2 px-2" asChild>
                             <Link to="/health-goals">
                                 <Target className="size-4" />
                                 <span className="text-sm">Health Goals</span>

@@ -25,6 +25,7 @@ import WaterLog from "./pages/WaterLog";
 import Notifications from "./pages/Notifications";
 import Debug from "./pages/Debug";
 import GradualBlurDemo from "./pages/GradualBlurDemo";
+import ChatAnalytics from "./pages/ChatAnalytics";
 
 const queryClient = new QueryClient();
 
@@ -118,6 +119,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <SquareChat />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/chat/analytics"
+              element={
+                <ProtectedRoute>
+                  <ChatAnalytics />
                 </ProtectedRoute>
               }
             />

@@ -53,7 +53,7 @@ export const tokenUtils: TokenUtils = {
   setToken: (token: string): boolean => {
     try {
       if (!tokenUtils.isValidToken(token)) {
-        console.error('Attempting to store invalid token:', token);
+        console.error('Attempting to store invalid token');
         return false;
       }
 
@@ -68,7 +68,7 @@ export const tokenUtils: TokenUtils = {
 
       return true;
     } catch (error) {
-      console.error('Error storing token:', error);
+      console.error('Error storing token');
       return false;
     }
   },
