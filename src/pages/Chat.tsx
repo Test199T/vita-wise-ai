@@ -208,7 +208,7 @@ export default function Chat() {
   };
 
   // ฟังก์ชันวิเคราะห์ข้อมูลเฉพาะเจาะจงผ่าน API ใหม่
-  const analyzeSpecificData = async (query: string, sessionId: number) => {
+  const analyzeSpecificData = async (query: string, sessionId: string) => {
     if (isAnalyzing) return null;
 
     setIsAnalyzing(true);
@@ -273,7 +273,7 @@ export default function Chat() {
   };
 
   // สร้าง session ใหม่ใน AI หลังบ้าน (ต้องสำเร็จฝั่ง backend เท่านั้น)
-  const createNewSession = async (): Promise<number | null> => {
+  const createNewSession = async (): Promise<string | null> => {
     try {
       const token = tokenUtils.getValidToken();
       if (!token) {
@@ -309,7 +309,7 @@ export default function Chat() {
 
         if (data.success && data.data) {
           const newSession: ChatSession = {
-            id: data.data.id.toString(),
+            id: data.data.id, // UUID is already a string
             title:
               data.data.title ||
               `AI สุขภาพ (${new Date().toLocaleDateString("th-TH")})`,
@@ -341,7 +341,7 @@ export default function Chat() {
             description: "สร้างการสนทนาใหม่แล้ว",
           });
 
-          return parseInt(newSession.id);
+          return newSession.id; // Return UUID string directly
         } else {
           console.error("Invalid response data:", data);
           toast({
@@ -390,8 +390,11 @@ export default function Chat() {
     return null;
   };
 
+  // UUID validation regex
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
   // ตรวจสอบและรับ sessionId ที่ถูกต้อง (ต้องมีอยู่จริงใน backend)
-  const getValidSessionId = async (): Promise<number | null> => {
+  const getValidSessionId = async (): Promise<string | null> => {
     console.log("getValidSessionId called with:", {
       selectedSessionId,
       type: typeof selectedSessionId,
@@ -406,12 +409,9 @@ export default function Chat() {
       return null;
     }
 
-    const sessionIdNum = parseInt(selectedSessionId);
-    if (isNaN(sessionIdNum) || sessionIdNum <= 0) {
-      console.warn("Invalid sessionId number:", {
-        selectedSessionId,
-        parsed: sessionIdNum,
-      });
+    // Validate UUID format
+    if (!UUID_REGEX.test(selectedSessionId)) {
+      console.warn("Invalid UUID format:", selectedSessionId);
       return null;
     }
 
@@ -419,7 +419,7 @@ export default function Chat() {
     const existsInState = chatSessions.some((s) => s.id === selectedSessionId);
     if (existsInState) {
       console.log("Session exists in state:", { selectedSessionId });
-      return sessionIdNum;
+      return selectedSessionId;
     }
 
     // ดึงรายการ session จาก backend เพื่อยืนยันอีกครั้ง
@@ -429,7 +429,7 @@ export default function Chat() {
     );
     if (existsAfterFetch) {
       console.log("Session found after fetching list:", { selectedSessionId });
-      return sessionIdNum;
+      return selectedSessionId;
     }
 
     console.warn("Session not found on server:", { selectedSessionId });
@@ -456,7 +456,7 @@ export default function Chat() {
 
         if (data.success && data.data) {
           const sessions = data.data.map((session: any) => ({
-            id: session.id.toString(),
+            id: session.id, // UUID is already a string
             title:
               session.title ||
               `AI สุขภาพ (${new Date(session.created_at).toLocaleDateString(
@@ -717,7 +717,7 @@ export default function Chat() {
         });
         return;
       }
-      setSelectedSessionId(validSessionId.toString());
+      setSelectedSessionId(validSessionId); // UUID is already a string
     }
 
     // Optimistic UI Update: แสดงข้อความของผู้ใช้ทันที
@@ -740,7 +740,7 @@ export default function Chat() {
 
     // Update sidebar optimistically
     updateSessionAfterMessage(
-      validSessionId.toString(),
+      validSessionId, // UUID is already a string
       messageText || "ส่งรูปภาพ",
     );
 
@@ -750,7 +750,7 @@ export default function Chat() {
       // สร้าง formData สำหรับ multipart/form-data
       const formData = new FormData();
       formData.append("message", messageText);
-      formData.append("session_id", validSessionId.toString());
+      formData.append("session_id", validSessionId); // UUID is already a string
       formData.append("timestamp", new Date().toISOString());
 
       // กำหนดคำถามที่ต้องการคำตอบตรงๆ (ไม่วิเคราะห์)
@@ -904,7 +904,7 @@ export default function Chat() {
           },
           body: JSON.stringify({
             message: messageText,
-            session_id: validSessionId.toString(),
+            session_id: validSessionId, // UUID is already a string
             timestamp: new Date().toISOString(),
           }),
         });

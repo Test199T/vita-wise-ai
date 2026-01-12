@@ -72,6 +72,7 @@ export function ChatSidebar() {
 
     const handleNewChat = async () => {
         selectSession(null); // Reset to welcome screen
+        navigate("/chat"); // Navigate to new chat URL
     };
 
     const handleLogout = () => {
@@ -79,8 +80,16 @@ export function ChatSidebar() {
         navigate("/login");
     };
 
+    const handleSelectSession = (sessionId: string) => {
+        navigate(`/chat/${sessionId}`);
+    };
+
     const handleDeleteSession = async (sessionId: string) => {
         await deleteSession(sessionId);
+        // If deleted session was selected, navigate to new chat
+        if (selectedSessionId === sessionId) {
+            navigate("/chat");
+        }
     };
 
     return (
@@ -259,7 +268,7 @@ export function ChatSidebar() {
                                                         "flex-1 justify-start gap-2 px-2 text-left h-auto py-1.5 min-w-0 pr-8",
                                                         isActive ? "hover:bg-sidebar-accent" : "hover:bg-accent"
                                                     )}
-                                                    onClick={() => selectSession(session.id)}
+                                                    onClick={() => handleSelectSession(session.id)}
                                                 >
                                                     <Icon className="size-4 shrink-0" />
                                                     <span className="text-sm truncate min-w-0">
