@@ -228,7 +228,7 @@ const getStatusBadge = (status: string) => {
 const calculateConsistencyFactor = (goal: HealthGoal): number => {
   const daysSinceStart = Math.ceil(
     (new Date().getTime() - new Date(goal.start_date).getTime()) /
-      (1000 * 60 * 60 * 24)
+    (1000 * 60 * 60 * 24)
   );
   const expectedUpdates = Math.min(daysSinceStart, 30);
   const actualUpdates = Math.min(
@@ -519,20 +519,20 @@ export default function HealthGoals() {
             (apiGoal.goal_type === "weight_loss"
               ? "ลดน้ำหนัก"
               : apiGoal.goal_type === "weight_gain"
-              ? "เพิ่มน้ำหนัก"
-              : apiGoal.goal_type === "muscle_gain"
-              ? "เพิ่มกล้ามเนื้อ"
-              : apiGoal.goal_type === "endurance"
-              ? "วิ่งระยะทาง"
-              : apiGoal.goal_type === "stress_reduction"
-              ? "ลดความเครียด"
-              : apiGoal.goal_type === "sleep_improvement"
-              ? "นอนหลับ"
-              : apiGoal.goal_type === "nutrition"
-              ? "ดื่มน้ำ"
-              : apiGoal.goal_type === "flexibility"
-              ? "ยืดหยุ่น"
-              : "เป้าหมายสุขภาพ");
+                ? "เพิ่มน้ำหนัก"
+                : apiGoal.goal_type === "muscle_gain"
+                  ? "เพิ่มกล้ามเนื้อ"
+                  : apiGoal.goal_type === "endurance"
+                    ? "วิ่งระยะทาง"
+                    : apiGoal.goal_type === "stress_reduction"
+                      ? "ลดความเครียด"
+                      : apiGoal.goal_type === "sleep_improvement"
+                        ? "นอนหลับ"
+                        : apiGoal.goal_type === "nutrition"
+                          ? "ดื่มน้ำ"
+                          : apiGoal.goal_type === "flexibility"
+                            ? "ยืดหยุ่น"
+                            : "เป้าหมายสุขภาพ");
 
           const convertedGoal = {
             goal_id: goalId,
@@ -793,9 +793,8 @@ export default function HealthGoals() {
       if (!skipReload) {
         toast({
           title: "อัปเดต Health Goal สำเร็จ!",
-          description: `อัปเดตเป้าหมาย "${
-            result.title || "เป้าหมาย"
-          }" ผ่าน API แล้ว`,
+          description: `อัปเดตเป้าหมาย "${result.title || "เป้าหมาย"
+            }" ผ่าน API แล้ว`,
           variant: "default",
         });
       }
@@ -1059,9 +1058,8 @@ export default function HealthGoals() {
           goal_type: selectedGoal.goal_type,
           action: "updated",
           timestamp: new Date().toISOString(),
-          details: `อัปเดตความคืบหน้า: ${progressValue}/${
-            selectedGoal.target_value
-          } - ${getGoalDisplayTitle(selectedGoal)}`,
+          details: `อัปเดตความคืบหน้า: ${progressValue}/${selectedGoal.target_value
+            } - ${getGoalDisplayTitle(selectedGoal)}`,
         },
         ...history,
       ];
@@ -1076,9 +1074,8 @@ export default function HealthGoals() {
 
       toast({
         title: "อัปเดตความคืบหน้าสำเร็จ!",
-        description: `ความคืบหน้า: ${progressValue}/${
-          selectedGoal.target_value
-        } - ${getGoalDisplayTitle(selectedGoal)}`,
+        description: `ความคืบหน้า: ${progressValue}/${selectedGoal.target_value
+          } - ${getGoalDisplayTitle(selectedGoal)}`,
         variant: "default",
       });
     } catch (error) {
@@ -1160,9 +1157,8 @@ export default function HealthGoals() {
           goal_type: goal.goal_type,
           action: "completed",
           timestamp: new Date().toISOString(),
-          details: `ทำสำเร็จ: ${getGoalDisplayTitle(goal)} (${
-            goal.target_value
-          }/${goal.target_value}) - 100%`,
+          details: `ทำสำเร็จ: ${getGoalDisplayTitle(goal)} (${goal.target_value
+            }/${goal.target_value}) - 100%`,
         },
         ...history,
       ];
@@ -1253,26 +1249,26 @@ export default function HealthGoals() {
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-2">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
+              <div className="p-2 bg-primary/10 rounded-lg shrink-0">
                 <Target className="h-6 w-6 text-primary" />
               </div>
-              <h1 className="text-3xl font-bold text-primary">
+              <h1 className="text-2xl md:text-3xl font-bold text-primary break-words">
                 เป้าหมายของคุณ
               </h1>
             </div>
-            <p className="text-muted-foreground ml-12">
+            <p className="text-muted-foreground ml-12 text-sm md:text-base">
               ติดตามความคืบหน้าและบรรลุเป้าหมายสุขภาพ
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
             <Button
               onClick={loadHealthGoals}
               disabled={isLoading}
               variant="outline"
-              className="gap-2 rounded-full border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all duration-200"
+              className="gap-2 w-[130px] shrink-0 justify-center"
             >
               <RefreshCw
                 className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
@@ -1281,7 +1277,7 @@ export default function HealthGoals() {
             </Button>
             <Button
               onClick={() => setShowForm(!showForm)}
-              className="gap-2 rounded-full bg-gradient-to-r from-primary to-secondary hover:from-primary-hover hover:to-secondary-hover text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+              className="gap-2 shrink-0 justify-center min-w-[130px]"
             >
               <Plus className="h-4 w-4" />
               {editingGoalId ? "แก้ไขเป้าหมาย" : "เพิ่มเป้าหมายใหม่"}
@@ -1381,18 +1377,18 @@ export default function HealthGoals() {
                       {formData.goal_type === "ลดน้ำหนัก"
                         ? "น้ำหนักเป้าหมาย (กก.)"
                         : formData.goal_type === "เพิ่มน้ำหนัก"
-                        ? "น้ำหนักเป้าหมาย (กก.)"
-                        : formData.goal_type === "วิ่งระยะทาง"
-                        ? "ระยะทางเป้าหมาย (กม.)"
-                        : formData.goal_type === "ดื่มน้ำ"
-                        ? "ปริมาณน้ำเป้าหมาย (ลิตร)"
-                        : formData.goal_type === "ออกกำลังกาย"
-                        ? "เวลาออกกำลังกายเป้าหมาย (นาที)"
-                        : formData.goal_type === "นอนหลับ"
-                        ? "เวลานอนเป้าหมาย (ชั่วโมง)"
-                        : formData.goal_type === "ลดความเครียด"
-                        ? "เวลาผ่อนคลายเป้าหมาย (นาที)"
-                        : "ค่าเป้าหมาย"}
+                          ? "น้ำหนักเป้าหมาย (กก.)"
+                          : formData.goal_type === "วิ่งระยะทาง"
+                            ? "ระยะทางเป้าหมาย (กม.)"
+                            : formData.goal_type === "ดื่มน้ำ"
+                              ? "ปริมาณน้ำเป้าหมาย (ลิตร)"
+                              : formData.goal_type === "ออกกำลังกาย"
+                                ? "เวลาออกกำลังกายเป้าหมาย (นาที)"
+                                : formData.goal_type === "นอนหลับ"
+                                  ? "เวลานอนเป้าหมาย (ชั่วโมง)"
+                                  : formData.goal_type === "ลดความเครียด"
+                                    ? "เวลาผ่อนคลายเป้าหมาย (นาที)"
+                                    : "ค่าเป้าหมาย"}
                     </Label>
                     <Input
                       id="target_value"
@@ -1402,18 +1398,18 @@ export default function HealthGoals() {
                         formData.goal_type === "ลดน้ำหนัก"
                           ? "เช่น 65"
                           : formData.goal_type === "เพิ่มน้ำหนัก"
-                          ? "เช่น 70"
-                          : formData.goal_type === "วิ่งระยะทาง"
-                          ? "เช่น 5"
-                          : formData.goal_type === "ดื่มน้ำ"
-                          ? "เช่น 2"
-                          : formData.goal_type === "ออกกำลังกาย"
-                          ? "เช่น 30"
-                          : formData.goal_type === "นอนหลับ"
-                          ? "เช่น 8"
-                          : formData.goal_type === "ลดความเครียด"
-                          ? "เช่น 15"
-                          : "เช่น 100"
+                            ? "เช่น 70"
+                            : formData.goal_type === "วิ่งระยะทาง"
+                              ? "เช่น 5"
+                              : formData.goal_type === "ดื่มน้ำ"
+                                ? "เช่น 2"
+                                : formData.goal_type === "ออกกำลังกาย"
+                                  ? "เช่น 30"
+                                  : formData.goal_type === "นอนหลับ"
+                                    ? "เช่น 8"
+                                    : formData.goal_type === "ลดความเครียด"
+                                      ? "เช่น 15"
+                                      : "เช่น 100"
                       }
                       value={formData.target_value}
                       onChange={(e) =>
@@ -1443,18 +1439,18 @@ export default function HealthGoals() {
                       {formData.goal_type === "ลดน้ำหนัก"
                         ? "น้ำหนักปัจจุบัน (กก.)"
                         : formData.goal_type === "เพิ่มน้ำหนัก"
-                        ? "น้ำหนักปัจจุบัน (กก.)"
-                        : formData.goal_type === "วิ่งระยะทาง"
-                        ? "ระยะทางที่วิ่งได้แล้ว (กม.)"
-                        : formData.goal_type === "ดื่มน้ำ"
-                        ? "ปริมาณน้ำที่ดื่มแล้ว (ลิตร)"
-                        : formData.goal_type === "ออกกำลังกาย"
-                        ? "เวลาออกกำลังกายที่ทำแล้ว (นาที)"
-                        : formData.goal_type === "นอนหลับ"
-                        ? "เวลานอนที่ได้แล้ว (ชั่วโมง)"
-                        : formData.goal_type === "ลดความเครียด"
-                        ? "เวลาผ่อนคลายที่ทำแล้ว (นาที)"
-                        : "ค่าปัจจุบัน"}
+                          ? "น้ำหนักปัจจุบัน (กก.)"
+                          : formData.goal_type === "วิ่งระยะทาง"
+                            ? "ระยะทางที่วิ่งได้แล้ว (กม.)"
+                            : formData.goal_type === "ดื่มน้ำ"
+                              ? "ปริมาณน้ำที่ดื่มแล้ว (ลิตร)"
+                              : formData.goal_type === "ออกกำลังกาย"
+                                ? "เวลาออกกำลังกายที่ทำแล้ว (นาที)"
+                                : formData.goal_type === "นอนหลับ"
+                                  ? "เวลานอนที่ได้แล้ว (ชั่วโมง)"
+                                  : formData.goal_type === "ลดความเครียด"
+                                    ? "เวลาผ่อนคลายที่ทำแล้ว (นาที)"
+                                    : "ค่าปัจจุบัน"}
                     </Label>
                     <Input
                       id="current_value"
@@ -1463,18 +1459,18 @@ export default function HealthGoals() {
                         formData.goal_type === "ลดน้ำหนัก"
                           ? "เช่น 70 (น้ำหนักปัจจุบัน)"
                           : formData.goal_type === "เพิ่มน้ำหนัก"
-                          ? "เช่น 65 (น้ำหนักปัจจุบัน)"
-                          : formData.goal_type === "วิ่งระยะทาง"
-                          ? "เช่น 2 (กิโลเมตรที่วิ่งได้)"
-                          : formData.goal_type === "ดื่มน้ำ"
-                          ? "เช่น 1 (ลิตรที่ดื่มแล้ว)"
-                          : formData.goal_type === "ออกกำลังกาย"
-                          ? "เช่น 15 (นาทีที่ออกกำลังกาย)"
-                          : formData.goal_type === "นอนหลับ"
-                          ? "เช่น 6 (ชั่วโมงที่นอน)"
-                          : formData.goal_type === "ลดความเครียด"
-                          ? "เช่น 5 (นาทีที่ผ่อนคลาย)"
-                          : "ค่าปัจจุบันของเป้าหมาย"
+                            ? "เช่น 65 (น้ำหนักปัจจุบัน)"
+                            : formData.goal_type === "วิ่งระยะทาง"
+                              ? "เช่น 2 (กิโลเมตรที่วิ่งได้)"
+                              : formData.goal_type === "ดื่มน้ำ"
+                                ? "เช่น 1 (ลิตรที่ดื่มแล้ว)"
+                                : formData.goal_type === "ออกกำลังกาย"
+                                  ? "เช่น 15 (นาทีที่ออกกำลังกาย)"
+                                  : formData.goal_type === "นอนหลับ"
+                                    ? "เช่น 6 (ชั่วโมงที่นอน)"
+                                    : formData.goal_type === "ลดความเครียด"
+                                      ? "เช่น 5 (นาทีที่ผ่อนคลาย)"
+                                      : "ค่าปัจจุบันของเป้าหมาย"
                       }
                       value={formData.current_value}
                       onChange={(e) =>
@@ -1956,18 +1952,18 @@ export default function HealthGoals() {
         )}
 
         <div className="grid gap-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <h2 className="text-xl font-semibold">เป้าหมายของคุณ</h2>
             <Tabs
               defaultValue={filter}
               onValueChange={(v) => setFilter(v as any)}
               className="w-full md:w-auto"
             >
-              <TabsList className="grid w-full md:w-auto grid-cols-4 md:inline-grid">
-                <TabsTrigger value="all">ทั้งหมด</TabsTrigger>
-                <TabsTrigger value="active">กำลังดำเนินการ</TabsTrigger>
-                <TabsTrigger value="completed">สำเร็จแล้ว</TabsTrigger>
-                <TabsTrigger value="history">ประวัติ</TabsTrigger>
+              <TabsList className="flex w-full overflow-x-auto md:w-auto md:inline-grid md:grid-cols-4 p-1">
+                <TabsTrigger value="all" className="flex-1 md:flex-none">ทั้งหมด</TabsTrigger>
+                <TabsTrigger value="active" className="flex-1 md:flex-none">กำลังดำเนินการ</TabsTrigger>
+                <TabsTrigger value="completed" className="flex-1 md:flex-none">สำเร็จแล้ว</TabsTrigger>
+                <TabsTrigger value="history" className="flex-1 md:flex-none">ประวัติ</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -2141,8 +2137,8 @@ export default function HealthGoals() {
                                   {goal.status === "active"
                                     ? "กำลังดำเนินการ"
                                     : goal.status === "completed"
-                                    ? "สำเร็จแล้ว"
-                                    : "รอดำเนินการ"}
+                                      ? "สำเร็จแล้ว"
+                                      : "รอดำเนินการ"}
                                 </span>
                               </div>
                             </div>
@@ -2214,7 +2210,7 @@ export default function HealthGoals() {
             <Card>
               <CardContent className="p-4">
                 {history.length === 0 &&
-                goals.filter((g) => g.status === "completed").length === 0 ? (
+                  goals.filter((g) => g.status === "completed").length === 0 ? (
                   <div className="text-sm text-muted-foreground">
                     ยังไม่มีประวัติ
                   </div>
@@ -2292,10 +2288,10 @@ export default function HealthGoals() {
                                     {h.action === "created"
                                       ? "สร้าง"
                                       : h.action === "updated"
-                                      ? "แก้ไข"
-                                      : h.action === "completed"
-                                      ? "สำเร็จ"
-                                      : "ลบ"}
+                                        ? "แก้ไข"
+                                        : h.action === "completed"
+                                          ? "สำเร็จ"
+                                          : "ลบ"}
                                   </Badge>
                                 </div>
                               </div>
@@ -2349,10 +2345,10 @@ export default function HealthGoals() {
                 value={
                   goalToComplete
                     ? calculateProgressPercentage(
-                        goalToComplete.current_value,
-                        goalToComplete.target_value,
-                        goalToComplete.goal_type
-                      )
+                      goalToComplete.current_value,
+                      goalToComplete.target_value,
+                      goalToComplete.goal_type
+                    )
                     : 0
                 }
                 className="h-2 mt-2"
@@ -2468,18 +2464,18 @@ export default function HealthGoals() {
             <div className="text-sm text-muted-foreground">
               เป้าหมาย: {selectedGoal?.target_value}{" "}
               {selectedGoal?.goal_type === "ลดน้ำหนัก" ||
-              selectedGoal?.goal_type === "เพิ่มน้ำหนัก"
+                selectedGoal?.goal_type === "เพิ่มน้ำหนัก"
                 ? "กก."
                 : selectedGoal?.goal_type === "วิ่งระยะทาง"
-                ? "กม."
-                : selectedGoal?.goal_type === "ดื่มน้ำ"
-                ? "ลิตร"
-                : selectedGoal?.goal_type === "ออกกำลังกาย" ||
-                  selectedGoal?.goal_type === "ลดความเครียด"
-                ? "นาที"
-                : selectedGoal?.goal_type === "นอนหลับ"
-                ? "ชั่วโมง"
-                : ""}
+                  ? "กม."
+                  : selectedGoal?.goal_type === "ดื่มน้ำ"
+                    ? "ลิตร"
+                    : selectedGoal?.goal_type === "ออกกำลังกาย" ||
+                      selectedGoal?.goal_type === "ลดความเครียด"
+                      ? "นาที"
+                      : selectedGoal?.goal_type === "นอนหลับ"
+                        ? "ชั่วโมง"
+                        : ""}
             </div>
             {newProgress && !isNaN(parseFloat(newProgress)) && (
               <div className="text-sm">

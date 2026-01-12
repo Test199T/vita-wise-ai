@@ -22,7 +22,7 @@ const CustomTooltip = ({ active, payload, label, unit = "" }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     const value = payload[0].value;
-    
+
     return (
       <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg">
         <p className="font-semibold text-gray-900 mb-2">{label}</p>
@@ -31,7 +31,7 @@ const CustomTooltip = ({ active, payload, label, unit = "" }: any) => {
             <span className="text-sm text-gray-600">ค่า:</span>
             <span className="font-medium">{value.toFixed(1)} {unit}</span>
           </div>
-          
+
           {/* แสดงข้อมูลเพิ่มเติมถ้ามี */}
           {data.date && (
             <div className="flex items-center gap-2">
@@ -39,7 +39,7 @@ const CustomTooltip = ({ active, payload, label, unit = "" }: any) => {
               <span className="font-medium">{data.date}</span>
             </div>
           )}
-          
+
           {data.type && (
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">ประเภท:</span>
@@ -48,48 +48,47 @@ const CustomTooltip = ({ active, payload, label, unit = "" }: any) => {
               </Badge>
             </div>
           )}
-          
+
           {data.quality && (
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">คุณภาพ:</span>
-              <Badge 
-                variant="outline" 
-                className={`text-xs ${
-                  data.quality === 'excellent' ? 'bg-green-100 text-green-800' :
-                  data.quality === 'good' ? 'bg-blue-100 text-blue-800' :
-                  data.quality === 'fair' ? 'bg-yellow-100 text-yellow-800' :
-                  data.quality === 'poor' ? 'bg-orange-100 text-orange-800' :
-                  'bg-red-100 text-red-800'
-                }`}
+              <Badge
+                variant="outline"
+                className={`text-xs ${data.quality === 'excellent' ? 'bg-green-100 text-green-800' :
+                    data.quality === 'good' ? 'bg-blue-100 text-blue-800' :
+                      data.quality === 'fair' ? 'bg-yellow-100 text-yellow-800' :
+                        data.quality === 'poor' ? 'bg-orange-100 text-orange-800' :
+                          'bg-red-100 text-red-800'
+                  }`}
               >
                 {data.quality === 'excellent' ? 'ยอดเยี่ยม' :
-                 data.quality === 'good' ? 'ดี' :
-                 data.quality === 'fair' ? 'ปานกลาง' :
-                 data.quality === 'poor' ? 'แย่' : 'แย่มาก'}
+                  data.quality === 'good' ? 'ดี' :
+                    data.quality === 'fair' ? 'ปานกลาง' :
+                      data.quality === 'poor' ? 'แย่' : 'แย่มาก'}
               </Badge>
             </div>
           )}
-          
+
           {data.efficiency && (
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">ประสิทธิภาพ:</span>
               <span className="font-medium">{data.efficiency}%</span>
             </div>
           )}
-          
+
           {data.score && (
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">คะแนน:</span>
               <span className="font-medium">{data.score}/100</span>
             </div>
           )}
-          
+
           {/* แสดงสถานะข้อมูลถ้าเปิดใช้งาน */}
           {data.isRealData !== undefined && (
             <div className="pt-2 border-t border-gray-100">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-500">สถานะ:</span>
-                <Badge 
+                <Badge
                   variant={data.isRealData ? "default" : "secondary"}
                   className="text-xs"
                 >
@@ -109,10 +108,10 @@ const CustomTooltip = ({ active, payload, label, unit = "" }: any) => {
 const CustomDot = (props: any) => {
   const { cx, cy, payload } = props;
   if (!payload) return null;
-  
+
   // กำหนดสีตามคุณภาพหรือประเภทข้อมูล
   let color = props.fill || "#6366f1";
-  
+
   if (payload.quality) {
     switch (payload.quality) {
       case "excellent":
@@ -143,7 +142,7 @@ const CustomDot = (props: any) => {
         color = props.fill || "#6366f1";
     }
   }
-  
+
   return (
     <Dot
       cx={cx}
@@ -156,10 +155,10 @@ const CustomDot = (props: any) => {
   );
 };
 
-export function EnhancedHealthChart({ 
-  title, 
-  description, 
-  data, 
+export function EnhancedHealthChart({
+  title,
+  description,
+  data,
   type = "line",
   color = "#6366f1",
   unit = "",
@@ -168,7 +167,7 @@ export function EnhancedHealthChart({
 }: EnhancedHealthChartProps) {
   // ตรวจสอบว่ามีข้อมูลจริงหรือไม่
   const hasRealData = data.some(item => item.value > 0);
-  
+
   if (isLoading) {
     return (
       <Card className="health-stat-card">
@@ -219,19 +218,21 @@ export function EnhancedHealthChart({
   return (
     <Card className="health-stat-card">
       <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
+        <CardTitle className="text-lg flex flex-col items-start gap-2 sm:flex-row sm:items-center">
           <span>{title}</span>
-          <Badge variant="outline" className="text-xs">
-            {data.length} รายการ
-          </Badge>
-          {showDataStatus && (
-            <Badge 
-              variant={hasRealData ? "default" : "secondary"}
-              className="text-xs"
-            >
-              {hasRealData ? "ข้อมูลจริง" : "ข้อมูลตัวอย่าง"}
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-xs">
+              {data.length} รายการ
             </Badge>
-          )}
+            {showDataStatus && (
+              <Badge
+                variant={hasRealData ? "default" : "secondary"}
+                className="text-xs"
+              >
+                {hasRealData ? "ข้อมูลจริง" : "ข้อมูลตัวอย่าง"}
+              </Badge>
+            )}
+          </div>
         </CardTitle>
         {description && (
           <CardDescription>{description}</CardDescription>
@@ -243,22 +244,22 @@ export function EnhancedHealthChart({
             {type === "line" ? (
               <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.2} stroke="#e5e7eb" />
-                <XAxis 
-                  dataKey="name" 
+                <XAxis
+                  dataKey="name"
                   tick={{ fontSize: 12, fill: "#6b7280" }}
                   axisLine={false}
                   tickLine={false}
                 />
-                <YAxis 
+                <YAxis
                   tick={{ fontSize: 12, fill: "#6b7280" }}
                   axisLine={false}
                   tickLine={false}
                   tickFormatter={(value) => `${value}${unit}`}
                 />
                 <Tooltip content={<CustomTooltip unit={unit} />} />
-                <Line 
-                  type="monotone" 
-                  dataKey="value" 
+                <Line
+                  type="monotone"
+                  dataKey="value"
                   stroke={color}
                   strokeWidth={3}
                   dot={{ r: 6, fill: color, stroke: color, strokeWidth: 1 }}
@@ -269,21 +270,21 @@ export function EnhancedHealthChart({
             ) : (
               <BarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.2} stroke="#e5e7eb" />
-                <XAxis 
-                  dataKey="name" 
+                <XAxis
+                  dataKey="name"
                   tick={{ fontSize: 12, fill: "#6b7280" }}
                   axisLine={false}
                   tickLine={false}
                 />
-                <YAxis 
+                <YAxis
                   tick={{ fontSize: 12, fill: "#6b7280" }}
                   axisLine={false}
                   tickLine={false}
                   tickFormatter={(value) => `${value}${unit}`}
                 />
                 <Tooltip content={<CustomTooltip unit={unit} />} />
-                <Bar 
-                  dataKey="value" 
+                <Bar
+                  dataKey="value"
                   fill={color}
                   radius={[4, 4, 0, 0]}
                 />
@@ -291,7 +292,7 @@ export function EnhancedHealthChart({
             )}
           </ResponsiveContainer>
         </div>
-        
+
         {/* Legend สำหรับข้อมูลที่มีประเภทหรือคุณภาพ */}
         {(data.some(item => item.type) || data.some(item => item.quality)) && (
           <div className="mt-4 pt-4 border-t border-gray-100">
@@ -333,8 +334,8 @@ export function EnhancedHealthChart({
                     };
                     return (
                       <div key={quality} className="flex items-center gap-1">
-                        <div 
-                          className="w-3 h-3 rounded-full" 
+                        <div
+                          className="w-3 h-3 rounded-full"
                           style={{ backgroundColor: colors[quality as keyof typeof colors] }}
                         />
                         <span className="text-xs text-gray-600">{labels[quality as keyof typeof labels]}</span>

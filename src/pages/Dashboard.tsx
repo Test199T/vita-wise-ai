@@ -1677,7 +1677,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="daily" className="w-full">
-              <TabsList className="grid w-full grid-cols-6">
+              <TabsList className="flex w-full overflow-x-auto gap-1 sm:grid sm:grid-cols-6 px-1 pb-2 sm:pb-0">
                 <TabsTrigger value="daily" className="flex items-center gap-2">
                   <Clock className="h-4 w-4" />
                   รายวัน
@@ -1708,7 +1708,7 @@ export default function Dashboard() {
               <TabsContent value="daily" className="space-y-6">
 
                 <Tabs defaultValue="exercise" className="w-full">
-                  <TabsList className="grid w-full grid-cols-4">
+                  <TabsList className="flex w-full overflow-x-auto gap-1 sm:grid sm:grid-cols-4">
                     <TabsTrigger value="exercise" className="flex items-center gap-2">
                       <Dumbbell className="h-4 w-4" />
                       ออกกำลังกาย
@@ -1729,9 +1729,12 @@ export default function Dashboard() {
 
                   {/* แท็บออกกำลังกาย */}
                   <TabsContent value="exercise" className="space-y-6 mt-6">
-                    <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                      <h4 className="font-medium text-blue-900 mb-1">การออกกำลังกาย</h4>
-                      <p className="text-sm text-blue-700">
+                    <div className="mb-6 p-4 bg-blue-50/50 border-l-4 border-blue-500 rounded-r-xl shadow-sm">
+                      <h4 className="font-medium text-blue-900 mb-2 flex items-center gap-2">
+                        <Dumbbell className="h-4 w-4 text-blue-600" />
+                        การออกกำลังกาย
+                      </h4>
+                      <p className="text-sm text-blue-700/90 leading-relaxed">
                         ติดตามความสม่ำเสมอและความเข้มข้นของการออกกำลังกาย เพื่อประเมินความคืบหน้าและปรับแผนการออกกำลังกายให้เหมาะสม
                       </p>
                     </div>
@@ -1759,9 +1762,12 @@ export default function Dashboard() {
 
                   {/* แท็บโภชนาการ */}
                   <TabsContent value="nutrition" className="space-y-6 mt-6">
-                    <div className="mb-4 p-3 bg-orange-50 rounded-lg">
-                      <h4 className="font-medium text-orange-900 mb-1">โภชนาการ</h4>
-                      <p className="text-sm text-orange-700">
+                    <div className="mb-6 p-4 bg-orange-50/50 border-l-4 border-orange-500 rounded-r-xl shadow-sm">
+                      <h4 className="font-medium text-orange-900 mb-2 flex items-center gap-2">
+                        <Pill className="h-4 w-4 text-orange-600" />
+                        โภชนาการ
+                      </h4>
+                      <p className="text-sm text-orange-700/90 leading-relaxed">
                         ติดตามการบริโภคอาหารและสารอาหาร เพื่อให้แน่ใจว่าคุณได้รับสารอาหารครบถ้วนและอยู่ในเกณฑ์ที่เหมาะสม
                       </p>
                     </div>
@@ -1840,7 +1846,7 @@ export default function Dashboard() {
                   </p>
                 </div>
                 <Tabs defaultValue="exercise" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
+                  <TabsList className="flex w-full overflow-x-auto gap-1 sm:grid sm:grid-cols-3">
                     <TabsTrigger value="exercise" className="flex items-center gap-2">
                       <Dumbbell className="h-4 w-4" />
                       ออกกำลังกาย

@@ -34,8 +34,8 @@ export default function SleepLog() {
       setIsLoading(true);
       const token = localStorage.getItem('token');
       if (!token) {
-        toast({ 
-          title: 'เกิดข้อผิดพลาด', 
+        toast({
+          title: 'เกิดข้อผิดพลาด',
           description: 'ไม่พบ JWT Token กรุณาเข้าสู่ระบบก่อน',
           variant: 'destructive'
         });
@@ -51,15 +51,15 @@ export default function SleepLog() {
 
       if (response.ok) {
         const data = await response.json();
-        
+
         // ตรวจสอบโครงสร้างข้อมูลจาก API
-        let sleepLogs = [];
-        
+        let sleepLogs: any[] = [];
+
         // ตรวจสอบทุกความเป็นไปได้
         if (Array.isArray(data)) {
           sleepLogs = data;
         } else if (data && data.data) {
-          
+
           if (Array.isArray(data.data)) {
             sleepLogs = data.data;
           } else if (data.data && Array.isArray(data.data.sleep_logs)) {
@@ -95,20 +95,20 @@ export default function SleepLog() {
             }
           }
         }
-        
-        
+
+
         // ตรวจสอบว่า sleepLogs เป็น array และมีข้อมูล
         if (!Array.isArray(sleepLogs)) {
           console.error('sleepLogs is not an array:', sleepLogs);
           setLogs([]);
-          toast({ 
-            title: 'เกิดข้อผิดพลาด', 
+          toast({
+            title: 'เกิดข้อผิดพลาด',
             description: 'รูปแบบข้อมูลจาก API ไม่ถูกต้อง',
             variant: 'destructive'
           });
           return;
         }
-        
+
         // แปลงข้อมูลให้ตรงกับ interface
         const formattedLogs = sleepLogs.map((log: any) => {
           return {
@@ -120,24 +120,24 @@ export default function SleepLog() {
             notes: log.notes || ""
           };
         });
-        
-        
+
+
         // เรียงลำดับตามวันที่ล่าสุด
-        const sortedLogs = formattedLogs.sort((a, b) => 
+        const sortedLogs = formattedLogs.sort((a, b) =>
           new Date(b.date).getTime() - new Date(a.date).getTime()
         );
-        
+
         setLogs(sortedLogs);
-        
+
         // แสดงข้อความสำเร็จ
         if (sortedLogs.length > 0) {
-          toast({ 
-            title: 'ดึงข้อมูลสำเร็จ', 
+          toast({
+            title: 'ดึงข้อมูลสำเร็จ',
             description: `พบข้อมูลการนอน ${sortedLogs.length} รายการ`,
           });
         } else {
-          toast({ 
-            title: 'ดึงข้อมูลสำเร็จ', 
+          toast({
+            title: 'ดึงข้อมูลสำเร็จ',
             description: 'ไม่พบข้อมูลการนอนในฐานข้อมูล',
           });
         }
@@ -146,11 +146,11 @@ export default function SleepLog() {
         // Fallback to localStorage if API fails
         const raw = localStorage.getItem('sleep_logs');
         if (raw) {
-          try { 
+          try {
             const parsedData = JSON.parse(raw);
             setLogs(Array.isArray(parsedData) ? parsedData : []);
-          } catch { 
-            setLogs([]); 
+          } catch {
+            setLogs([]);
           }
         } else {
           setLogs([]);
@@ -161,11 +161,11 @@ export default function SleepLog() {
       // Fallback to localStorage if API fails
       const raw = localStorage.getItem('sleep_logs');
       if (raw) {
-        try { 
+        try {
           const parsedData = JSON.parse(raw);
           setLogs(Array.isArray(parsedData) ? parsedData : []);
-        } catch { 
-          setLogs([]); 
+        } catch {
+          setLogs([]);
         }
       } else {
         setLogs([]);
@@ -275,7 +275,7 @@ export default function SleepLog() {
 
     try {
       const { quality, apiValue } = computeSleepQuality(formData.sleep_time, formData.wake_time);
-      
+
       // แปลงข้อมูลให้ตรงกับ API format
       const apiData = {
         sleep_date: formData.date,
@@ -323,14 +323,14 @@ export default function SleepLog() {
 
       // รีเฟรชข้อมูลจาก API
       await fetchSleepLogs();
-      
+
       setEditingId(null);
       setShowForm(false);
       setFormData({ date: new Date().toISOString().split('T')[0], sleep_time: "", wake_time: "", sleep_quality: "", notes: "" });
     } catch (error) {
       console.error('Error saving sleep log:', error);
-      toast({ 
-        title: 'เกิดข้อผิดพลาด', 
+      toast({
+        title: 'เกิดข้อผิดพลาด',
         description: error instanceof Error ? error.message : 'ไม่สามารถบันทึกข้อมูลได้',
         variant: 'destructive'
       });
@@ -340,12 +340,12 @@ export default function SleepLog() {
   };
   const startEdit = (l: SleepLogItem) => {
     setEditingId(l.id);
-    setFormData({ 
-      date: l.date || new Date().toISOString().split('T')[0], 
-      sleep_time: l.sleep_time || "", 
-      wake_time: l.wake_time || "", 
-      sleep_quality: l.sleep_quality || "", 
-      notes: l.notes || '' 
+    setFormData({
+      date: l.date || new Date().toISOString().split('T')[0],
+      sleep_time: l.sleep_time || "",
+      wake_time: l.wake_time || "",
+      sleep_quality: l.sleep_quality || "",
+      notes: l.notes || ''
     });
     setShowForm(true);
   };
@@ -380,8 +380,8 @@ export default function SleepLog() {
       await fetchSleepLogs();
     } catch (error) {
       console.error('Error deleting sleep log:', error);
-      toast({ 
-        title: 'เกิดข้อผิดพลาด', 
+      toast({
+        title: 'เกิดข้อผิดพลาด',
         description: error instanceof Error ? error.message : 'ไม่สามารถลบข้อมูลได้',
         variant: 'destructive'
       });
@@ -393,8 +393,8 @@ export default function SleepLog() {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
-        toast({ 
-          title: 'เกิดข้อผิดพลาด', 
+        toast({
+          title: 'เกิดข้อผิดพลาด',
           description: 'ไม่พบ JWT Token กรุณาเข้าสู่ระบบก่อน',
           variant: 'destructive'
         });
@@ -447,22 +447,22 @@ export default function SleepLog() {
 
       if (response.ok) {
         const result = await response.json();
-        toast({ 
-          title: 'เทส API สำเร็จ', 
+        toast({
+          title: 'เทส API สำเร็จ',
           description: `บันทึกข้อมูลการนอนหลับเรียบร้อยแล้ว ID: ${result.id || 'N/A'}`,
         });
       } else {
         const errorData = await response.json().catch(() => ({}));
-        toast({ 
-          title: 'เทส API ล้มเหลว', 
+        toast({
+          title: 'เทส API ล้มเหลว',
           description: `Status: ${response.status} - ${errorData.message || response.statusText}`,
           variant: 'destructive'
         });
         console.error('API Error:', errorData);
       }
     } catch (error) {
-      toast({ 
-        title: 'เกิดข้อผิดพลาด', 
+      toast({
+        title: 'เกิดข้อผิดพลาด',
         description: `ไม่สามารถเชื่อมต่อ API ได้: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: 'destructive'
       });
@@ -473,31 +473,32 @@ export default function SleepLog() {
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-2">
           <div className="space-y-2">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Moon className="h-6 w-6 text-primary" />
+              <div className="p-3 bg-primary/10 rounded-xl shadow-sm">
+                <Moon className="h-8 w-8 text-primary" />
               </div>
-              <h1 className="text-3xl font-bold text-primary">บันทึกการนอน</h1>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-primary">บันทึกการนอน</h1>
+                <p className="text-xs md:text-sm text-muted-foreground">ติดตามคุณภาพการนอนของคุณเพื่อสุขภาพที่ดี</p>
+              </div>
             </div>
-            <p className="text-muted-foreground ml-12">ติดตามคุณภาพการนอนของคุณเพื่อสุขภาพที่ดี</p>
           </div>
-          <div className="flex gap-2">
-            <Button 
-              onClick={fetchSleepLogs} 
+          <div className="flex w-full md:w-auto gap-3">
+            <Button
+              onClick={fetchSleepLogs}
               disabled={isLoading}
               variant="outline"
-              className="gap-2 rounded-full border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all duration-200"
+              className="flex-1 md:flex-none gap-2 rounded-full border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all"
             >
-              <svg className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              {isLoading ? 'กำลังโหลด...' : 'รีเฟรช'}
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">{isLoading ? 'รอสักครู่...' : 'รีเฟรช'}</span>
+              <span className="sm:hidden">รีเฟรช</span>
             </Button>
-            <Button 
-              onClick={() => setShowForm(!showForm)} 
-              className="gap-2 rounded-full bg-gradient-to-r from-primary to-secondary hover:from-primary-hover hover:to-secondary-hover text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+            <Button
+              onClick={() => setShowForm(!showForm)}
+              className="flex-1 md:flex-none gap-2 rounded-full bg-gradient-to-r from-primary to-secondary hover:from-primary-hover hover:to-secondary-hover text-white shadow-lg shadow-primary/20 transition-all hover:scale-105"
             >
               <Plus className="h-4 w-4" />
               เพิ่มการนอน
@@ -524,13 +525,13 @@ export default function SleepLog() {
                       <Calendar className="h-4 w-4 text-primary" />
                       วันที่นอน
                     </Label>
-                    <Input 
-                      id="date" 
-                      type="date" 
-                      value={formData.date} 
-                      onChange={(e) => setFormData({ ...formData, date: e.target.value })} 
+                    <Input
+                      id="date"
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                       className="h-11 border-primary/20 focus:border-primary/40"
-                      required 
+                      required
                     />
                   </div>
                   <div className="space-y-3">
@@ -538,13 +539,13 @@ export default function SleepLog() {
                       <Moon className="h-4 w-4 text-primary" />
                       เวลาเข้านอน
                     </Label>
-                    <Input 
-                      id="sleep_time" 
-                      type="time" 
-                      value={formData.sleep_time} 
-                      onChange={(e) => setFormData({ ...formData, sleep_time: e.target.value })} 
+                    <Input
+                      id="sleep_time"
+                      type="time"
+                      value={formData.sleep_time}
+                      onChange={(e) => setFormData({ ...formData, sleep_time: e.target.value })}
                       className="h-11 border-primary/20 focus:border-primary/40"
-                      required 
+                      required
                     />
                   </div>
                   <div className="space-y-3">
@@ -552,13 +553,13 @@ export default function SleepLog() {
                       <Clock className="h-4 w-4 text-primary" />
                       เวลาตื่นนอน
                     </Label>
-                    <Input 
-                      id="wake_time" 
-                      type="time" 
-                      value={formData.wake_time} 
-                      onChange={(e) => setFormData({ ...formData, wake_time: e.target.value })} 
+                    <Input
+                      id="wake_time"
+                      type="time"
+                      value={formData.wake_time}
+                      onChange={(e) => setFormData({ ...formData, wake_time: e.target.value })}
                       className="h-11 border-primary/20 focus:border-primary/40"
-                      required 
+                      required
                     />
                   </div>
                   <div className="space-y-3">
@@ -569,10 +570,10 @@ export default function SleepLog() {
                     {(() => {
                       const { quality } = computeSleepQuality(formData.sleep_time, formData.wake_time);
                       return (
-                        <Input 
-                          value={quality || ""} 
-                          readOnly 
-                          placeholder="ระบบจะคำนวณอัตโนมัติ" 
+                        <Input
+                          value={quality || ""}
+                          readOnly
+                          placeholder="ระบบจะคำนวณอัตโนมัติ"
                           className="h-11 bg-muted border-primary/20"
                         />
                       );
@@ -584,17 +585,17 @@ export default function SleepLog() {
                     <Activity className="h-4 w-4 text-primary" />
                     หมายเหตุ
                   </Label>
-                  <Textarea 
-                    id="notes" 
-                    placeholder="รายละเอียดเพิ่มเติม เช่น ความรู้สึก, สภาพแวดล้อม, หรือปัจจัยที่ส่งผลต่อการนอน..." 
-                    value={formData.notes} 
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })} 
+                  <Textarea
+                    id="notes"
+                    placeholder="รายละเอียดเพิ่มเติม เช่น ความรู้สึก, สภาพแวดล้อม, หรือปัจจัยที่ส่งผลต่อการนอน..."
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                     className="min-h-[80px] border-primary/20 focus:border-primary/40 resize-none"
                   />
                 </div>
                 <div className="flex gap-3 pt-4 border-t border-border/50">
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     disabled={isSubmitting}
                     className="flex-1 h-11 bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
@@ -610,14 +611,14 @@ export default function SleepLog() {
                       </div>
                     )}
                   </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
+                  <Button
+                    type="button"
+                    variant="outline"
                     onClick={() => {
                       setShowForm(false);
                       setEditingId(null);
                       setFormData({ date: new Date().toISOString().split('T')[0], sleep_time: "", wake_time: "", sleep_quality: "", notes: "" });
-                    }} 
+                    }}
                     disabled={isSubmitting}
                     className="h-11 px-6 border-primary/20 hover:border-primary/40"
                   >
@@ -676,8 +677,8 @@ export default function SleepLog() {
                     </div>
                     <div className="text-3xl font-bold text-foreground">
                       {(() => {
-                        const goodCount = logs.filter(log => 
-                          log.sleep_quality === 'good' || 
+                        const goodCount = logs.filter(log =>
+                          log.sleep_quality === 'good' ||
                           log.sleep_quality === 'excellent' ||
                           log.sleep_quality === 'ดี'
                         ).length;
@@ -722,7 +723,7 @@ export default function SleepLog() {
                     </div>
                     <div className="text-3xl font-bold text-foreground">
                       {(() => {
-                        const latest = logs.sort((a, b) => 
+                        const latest = logs.sort((a, b) =>
                           new Date(b.date).getTime() - new Date(a.date).getTime()
                         )[0];
                         return latest ? new Date(latest.date).getDate() : '--';
@@ -732,10 +733,24 @@ export default function SleepLog() {
                 </div>
               </div>
             ) : (
-              <div className="text-center p-8 text-muted-foreground">
-                <Moon className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-lg font-medium">ยังไม่มีข้อมูลการนอน</p>
-                <p className="text-sm">เริ่มต้นบันทึกการนอนของคุณเพื่อดูสถิติ</p>
+              <div className="flex flex-col items-center justify-center py-12 px-4 text-center space-y-4 bg-muted/10 rounded-xl border-2 border-dashed border-muted">
+                <div className="p-4 bg-primary/5 rounded-full ring-8 ring-primary/5">
+                  <Moon className="h-10 w-10 text-primary/40" />
+                </div>
+                <div className="space-y-2 max-w-sm">
+                  <h3 className="text-lg font-semibold text-foreground">ยังไม่มีข้อมูลการนอน</h3>
+                  <p className="text-sm text-muted-foreground">
+                    เริ่มต้นบันทึกการนอนของคุณเพื่อติดตามคุณภาพการพักผ่อนและดูสถิติที่น่าสนใจ
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowForm(true)}
+                  className="text-primary hover:text-primary-hover hover:bg-primary/5 mt-2"
+                >
+                  เริ่มบันทึกเลย <Plus className="ml-1 h-3 w-3" />
+                </Button>
               </div>
             )}
           </CardContent>
@@ -758,7 +773,7 @@ export default function SleepLog() {
               เรียงตามวันที่ล่าสุด
             </div>
           </div>
-          
+
           {isLoading ? (
             <Card>
               <CardContent className="p-6">
@@ -781,8 +796,8 @@ export default function SleepLog() {
                       เริ่มต้นบันทึกการนอนของคุณเพื่อติดตามความคืบหน้าและสร้างแรงบันดาลใจในการดูแลสุขภาพ
                     </p>
                   </div>
-                  <Button 
-                    onClick={() => setShowForm(true)} 
+                  <Button
+                    onClick={() => setShowForm(true)}
                     className="gap-2"
                   >
                     <Plus className="h-4 w-4" />
@@ -813,7 +828,7 @@ export default function SleepLog() {
                                 if (q === "ดี" || q === "good" || q === "excellent") return "bg-green-600 text-white";
                                 return "bg-gray-500 text-white";
                               };
-                              
+
                               // แปลง API value กลับเป็นภาษาไทยสำหรับแสดงผล
                               const getDisplayQuality = (apiValue: string) => {
                                 switch (apiValue) {
@@ -825,7 +840,7 @@ export default function SleepLog() {
                                   default: return apiValue || "ไม่ระบุ";
                                 }
                               };
-                              
+
                               return (
                                 <Badge className={`${mapColor(item.sleep_quality || '')} px-3 py-1`}>
                                   {getDisplayQuality(item.sleep_quality || '')}
@@ -849,11 +864,11 @@ export default function SleepLog() {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => startEdit(item)}
                           className="h-8 px-3 border-primary/20 hover:border-primary/40"
                         >
@@ -861,8 +876,8 @@ export default function SleepLog() {
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button 
-                              variant="destructive" 
+                            <Button
+                              variant="destructive"
                               size="sm"
                               className="h-8 px-3"
                             >
@@ -884,7 +899,7 @@ export default function SleepLog() {
                         </AlertDialog>
                       </div>
                     </div>
-                    
+
                     {item.notes && (
                       <div className="mt-4 p-3 bg-muted/20 border rounded-lg">
                         <div className="flex items-start gap-2">

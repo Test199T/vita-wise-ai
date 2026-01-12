@@ -27,11 +27,11 @@ const getLocalDateString = (date?: Date | string) => {
 const getDateRange = (period: 'today' | 'week' | 'month') => {
   const today = new Date();
   const todayString = getLocalDateString(today);
-  
+
   switch (period) {
     case 'today':
       return { start: todayString, end: todayString };
-    
+
     case 'week':
       const startOfWeek = new Date(today);
       startOfWeek.setDate(today.getDate() - today.getDay()); // เริ่มจากวันอาทิตย์
@@ -41,7 +41,7 @@ const getDateRange = (period: 'today' | 'week' | 'month') => {
         start: getLocalDateString(startOfWeek),
         end: getLocalDateString(endOfWeek)
       };
-    
+
     case 'month':
       const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
       const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
@@ -49,7 +49,7 @@ const getDateRange = (period: 'today' | 'week' | 'month') => {
         start: getLocalDateString(startOfMonth),
         end: getLocalDateString(endOfMonth)
       };
-    
+
     default:
       return { start: todayString, end: todayString };
   }
@@ -108,10 +108,10 @@ export default function ExerciseLog() {
       stats.totalSessions++;
       stats.totalDuration += session.duration_minutes;
       stats.totalCalories += session.calories_burned;
-      
+
       // นับประเภทการออกกำลังกาย
       stats.exerciseTypes[session.exercise_type] = (stats.exerciseTypes[session.exercise_type] || 0) + 1;
-      
+
       // นับระดับความหนัก
       stats.intensityDistribution[session.intensity_level] = (stats.intensityDistribution[session.intensity_level] || 0) + 1;
     });
@@ -138,7 +138,7 @@ export default function ExerciseLog() {
       setSessions([]);
       localStorage.setItem('exercise_logs', JSON.stringify([]));
     }
-    
+
     // โหลดข้อมูลจาก Backend เมื่อเปิดหน้า
     loadExerciseLogsFromBackend();
   }, []);
@@ -146,67 +146,67 @@ export default function ExerciseLog() {
   // ฟังก์ชันโหลดข้อมูลการออกกำลังกายจาก Backend
   const loadExerciseLogsFromBackend = async () => {
     if (isLoadingFromBackend) return; // ป้องกันการโหลดซ้ำ
-    
+
     setIsLoadingFromBackend(true);
-    
+
     try {
       console.log('📥 โหลดข้อมูลการออกกำลังกายจาก Backend...');
       const backendLogs = await apiService.getExerciseLogs();
-      
+
       if (backendLogs && backendLogs.length > 0) {
         console.log('✅ โหลดข้อมูลจาก Backend สำเร็จ:', backendLogs.length, 'รายการ');
-        
+
         // แปลงข้อมูลจาก Backend เป็นรูปแบบที่ใช้ในหน้า
         const convertedSessions: ExerciseSession[] = backendLogs.map(log => {
           // ใช้ ID จริงจาก Backend ถ้ามี ถ้าไม่มีให้สร้าง ID ชั่วคราว
           const sessionId = log.id?.toString() || `temp_${log.exercise_name}_${log.exercise_date}_${log.exercise_time}`;
-          
-          console.log('🆔 แปลง ID:', { 
-            originalId: log.id, 
+
+          console.log('🆔 แปลง ID:', {
+            originalId: log.id,
             sessionId,
             exercise_name: log.exercise_name,
             exercise_date: log.exercise_date,
             exercise_time: log.exercise_time
           });
-          
-                     return {
-             session_id: sessionId,
-             session_date: log.exercise_date,
-             exercise_type: log.exercise_name || log.exercise_type,
-             duration_minutes: log.duration_minutes,
-             intensity_level: log.intensity,
-             calories_burned: log.calories_burned,
-             notes: log.notes || '',
-             // ข้อมูลยกน้ำหนัก
-             sets: log.sets || null,
-             reps: log.reps || null,
-             weight_kg: log.weight_kg || null,
-             // เก็บ ID จริงจาก Backend ไว้ใช้ตอนลบ
-             backend_id: log.id
-           };
+
+          return {
+            session_id: sessionId,
+            session_date: log.exercise_date,
+            exercise_type: log.exercise_name || log.exercise_type,
+            duration_minutes: log.duration_minutes,
+            intensity_level: log.intensity,
+            calories_burned: log.calories_burned,
+            notes: log.notes || '',
+            // ข้อมูลยกน้ำหนัก
+            sets: log.sets || null,
+            reps: log.reps || null,
+            weight_kg: log.weight_kg || null,
+            // เก็บ ID จริงจาก Backend ไว้ใช้ตอนลบ
+            backend_id: log.id
+          };
         });
-        
+
         // อัพเดท state และ localStorage
         setSessions(convertedSessions);
         localStorage.setItem('exercise_logs', JSON.stringify(convertedSessions));
-        
-        toast({ 
-          title: 'โหลดข้อมูลสำเร็จ', 
-          description: `โหลดข้อมูลการออกกำลังกาย ${backendLogs.length} รายการจาก Backend` 
+
+        toast({
+          title: 'โหลดข้อมูลสำเร็จ',
+          description: `โหลดข้อมูลการออกกำลังกาย ${backendLogs.length} รายการจาก Backend`
         });
       } else {
         console.log('ℹ️ ไม่มีข้อมูลการออกกำลังกายใน Backend');
         setSessions([]);
         localStorage.setItem('exercise_logs', JSON.stringify([]));
-        
-        toast({ 
-          title: 'ไม่มีข้อมูล', 
-          description: 'ไม่พบข้อมูลการออกกำลังกายในระบบ' 
+
+        toast({
+          title: 'ไม่มีข้อมูล',
+          description: 'ไม่พบข้อมูลการออกกำลังกายในระบบ'
         });
       }
     } catch (error) {
       console.error('❌ Error loading exercise logs from backend:', error);
-      
+
       let errorMessage = 'ไม่สามารถโหลดข้อมูลจาก Backend ได้';
       if (error instanceof Error) {
         if (error.message.includes('401') || error.message.includes('Unauthorized')) {
@@ -217,9 +217,9 @@ export default function ExerciseLog() {
           errorMessage = error.message;
         }
       }
-      
-      toast({ 
-        title: 'เกิดข้อผิดพลาด', 
+
+      toast({
+        title: 'เกิดข้อผิดพลาด',
         description: errorMessage,
         variant: 'destructive'
       });
@@ -258,7 +258,7 @@ export default function ExerciseLog() {
   const removeWeightExercise = (index: number) => setWeightExercises(prev => prev.filter((_, i) => i !== index));
 
   const cardioTypes = ["วิ่ง", "เดิน", "ขี่จักรยาน", "ว่ายน้ำ", "มวยไทย", "เต้นรำ"];
-  
+
   // กีฬาที่ต้องใช้ระยะทางในการคำนวณ
   const distanceBasedExercises = ["วิ่ง", "เดิน", "ขี่จักรยาน", "ว่ายน้ำ"];
 
@@ -308,7 +308,7 @@ export default function ExerciseLog() {
   // ฟังก์ชันคำนวณแคลอรี่ทั้งหมด
   const calculateTotalCalories = (exerciseType: string, duration: number, intensity: string, distance?: number): number => {
     if (!exerciseType || !duration || !intensity) return 0;
-    
+
     // สำหรับกีฬาที่ใช้ระยะทาง ให้คำนวณจากระยะทางด้วย
     if (distanceBasedExercises.includes(exerciseType) && distance && distance > 0) {
       const caloriesPerKm: { [key: string]: number } = {
@@ -317,14 +317,14 @@ export default function ExerciseLog() {
         "ขี่จักรยาน": 25, // 25 แคล/กม.
         "ว่ายน้ำ": 80    // 80 แคล/กม.
       };
-      
+
       const intensityData = intensityLevels.find(level => level.label === intensity);
       const intensityMultiplier = intensityData?.multiplier || 1.3;
-      
+
       const baseCaloriesPerKm = caloriesPerKm[exerciseType] || 30;
       return Math.round(baseCaloriesPerKm * distance * intensityMultiplier);
     }
-    
+
     // สำหรับกีฬาที่ไม่ใช้ระยะทาง หรือไม่มีระยะทาง
     const caloriesPerMinute = getCaloriesPerMinute(exerciseType, intensity);
     return caloriesPerMinute * duration;
@@ -334,9 +334,9 @@ export default function ExerciseLog() {
   const updateCaloriesAutomatically = (exerciseType: string, duration: string, intensity: string, distance?: string) => {
     if (exerciseType && duration && intensity) {
       const calculatedCalories = calculateTotalCalories(
-        exerciseType, 
-        Number(duration), 
-        intensity, 
+        exerciseType,
+        Number(duration),
+        intensity,
         distance ? Number(distance) : undefined
       );
       setFormData(prev => ({
@@ -359,65 +359,65 @@ export default function ExerciseLog() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (isSubmitting) return;
     setIsSubmitting(true);
 
     try {
-             // สร้างข้อมูลสำหรับส่งไปยัง API
-       const exerciseData: ExerciseLog = {
-         exercise_name: formData.exercise_name || formData.exercise_type,
-         exercise_type: mapExerciseTypeToEnglish(formData.exercise_type),
-         duration_minutes: Number(formData.duration_minutes || 0),
-         // ใช้ข้อมูลจาก weightExercises ถ้าเป็นยกน้ำหนัก
-         sets: formData.exercise_type === "ยกน้ำหนัก" && weightExercises[0]?.sets ? Number(weightExercises[0].sets) : (formData.sets ? Number(formData.sets) : null),
-         reps: formData.exercise_type === "ยกน้ำหนัก" && weightExercises[0]?.reps ? Number(weightExercises[0].reps) : (formData.reps ? Number(formData.reps) : null),
-         weight_kg: formData.exercise_type === "ยกน้ำหนัก" && weightExercises[0]?.weight ? Number(weightExercises[0].weight) : (formData.weight_kg ? Number(formData.weight_kg) : null),
-         distance_km: formData.distance_km ? Number(formData.distance_km) : null,
-         calories_burned: Number(formData.calories_burned || 0),
-         intensity: mapIntensityToEnglish(formData.intensity),
-         notes: formData.notes,
-         exercise_date: formData.exercise_date,
-         exercise_time: formData.exercise_time
-       };
+      // สร้างข้อมูลสำหรับส่งไปยัง API
+      const exerciseData: ExerciseLog = {
+        exercise_name: formData.exercise_name || formData.exercise_type,
+        exercise_type: mapExerciseTypeToEnglish(formData.exercise_type),
+        duration_minutes: Number(formData.duration_minutes || 0),
+        // ใช้ข้อมูลจาก weightExercises ถ้าเป็นยกน้ำหนัก
+        sets: formData.exercise_type === "ยกน้ำหนัก" && weightExercises[0]?.sets ? Number(weightExercises[0].sets) : (formData.sets ? Number(formData.sets) : null),
+        reps: formData.exercise_type === "ยกน้ำหนัก" && weightExercises[0]?.reps ? Number(weightExercises[0].reps) : (formData.reps ? Number(formData.reps) : null),
+        weight_kg: formData.exercise_type === "ยกน้ำหนัก" && weightExercises[0]?.weight ? Number(weightExercises[0].weight) : (formData.weight_kg ? Number(formData.weight_kg) : null),
+        distance_km: formData.distance_km ? Number(formData.distance_km) : null,
+        calories_burned: Number(formData.calories_burned || 0),
+        intensity: mapIntensityToEnglish(formData.intensity),
+        notes: formData.notes,
+        exercise_date: formData.exercise_date,
+        exercise_time: formData.exercise_time
+      };
 
-             console.log('📝 ข้อมูลที่จะส่งไปยัง API:', exerciseData);
-       console.log('🏋️ ข้อมูลยกน้ำหนัก:', {
-         exercise_type: formData.exercise_type,
-         weightExercises: weightExercises,
-         sets: exerciseData.sets,
-         reps: exerciseData.reps,
-         weight_kg: exerciseData.weight_kg
-       });
+      console.log('📝 ข้อมูลที่จะส่งไปยัง API:', exerciseData);
+      console.log('🏋️ ข้อมูลยกน้ำหนัก:', {
+        exercise_type: formData.exercise_type,
+        weightExercises: weightExercises,
+        sets: exerciseData.sets,
+        reps: exerciseData.reps,
+        weight_kg: exerciseData.weight_kg
+      });
 
       // เรียก API เพื่อบันทึกข้อมูล
       const savedExercise = await apiService.createExerciseLog(exerciseData);
-      
-      toast({ 
-        title: 'บันทึกสำเร็จ', 
-        description: 'บันทึกการออกกำลังกายเรียบร้อยแล้ว' 
+
+      toast({
+        title: 'บันทึกสำเร็จ',
+        description: 'บันทึกการออกกำลังกายเรียบร้อยแล้ว'
       });
 
-             // บันทึกลง localStorage สำหรับแสดงผลในหน้า
-       const newSession: ExerciseSession = {
-         session_id: crypto.randomUUID(),
-         session_date: formData.exercise_date,
-         exercise_type: formData.exercise_type,
-         duration_minutes: Number(formData.duration_minutes || 0),
-         intensity_level: formData.intensity,
-         calories_burned: Number(formData.calories_burned || 0),
-         notes: formData.notes,
-         // ใช้ ID จาก Backend response ถ้ามี
-         backend_id: savedExercise.id || undefined
-       };
-       
-       console.log('🆕 สร้าง session ใหม่:', {
-         session_id: newSession.session_id,
-         backend_id: newSession.backend_id,
-         savedExercise_id: savedExercise.id
-       });
-       
-       saveSessions([newSession, ...sessions]);
+      // บันทึกลง localStorage สำหรับแสดงผลในหน้า
+      const newSession: ExerciseSession = {
+        session_id: crypto.randomUUID(),
+        session_date: formData.exercise_date,
+        exercise_type: formData.exercise_type,
+        duration_minutes: Number(formData.duration_minutes || 0),
+        intensity_level: formData.intensity,
+        calories_burned: Number(formData.calories_burned || 0),
+        notes: formData.notes,
+        // ใช้ ID จาก Backend response ถ้ามี
+        backend_id: savedExercise.id || undefined
+      };
+
+      console.log('🆕 สร้าง session ใหม่:', {
+        session_id: newSession.session_id,
+        backend_id: newSession.backend_id,
+        savedExercise_id: savedExercise.id
+      });
+
+      saveSessions([newSession, ...sessions]);
 
       // รีเซ็ตฟอร์ม
       setFormData({
@@ -438,8 +438,8 @@ export default function ExerciseLog() {
 
     } catch (error) {
       console.error('Error saving exercise log:', error);
-      toast({ 
-        title: 'เกิดข้อผิดพลาด', 
+      toast({
+        title: 'เกิดข้อผิดพลาด',
         description: error instanceof Error ? error.message : 'ไม่สามารถบันทึกข้อมูลได้',
         variant: 'destructive'
       });
@@ -450,39 +450,39 @@ export default function ExerciseLog() {
   const startEdit = (s: ExerciseSession) => {
     console.log('✏️ เริ่มแก้ไข session:', s);
     setEditingId(s.session_id);
-    
-         // โหลดข้อมูลครบถ้วนจาก session
-     const editFormData = {
-       exercise_name: s.exercise_type,
-       exercise_type: s.exercise_type,
-       duration_minutes: String(s.duration_minutes || ''),
-       intensity: s.intensity_level,
-       calories_burned: String(s.calories_burned || ''),
-       distance_km: '',
-       sets: '',
-       reps: '',
-       weight_kg: '',
-       notes: s.notes || '',
-       exercise_date: s.session_date,
-       exercise_time: new Date().toTimeString().split(' ')[0]
-     };
-     
-     // โหลดข้อมูลยกน้ำหนักถ้ามี
-     if (s.exercise_type === "ยกน้ำหนัก") {
-       editFormData.sets = String(s.sets || '');
-       editFormData.reps = String(s.reps || '');
-       editFormData.weight_kg = String(s.weight_kg || '');
-       
-       // อัปเดต weightExercises state
-       setWeightExercises([{
-         name: '',
-         sets: String(s.sets || ''),
-         reps: String(s.reps || ''),
-         weight: String(s.weight_kg || ''),
-         rpe: ''
-       }]);
-     }
-    
+
+    // โหลดข้อมูลครบถ้วนจาก session
+    const editFormData = {
+      exercise_name: s.exercise_type,
+      exercise_type: s.exercise_type,
+      duration_minutes: String(s.duration_minutes || ''),
+      intensity: s.intensity_level,
+      calories_burned: String(s.calories_burned || ''),
+      distance_km: '',
+      sets: '',
+      reps: '',
+      weight_kg: '',
+      notes: s.notes || '',
+      exercise_date: s.session_date,
+      exercise_time: new Date().toTimeString().split(' ')[0]
+    };
+
+    // โหลดข้อมูลยกน้ำหนักถ้ามี
+    if (s.exercise_type === "ยกน้ำหนัก") {
+      editFormData.sets = String(s.sets || '');
+      editFormData.reps = String(s.reps || '');
+      editFormData.weight_kg = String(s.weight_kg || '');
+
+      // อัปเดต weightExercises state
+      setWeightExercises([{
+        name: '',
+        sets: String(s.sets || ''),
+        reps: String(s.reps || ''),
+        weight: String(s.weight_kg || ''),
+        rpe: ''
+      }]);
+    }
+
     console.log('📝 ข้อมูลฟอร์มสำหรับแก้ไข:', editFormData);
     setFormData(editFormData);
     setShowForm(true);
@@ -491,7 +491,7 @@ export default function ExerciseLog() {
   // ฟังก์ชันอัปเดตข้อมูลการออกกำลังกาย
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (isSubmitting || !editingId) return;
     setIsSubmitting(true);
 
@@ -507,72 +507,72 @@ export default function ExerciseLog() {
         throw new Error('ไม่สามารถแก้ไขข้อมูลได้ เนื่องจากไม่พบ ID จาก Backend');
       }
 
-             // สร้างข้อมูลสำหรับส่งไปยัง API
-       const updateData: Partial<ExerciseLog> = {
-         exercise_name: formData.exercise_name || formData.exercise_type,
-         exercise_type: mapExerciseTypeToEnglish(formData.exercise_type),
-         duration_minutes: Number(formData.duration_minutes || 0),
-         // ใช้ข้อมูลจาก weightExercises ถ้าเป็นยกน้ำหนัก
-         sets: formData.exercise_type === "ยกน้ำหนัก" && weightExercises[0]?.sets ? Number(weightExercises[0].sets) : (formData.sets ? Number(formData.sets) : null),
-         reps: formData.exercise_type === "ยกน้ำหนัก" && weightExercises[0]?.reps ? Number(weightExercises[0].reps) : (formData.reps ? Number(formData.reps) : null),
-         weight_kg: formData.exercise_type === "ยกน้ำหนัก" && weightExercises[0]?.weight ? Number(weightExercises[0].weight) : (formData.weight_kg ? Number(formData.weight_kg) : null),
-         distance_km: formData.distance_km ? Number(formData.distance_km) : null,
-         calories_burned: Number(formData.calories_burned || 0),
-         intensity: mapIntensityToEnglish(formData.intensity),
-         notes: formData.notes,
-         exercise_date: formData.exercise_date,
-         exercise_time: formData.exercise_time
-       };
+      // สร้างข้อมูลสำหรับส่งไปยัง API
+      const updateData: Partial<ExerciseLog> = {
+        exercise_name: formData.exercise_name || formData.exercise_type,
+        exercise_type: mapExerciseTypeToEnglish(formData.exercise_type),
+        duration_minutes: Number(formData.duration_minutes || 0),
+        // ใช้ข้อมูลจาก weightExercises ถ้าเป็นยกน้ำหนัก
+        sets: formData.exercise_type === "ยกน้ำหนัก" && weightExercises[0]?.sets ? Number(weightExercises[0].sets) : (formData.sets ? Number(formData.sets) : null),
+        reps: formData.exercise_type === "ยกน้ำหนัก" && weightExercises[0]?.reps ? Number(weightExercises[0].reps) : (formData.reps ? Number(formData.reps) : null),
+        weight_kg: formData.exercise_type === "ยกน้ำหนัก" && weightExercises[0]?.weight ? Number(weightExercises[0].weight) : (formData.weight_kg ? Number(formData.weight_kg) : null),
+        distance_km: formData.distance_km ? Number(formData.distance_km) : null,
+        calories_burned: Number(formData.calories_burned || 0),
+        intensity: mapIntensityToEnglish(formData.intensity),
+        notes: formData.notes,
+        exercise_date: formData.exercise_date,
+        exercise_time: formData.exercise_time
+      };
 
-             console.log('✏️ ข้อมูลที่จะอัปเดต:', updateData);
-       console.log('🏋️ ข้อมูลยกน้ำหนักที่จะอัปเดต:', {
-         exercise_type: formData.exercise_type,
-         weightExercises: weightExercises,
-         sets: updateData.sets,
-         reps: updateData.reps,
-         weight_kg: updateData.weight_kg
-       });
+      console.log('✏️ ข้อมูลที่จะอัปเดต:', updateData);
+      console.log('🏋️ ข้อมูลยกน้ำหนักที่จะอัปเดต:', {
+        exercise_type: formData.exercise_type,
+        weightExercises: weightExercises,
+        sets: updateData.sets,
+        reps: updateData.reps,
+        weight_kg: updateData.weight_kg
+      });
       console.log('🆔 Backend ID ที่จะอัปเดต:', sessionToUpdate.backend_id);
 
       // เรียก API เพื่ออัปเดตข้อมูล
       const updatedExercise = await apiService.updateExerciseLog(sessionToUpdate.backend_id, updateData);
-      
+
       console.log('✅ อัปเดตข้อมูลสำเร็จ:', updatedExercise);
 
       // อัปเดต session ใน state
       const updatedSessions = sessions.map(s => {
         if (s.session_id === editingId) {
-                     const updatedSession = {
-             ...s,
-             exercise_type: formData.exercise_type,
-             session_date: formData.exercise_date, // อัปเดตวันที่
-             duration_minutes: Number(formData.duration_minutes || 0),
-             intensity_level: formData.intensity,
-             calories_burned: Number(formData.calories_burned || 0),
-             notes: formData.notes,
-             // อัปเดตข้อมูลยกน้ำหนัก
-             sets: formData.exercise_type === "ยกน้ำหนัก" && weightExercises[0]?.sets ? Number(weightExercises[0].sets) : (formData.sets ? Number(formData.sets) : null),
-             reps: formData.exercise_type === "ยกน้ำหนัก" && weightExercises[0]?.reps ? Number(weightExercises[0].reps) : (formData.reps ? Number(formData.reps) : null),
-             weight_kg: formData.exercise_type === "ยกน้ำหนัก" && weightExercises[0]?.weight ? Number(weightExercises[0].weight) : (formData.weight_kg ? Number(formData.weight_kg) : null),
-             // อัปเดต backend_id ถ้ามีใหม่
-             backend_id: updatedExercise.id || s.backend_id
-           };
-          
+          const updatedSession = {
+            ...s,
+            exercise_type: formData.exercise_type,
+            session_date: formData.exercise_date, // อัปเดตวันที่
+            duration_minutes: Number(formData.duration_minutes || 0),
+            intensity_level: formData.intensity,
+            calories_burned: Number(formData.calories_burned || 0),
+            notes: formData.notes,
+            // อัปเดตข้อมูลยกน้ำหนัก
+            sets: formData.exercise_type === "ยกน้ำหนัก" && weightExercises[0]?.sets ? Number(weightExercises[0].sets) : (formData.sets ? Number(formData.sets) : null),
+            reps: formData.exercise_type === "ยกน้ำหนัก" && weightExercises[0]?.reps ? Number(weightExercises[0].reps) : (formData.reps ? Number(formData.reps) : null),
+            weight_kg: formData.exercise_type === "ยกน้ำหนัก" && weightExercises[0]?.weight ? Number(weightExercises[0].weight) : (formData.weight_kg ? Number(formData.weight_kg) : null),
+            // อัปเดต backend_id ถ้ามีใหม่
+            backend_id: updatedExercise.id || s.backend_id
+          };
+
           console.log('🔄 อัปเดต session:', {
             before: s,
             after: updatedSession
           });
-          
+
           return updatedSession;
         }
         return s;
       });
 
       saveSessions(updatedSessions);
-      
-      toast({ 
-        title: 'อัปเดตสำเร็จ', 
-        description: 'อัปเดตข้อมูลการออกกำลังกายเรียบร้อยแล้ว' 
+
+      toast({
+        title: 'อัปเดตสำเร็จ',
+        description: 'อัปเดตข้อมูลการออกกำลังกายเรียบร้อยแล้ว'
       });
 
       // รีเซ็ตฟอร์มและปิดการแก้ไข
@@ -595,9 +595,9 @@ export default function ExerciseLog() {
 
     } catch (error) {
       console.error('❌ Error updating exercise log:', error);
-      
+
       let errorMessage = 'ไม่สามารถอัปเดตข้อมูลได้';
-      
+
       if (error instanceof Error) {
         if (error.message.includes('ไม่พบข้อมูลที่ต้องการแก้ไข')) {
           errorMessage = 'ไม่พบข้อมูลที่ต้องการแก้ไข';
@@ -615,9 +615,9 @@ export default function ExerciseLog() {
           errorMessage = error.message;
         }
       }
-      
-      toast({ 
-        title: 'เกิดข้อผิดพลาด', 
+
+      toast({
+        title: 'เกิดข้อผิดพลาด',
         description: errorMessage,
         variant: 'destructive'
       });
@@ -628,40 +628,40 @@ export default function ExerciseLog() {
 
   const deleteSession = async (s: ExerciseSession) => {
     if (deletingId) return; // ป้องกันการลบซ้ำ
-    
+
     setDeletingId(s.session_id);
-    
+
     try {
       console.log('🗑️ เริ่มลบข้อมูลการออกกำลังกาย:', s.session_id);
       console.log('📋 รายละเอียดข้อมูลที่จะลบ:', s);
-      
+
       // ตรวจสอบว่ามี backend_id หรือไม่
       if (!s.backend_id) {
         throw new Error('ไม่พบ ID จาก Backend สำหรับการลบข้อมูล');
       }
-      
+
       console.log('🆔 ใช้ backend_id สำหรับการลบ:', s.backend_id);
-      
+
       // เรียก API DELETE เพื่อลบข้อมูลจาก Backend โดยใช้ backend_id
       await apiService.deleteExerciseLog(s.backend_id);
-      
+
       console.log('✅ ลบข้อมูลจาก Backend สำเร็จ');
-      
+
       // ลบออกจาก localStorage และ state
       const next = sessions.filter(x => x.session_id !== s.session_id);
       saveSessions(next);
-      
-      toast({ 
-        title: 'ลบรายการแล้ว', 
-        description: 'ลบข้อมูลการออกกำลังกายเรียบร้อยแล้ว' 
+
+      toast({
+        title: 'ลบรายการแล้ว',
+        description: 'ลบข้อมูลการออกกำลังกายเรียบร้อยแล้ว'
       });
-      
+
     } catch (error) {
       console.error('❌ Error deleting exercise log:', error);
-      
+
       // แสดงข้อความ error ที่ชัดเจนขึ้น
       let errorMessage = 'ไม่สามารถลบข้อมูลได้';
-      
+
       if (error instanceof Error) {
         if (error.message.includes('ไม่พบ ID จาก Backend')) {
           errorMessage = 'ไม่สามารถลบข้อมูลได้ เนื่องจากไม่พบ ID ที่ถูกต้อง';
@@ -675,9 +675,9 @@ export default function ExerciseLog() {
           errorMessage = error.message;
         }
       }
-      
-      toast({ 
-        title: 'เกิดข้อผิดพลาด', 
+
+      toast({
+        title: 'เกิดข้อผิดพลาด',
         description: errorMessage,
         variant: 'destructive'
       });
@@ -689,207 +689,207 @@ export default function ExerciseLog() {
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-2">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
+              <div className="p-2 bg-primary/10 rounded-lg shrink-0">
                 <Dumbbell className="h-6 w-6 text-primary" />
               </div>
-              <h1 className="text-3xl font-bold text-primary">บันทึกการออกกำลังกาย</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-primary">บันทึกการออกกำลังกาย</h1>
             </div>
-            <p className="text-muted-foreground ml-12">ติดตามและบันทึกกิจกรรมการออกกำลังกายของคุณเพื่อสุขภาพที่ดี</p>
+            <p className="text-muted-foreground ml-12 text-sm sm:text-base">ติดตามและบันทึกกิจกรรมการออกกำลังกายของคุณเพื่อสุขภาพที่ดี</p>
           </div>
-          <div className="flex gap-2">
-            <Button 
+          <div className="flex flex-wrap gap-2 w-full md:w-auto md:ml-0">
+            <Button
               onClick={loadExerciseLogsFromBackend}
               disabled={isLoadingFromBackend}
               variant="outline"
-              className="gap-2 rounded-full border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all duration-200"
+              className="flex-1 sm:flex-none gap-2 rounded-full border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all duration-200"
             >
               <svg className={`h-4 w-4 ${isLoadingFromBackend ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
               {isLoadingFromBackend ? 'กำลังโหลด...' : 'รีเฟรช'}
             </Button>
-                         
-            <Button 
-              onClick={() => setShowForm(!showForm)} 
-              className="gap-2 rounded-full bg-gradient-to-r from-primary to-secondary hover:from-primary-hover hover:to-secondary-hover text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+
+            <Button
+              onClick={() => setShowForm(!showForm)}
+              className="flex-1 sm:flex-none gap-2 rounded-full bg-gradient-to-r from-primary to-secondary hover:from-primary-hover hover:to-secondary-hover text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
             >
               <Plus className="h-4 w-4" />
-              เพิ่มการออกกำลังกาย
+              <span className="whitespace-nowrap">เพิ่มการออกกำลังกาย</span>
             </Button>
           </div>
         </div>
 
-                 {showForm && (
-           <Card className="border-l-4 border-l-primary/20 shadow-sm">
-             <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
-               <CardTitle className="flex items-center gap-2 text-primary">
-                 <Activity className="h-5 w-5" />
-                 {editingId ? 'แก้ไขข้อมูลการออกกำลังกาย' : 'บันทึกการออกกำลังกายใหม่'}
-               </CardTitle>
-               <CardDescription className="text-muted-foreground">
-                 {editingId ? 'ปรับปรุงข้อมูลการออกกำลังกายของคุณ' : 'กรอกข้อมูลการออกกำลังกายเพื่อติดตามความคืบหน้า'}
-               </CardDescription>
-             </CardHeader>
-             <CardContent className="pt-6">
-               <form onSubmit={editingId ? handleUpdate : handleSubmit} className="space-y-6">
-                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                   <div className="space-y-3">
-                     <Label htmlFor="date" className="flex items-center gap-2 text-sm font-medium">
-                       <Calendar className="h-4 w-4 text-primary" />
-                       วันที่ออกกำลังกาย
-                     </Label>
-                     <Input
-                       id="date"
-                       type="date"
-                       value={formData.exercise_date}
-                       onChange={(e) => {
-                         console.log('📅 เปลี่ยนวันที่:', e.target.value);
-                         setFormData({...formData, exercise_date: e.target.value});
-                       }}
-                       className="h-11 border-primary/20 focus:border-primary/40"
-                       required
-                     />
-                   </div>
+        {showForm && (
+          <Card className="border-l-4 border-l-primary/20 shadow-sm">
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
+              <CardTitle className="flex items-center gap-2 text-primary">
+                <Activity className="h-5 w-5" />
+                {editingId ? 'แก้ไขข้อมูลการออกกำลังกาย' : 'บันทึกการออกกำลังกายใหม่'}
+              </CardTitle>
+              <CardDescription className="text-muted-foreground">
+                {editingId ? 'ปรับปรุงข้อมูลการออกกำลังกายของคุณ' : 'กรอกข้อมูลการออกกำลังกายเพื่อติดตามความคืบหน้า'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <form onSubmit={editingId ? handleUpdate : handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <Label htmlFor="date" className="flex items-center gap-2 text-sm font-medium">
+                      <Calendar className="h-4 w-4 text-primary" />
+                      วันที่ออกกำลังกาย
+                    </Label>
+                    <Input
+                      id="date"
+                      type="date"
+                      value={formData.exercise_date}
+                      onChange={(e) => {
+                        console.log('📅 เปลี่ยนวันที่:', e.target.value);
+                        setFormData({ ...formData, exercise_date: e.target.value });
+                      }}
+                      className="h-11 border-primary/20 focus:border-primary/40"
+                      required
+                    />
+                  </div>
 
-                                     <div className="space-y-3">
-                     <Label htmlFor="exercise_type" className="flex items-center gap-2 text-sm font-medium">
-                       <Target className="h-4 w-4 text-primary" />
-                       ประเภทการออกกำลังกาย
-                     </Label>
-                     <Select 
-                       value={formData.exercise_type} 
-                       onValueChange={(value) => {
-                         console.log('🏃‍♂️ เปลี่ยนประเภทการออกกำลังกาย:', value);
-                         setFormData({...formData, exercise_type: value});
-                         // คำนวณแคลอรี่อัตโนมัติ
-                         updateCaloriesAutomatically(value, formData.duration_minutes, formData.intensity, formData.distance_km);
-                       }}
-                     >
-                       <SelectTrigger className="h-11 border-primary/20 focus:border-primary/40">
-                         <SelectValue placeholder="เลือกประเภทการออกกำลังกาย" />
-                       </SelectTrigger>
-                       <SelectContent>
-                         {exerciseTypes.map((type) => (
-                           <SelectItem key={type.label} value={type.label} className="py-2">
-                             <div className="flex items-center gap-2">
-                               <Dumbbell className="h-4 w-4 text-primary/60" />
-                               {type.label}
-                             </div>
-                           </SelectItem>
-                         ))}
-                       </SelectContent>
-                     </Select>
-                   </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="exercise_type" className="flex items-center gap-2 text-sm font-medium">
+                      <Target className="h-4 w-4 text-primary" />
+                      ประเภทการออกกำลังกาย
+                    </Label>
+                    <Select
+                      value={formData.exercise_type}
+                      onValueChange={(value) => {
+                        console.log('🏃‍♂️ เปลี่ยนประเภทการออกกำลังกาย:', value);
+                        setFormData({ ...formData, exercise_type: value });
+                        // คำนวณแคลอรี่อัตโนมัติ
+                        updateCaloriesAutomatically(value, formData.duration_minutes, formData.intensity, formData.distance_km);
+                      }}
+                    >
+                      <SelectTrigger className="h-11 border-primary/20 focus:border-primary/40">
+                        <SelectValue placeholder="เลือกประเภทการออกกำลังกาย" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {exerciseTypes.map((type) => (
+                          <SelectItem key={type.label} value={type.label} className="py-2">
+                            <div className="flex items-center gap-2">
+                              <Dumbbell className="h-4 w-4 text-primary/60" />
+                              {type.label}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                                     <div className="space-y-3">
-                     <Label htmlFor="duration" className="flex items-center gap-2 text-sm font-medium">
-                       <Timer className="h-4 w-4 text-primary" />
-                       ระยะเวลา (นาที)
-                     </Label>
-                     <Input
-                       id="duration"
-                       type="number"
-                       placeholder="30"
-                       value={formData.duration_minutes}
-                       onChange={(e) => {
-                         console.log('⏱️ เปลี่ยนระยะเวลา:', e.target.value);
-                         setFormData({...formData, duration_minutes: e.target.value});
-                         // คำนวณแคลอรี่อัตโนมัติ
-                         updateCaloriesAutomatically(formData.exercise_type, e.target.value, formData.intensity, formData.distance_km);
-                       }}
-                       className="h-11 border-primary/20 focus:border-primary/40"
-                       required
-                     />
-                   </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="duration" className="flex items-center gap-2 text-sm font-medium">
+                      <Timer className="h-4 w-4 text-primary" />
+                      ระยะเวลา (นาที)
+                    </Label>
+                    <Input
+                      id="duration"
+                      type="number"
+                      placeholder="30"
+                      value={formData.duration_minutes}
+                      onChange={(e) => {
+                        console.log('⏱️ เปลี่ยนระยะเวลา:', e.target.value);
+                        setFormData({ ...formData, duration_minutes: e.target.value });
+                        // คำนวณแคลอรี่อัตโนมัติ
+                        updateCaloriesAutomatically(formData.exercise_type, e.target.value, formData.intensity, formData.distance_km);
+                      }}
+                      className="h-11 border-primary/20 focus:border-primary/40"
+                      required
+                    />
+                  </div>
 
-                                     <div className="space-y-3">
-                     <Label htmlFor="intensity" className="flex items-center gap-2 text-sm font-medium">
-                       <Zap className="h-4 w-4 text-primary" />
-                       ระดับความหนัก
-                     </Label>
-                     <Select 
-                       value={formData.intensity} 
-                       onValueChange={(value) => {
-                         console.log('💪 เปลี่ยนระดับความหนัก:', value);
-                         setFormData({...formData, intensity: value});
-                         // คำนวณแคลอรี่อัตโนมัติ
-                         updateCaloriesAutomatically(formData.exercise_type, formData.duration_minutes, value, formData.distance_km);
-                       }}
-                     >
-                       <SelectTrigger className="h-11 border-primary/20 focus:border-primary/40">
-                         <SelectValue placeholder="เลือกระดับความหนัก" />
-                       </SelectTrigger>
-                       <SelectContent>
-                         {intensityLevels.map((level) => (
-                           <SelectItem key={level.label} value={level.label} className="py-2">
-                             <div className="flex items-center gap-2">
-                               <div className={`w-3 h-3 rounded-full ${level.color}`}></div>
-                               {level.label}
-                             </div>
-                           </SelectItem>
-                         ))}
-                       </SelectContent>
-                     </Select>
-                   </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="intensity" className="flex items-center gap-2 text-sm font-medium">
+                      <Zap className="h-4 w-4 text-primary" />
+                      ระดับความหนัก
+                    </Label>
+                    <Select
+                      value={formData.intensity}
+                      onValueChange={(value) => {
+                        console.log('💪 เปลี่ยนระดับความหนัก:', value);
+                        setFormData({ ...formData, intensity: value });
+                        // คำนวณแคลอรี่อัตโนมัติ
+                        updateCaloriesAutomatically(formData.exercise_type, formData.duration_minutes, value, formData.distance_km);
+                      }}
+                    >
+                      <SelectTrigger className="h-11 border-primary/20 focus:border-primary/40">
+                        <SelectValue placeholder="เลือกระดับความหนัก" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {intensityLevels.map((level) => (
+                          <SelectItem key={level.label} value={level.label} className="py-2">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-3 h-3 rounded-full ${level.color}`}></div>
+                              {level.label}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                                     <div className="space-y-3">
-                     <Label htmlFor="calories" className="flex items-center gap-2 text-sm font-medium">
-                       <Flame className="h-4 w-4 text-primary" />
-                       แคลอรีที่เผาผลาญ
-                     </Label>
-                     <div className="space-y-3">
-                       <Input
-                         id="calories"
-                         type="number"
-                         placeholder="250"
-                         value={formData.calories_burned}
-                         onChange={(e) => {
-                           console.log('🔥 เปลี่ยนแคลอรี:', e.target.value);
-                           setFormData({...formData, calories_burned: e.target.value});
-                         }}
-                         className="h-11 border-primary/20 focus:border-primary/40"
-                       />
-                       <div className="flex items-center gap-3">
-                         <Button
-                           type="button"
-                           variant="outline"
-                           size="sm"
-                           onClick={() => {
-                             if (formData.exercise_type && formData.duration_minutes && formData.intensity) {
-                               const calculatedCalories = calculateTotalCalories(
-                                 formData.exercise_type, 
-                                 Number(formData.duration_minutes), 
-                                 formData.intensity,
-                                 formData.distance_km ? Number(formData.distance_km) : undefined
-                               );
-                               setFormData(prev => ({ ...prev, calories_burned: calculatedCalories.toString() }));
-                             }
-                           }}
-                           disabled={!formData.exercise_type || !formData.duration_minutes || !formData.intensity}
-                           className="text-xs h-8 px-3 border-primary/30 hover:border-primary/50"
-                         >
-                           <Flame className="h-3 w-3 mr-1" />
-                           คำนวณอัตโนมัติ
-                         </Button>
-                         {formData.exercise_type && formData.duration_minutes && formData.intensity && (
-                           <div className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-md">
-                             💡 {distanceBasedExercises.includes(formData.exercise_type) && formData.distance_km ? (
-                               <>
-                                 {formData.exercise_type}: {formData.distance_km} กม. × {intensityLevels.find(l => l.label === formData.intensity)?.multiplier || 1.3} = {calculateTotalCalories(formData.exercise_type, Number(formData.duration_minutes), formData.intensity, Number(formData.distance_km))} แคล
-                               </>
-                             ) : (
-                               <>
-                                 {getCaloriesPerMinute(formData.exercise_type, formData.intensity)} แคล/นาที × {formData.duration_minutes} นาที = {calculateTotalCalories(formData.exercise_type, Number(formData.duration_minutes), formData.intensity)} แคล
-                               </>
-                             )}
-                           </div>
-                         )}
-                       </div>
-                     </div>
-                   </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="calories" className="flex items-center gap-2 text-sm font-medium">
+                      <Flame className="h-4 w-4 text-primary" />
+                      แคลอรีที่เผาผลาญ
+                    </Label>
+                    <div className="space-y-3">
+                      <Input
+                        id="calories"
+                        type="number"
+                        placeholder="250"
+                        value={formData.calories_burned}
+                        onChange={(e) => {
+                          console.log('🔥 เปลี่ยนแคลอรี:', e.target.value);
+                          setFormData({ ...formData, calories_burned: e.target.value });
+                        }}
+                        className="h-11 border-primary/20 focus:border-primary/40"
+                      />
+                      <div className="flex items-center gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (formData.exercise_type && formData.duration_minutes && formData.intensity) {
+                              const calculatedCalories = calculateTotalCalories(
+                                formData.exercise_type,
+                                Number(formData.duration_minutes),
+                                formData.intensity,
+                                formData.distance_km ? Number(formData.distance_km) : undefined
+                              );
+                              setFormData(prev => ({ ...prev, calories_burned: calculatedCalories.toString() }));
+                            }
+                          }}
+                          disabled={!formData.exercise_type || !formData.duration_minutes || !formData.intensity}
+                          className="text-xs h-8 px-3 border-primary/30 hover:border-primary/50"
+                        >
+                          <Flame className="h-3 w-3 mr-1" />
+                          คำนวณอัตโนมัติ
+                        </Button>
+                        {formData.exercise_type && formData.duration_minutes && formData.intensity && (
+                          <div className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-md">
+                            💡 {distanceBasedExercises.includes(formData.exercise_type) && formData.distance_km ? (
+                              <>
+                                {formData.exercise_type}: {formData.distance_km} กม. × {intensityLevels.find(l => l.label === formData.intensity)?.multiplier || 1.3} = {calculateTotalCalories(formData.exercise_type, Number(formData.duration_minutes), formData.intensity, Number(formData.distance_km))} แคล
+                              </>
+                            ) : (
+                              <>
+                                {getCaloriesPerMinute(formData.exercise_type, formData.intensity)} แคล/นาที × {formData.duration_minutes} นาที = {calculateTotalCalories(formData.exercise_type, Number(formData.duration_minutes), formData.intensity)} แคล
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* รายละเอียดเฉพาะตามประเภท */}
@@ -961,68 +961,68 @@ export default function ExerciseLog() {
                   </div>
                 )}
 
-                                 <div className="space-y-3">
-                   <Label htmlFor="notes" className="flex items-center gap-2 text-sm font-medium">
-                     <Activity className="h-4 w-4 text-primary" />
-                     หมายเหตุ
-                   </Label>
-                   <Textarea
-                     id="notes"
-                     placeholder="รายละเอียดเพิ่มเติม เช่น ความรู้สึก, สภาพอากาศ, หรือเทคนิคที่ใช้..."
-                     value={formData.notes}
-                     onChange={(e) => {
-                       console.log('📝 เปลี่ยนหมายเหตุ:', e.target.value);
-                       setFormData({...formData, notes: e.target.value});
-                     }}
-                     className="min-h-[80px] border-primary/20 focus:border-primary/40 resize-none"
-                   />
-                 </div>
+                <div className="space-y-3">
+                  <Label htmlFor="notes" className="flex items-center gap-2 text-sm font-medium">
+                    <Activity className="h-4 w-4 text-primary" />
+                    หมายเหตุ
+                  </Label>
+                  <Textarea
+                    id="notes"
+                    placeholder="รายละเอียดเพิ่มเติม เช่น ความรู้สึก, สภาพอากาศ, หรือเทคนิคที่ใช้..."
+                    value={formData.notes}
+                    onChange={(e) => {
+                      console.log('📝 เปลี่ยนหมายเหตุ:', e.target.value);
+                      setFormData({ ...formData, notes: e.target.value });
+                    }}
+                    className="min-h-[80px] border-primary/20 focus:border-primary/40 resize-none"
+                  />
+                </div>
 
-                                                  <div className="flex gap-3 pt-4 border-t border-border/50">
-                    <Button 
-                      type="submit" 
-                      disabled={isSubmitting}
-                      className="flex-1 h-11 bg-primary hover:bg-primary/90 text-primary-foreground"
-                    >
-                      {isSubmitting ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                          {editingId ? 'กำลังอัปเดต...' : 'กำลังบันทึก...'}
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <Activity className="h-4 w-4" />
-                          {editingId ? 'อัปเดตข้อมูล' : 'บันทึกการออกกำลังกาย'}
-                        </div>
-                      )}
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => {
-                        setShowForm(false);
-                        setEditingId(null);
-                        // รีเซ็ตฟอร์ม
-                        setFormData({
-                          exercise_name: "",
-                          exercise_type: "",
-                          duration_minutes: "",
-                          intensity: "",
-                          calories_burned: "",
-                          distance_km: "",
-                          sets: "",
-                          reps: "",
-                          weight_kg: "",
-                          notes: "",
-                          exercise_date: new Date().toISOString().split('T')[0],
-                          exercise_time: new Date().toTimeString().split(' ')[0]
-                        });
-                      }}
-                      className="h-11 px-6 border-primary/20 hover:border-primary/40"
-                    >
-                      ยกเลิก
-                    </Button>
-                  </div>
+                <div className="flex gap-3 pt-4 border-t border-border/50">
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex-1 h-11 bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    {isSubmitting ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        {editingId ? 'กำลังอัปเดต...' : 'กำลังบันทึก...'}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Activity className="h-4 w-4" />
+                        {editingId ? 'อัปเดตข้อมูล' : 'บันทึกการออกกำลังกาย'}
+                      </div>
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowForm(false);
+                      setEditingId(null);
+                      // รีเซ็ตฟอร์ม
+                      setFormData({
+                        exercise_name: "",
+                        exercise_type: "",
+                        duration_minutes: "",
+                        intensity: "",
+                        calories_burned: "",
+                        distance_km: "",
+                        sets: "",
+                        reps: "",
+                        weight_kg: "",
+                        notes: "",
+                        exercise_date: new Date().toISOString().split('T')[0],
+                        exercise_time: new Date().toTimeString().split(' ')[0]
+                      });
+                    }}
+                    className="h-11 px-6 border-primary/20 hover:border-primary/40"
+                  >
+                    ยกเลิก
+                  </Button>
+                </div>
               </form>
             </CardContent>
           </Card>
@@ -1166,7 +1166,7 @@ export default function ExerciseLog() {
               </Badge>
             )}
           </div>
-          
+
           {sessions.length === 0 ? (
             <Card className="border-dashed border-2 border-muted-foreground/20">
               <CardContent className="p-8 text-center">
@@ -1180,8 +1180,8 @@ export default function ExerciseLog() {
                       เริ่มต้นบันทึกการออกกำลังกายของคุณเพื่อติดตามความคืบหน้าและสร้างแรงบันดาลใจในการดูแลสุขภาพ
                     </p>
                   </div>
-                  <Button 
-                    onClick={() => setShowForm(true)} 
+                  <Button
+                    onClick={() => setShowForm(true)}
                     className="gap-2"
                   >
                     <Plus className="h-4 w-4" />
@@ -1212,117 +1212,116 @@ export default function ExerciseLog() {
                           </div>
                         </div>
                       </div>
-                    
-                                         <div className="flex items-center gap-3">
-                       <Badge 
-                         className={`${
-                           intensityLevels.find(l => l.value === session.intensity_level)?.color || 'bg-gray-500'
-                         } text-white px-3 py-1`}
-                       >
-                         {session.intensity_level}
-                       </Badge>
-                       
-                       {/* แสดงสถานะการลบได้ */}
-                       {!session.backend_id && (
-                         <Badge variant="secondary" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200">
-                           ⚠️ รีเฟรชก่อนลบ
-                         </Badge>
-                       )}
-                       
-                       <Button 
-                         variant="outline" 
-                         size="sm" 
-                         onClick={() => startEdit(session)}
-                         className="h-8 px-3 border-primary/20 hover:border-primary/40"
-                       >
-                         แก้ไข
-                       </Button>
-                       <AlertDialog>
-                         <AlertDialogTrigger asChild>
-                           <Button 
-                             variant="destructive" 
-                             size="sm" 
-                             disabled={deletingId === session.session_id || !session.backend_id}
-                             title={!session.backend_id ? 'กรุณารีเฟรชก่อนลบข้อมูล' : 'ลบข้อมูล'}
-                             className="h-8 px-3"
-                           >
-                             {deletingId === session.session_id ? 'กำลังลบ...' : 'ลบ'}
-                           </Button>
-                         </AlertDialogTrigger>
-                         <AlertDialogContent>
-                           <AlertDialogHeader>
-                             <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
-                             <AlertDialogDescription>
-                               {!session.backend_id 
-                                 ? 'ข้อมูลนี้ยังไม่พร้อมสำหรับการลบ กรุณารีเฟรชหน้าเพื่อโหลดข้อมูลจาก Backend'
-                                 : 'ต้องการลบรายการนี้หรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้'
-                               }
-                             </AlertDialogDescription>
-                           </AlertDialogHeader>
-                           <AlertDialogFooter>
-                             <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
-                             {session.backend_id && (
-                               <AlertDialogAction 
-                                 onClick={() => deleteSession(session)}
-                                 disabled={deletingId === session.session_id}
-                               >
-                                 {deletingId === session.session_id ? 'กำลังลบ...' : 'ลบ'}
-                               </AlertDialogAction>
-                             )}
-                           </AlertDialogFooter>
-                         </AlertDialogContent>
-                       </AlertDialog>
-                     </div>
-                  </div>
-                  
-                                     <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3">
-                     <div className="flex items-center gap-2 p-3 bg-muted/20 rounded border">
-                       <Clock className="h-4 w-4 text-muted-foreground" />
-                       <div>
-                         <p className="text-sm font-medium text-foreground">{session.duration_minutes} นาที</p>
-                         <p className="text-xs text-muted-foreground">ระยะเวลา</p>
-                       </div>
-                     </div>
-                     <div className="flex items-center gap-2 p-3 bg-muted/20 rounded border">
-                       <Flame className="h-4 w-4 text-muted-foreground" />
-                       <div>
-                         <p className="text-sm font-medium text-foreground">{session.calories_burned} แคล</p>
-                         <p className="text-xs text-muted-foreground">เผาผลาญ</p>
-                       </div>
-                     </div>
-                     
-                     {/* แสดงข้อมูลยกน้ำหนักถ้ามี */}
-                     {session.exercise_type === "ยกน้ำหนัก" && session.sets && session.reps && session.weight_kg && (
-                       <>
-                         <div className="flex items-center gap-2 p-3 bg-muted/20 rounded border">
-                           <Dumbbell className="h-4 w-4 text-muted-foreground" />
-                           <div>
-                             <p className="text-sm font-medium text-foreground">{session.sets} เซ็ต x {session.reps} ครั้ง</p>
-                             <p className="text-xs text-muted-foreground">การฝึก</p>
-                           </div>
-                         </div>
-                         <div className="flex items-center gap-2 p-3 bg-muted/20 rounded border">
-                           <Target className="h-4 w-4 text-muted-foreground" />
-                           <div>
-                             <p className="text-sm font-medium text-foreground">{session.weight_kg} กก.</p>
-                             <p className="text-xs text-muted-foreground">น้ำหนัก</p>
-                           </div>
-                         </div>
-                       </>
-                     )}
-                   </div>
-                  
-                  {session.notes && (
-                    <div className="mt-4 p-3 bg-muted/20 border rounded">
-                      <div className="flex items-start gap-2">
-                        <Activity className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                        <p className="text-sm text-foreground leading-relaxed">{session.notes}</p>
+
+                      <div className="flex items-center gap-3">
+                        <Badge
+                          className={`${intensityLevels.find(l => l.value === session.intensity_level)?.color || 'bg-gray-500'
+                            } text-white px-3 py-1`}
+                        >
+                          {session.intensity_level}
+                        </Badge>
+
+                        {/* แสดงสถานะการลบได้ */}
+                        {!session.backend_id && (
+                          <Badge variant="secondary" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200">
+                            ⚠️ รีเฟรชก่อนลบ
+                          </Badge>
+                        )}
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => startEdit(session)}
+                          className="h-8 px-3 border-primary/20 hover:border-primary/40"
+                        >
+                          แก้ไข
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              disabled={deletingId === session.session_id || !session.backend_id}
+                              title={!session.backend_id ? 'กรุณารีเฟรชก่อนลบข้อมูล' : 'ลบข้อมูล'}
+                              className="h-8 px-3"
+                            >
+                              {deletingId === session.session_id ? 'กำลังลบ...' : 'ลบ'}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {!session.backend_id
+                                  ? 'ข้อมูลนี้ยังไม่พร้อมสำหรับการลบ กรุณารีเฟรชหน้าเพื่อโหลดข้อมูลจาก Backend'
+                                  : 'ต้องการลบรายการนี้หรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้'
+                                }
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+                              {session.backend_id && (
+                                <AlertDialogAction
+                                  onClick={() => deleteSession(session)}
+                                  disabled={deletingId === session.session_id}
+                                >
+                                  {deletingId === session.session_id ? 'กำลังลบ...' : 'ลบ'}
+                                </AlertDialogAction>
+                              )}
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+
+                    <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3">
+                      <div className="flex items-center gap-2 p-3 bg-muted/20 rounded border">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{session.duration_minutes} นาที</p>
+                          <p className="text-xs text-muted-foreground">ระยะเวลา</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 p-3 bg-muted/20 rounded border">
+                        <Flame className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{session.calories_burned} แคล</p>
+                          <p className="text-xs text-muted-foreground">เผาผลาญ</p>
+                        </div>
+                      </div>
+
+                      {/* แสดงข้อมูลยกน้ำหนักถ้ามี */}
+                      {session.exercise_type === "ยกน้ำหนัก" && session.sets && session.reps && session.weight_kg && (
+                        <>
+                          <div className="flex items-center gap-2 p-3 bg-muted/20 rounded border">
+                            <Dumbbell className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <p className="text-sm font-medium text-foreground">{session.sets} เซ็ต x {session.reps} ครั้ง</p>
+                              <p className="text-xs text-muted-foreground">การฝึก</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 p-3 bg-muted/20 rounded border">
+                            <Target className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <p className="text-sm font-medium text-foreground">{session.weight_kg} กก.</p>
+                              <p className="text-xs text-muted-foreground">น้ำหนัก</p>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {session.notes && (
+                      <div className="mt-4 p-3 bg-muted/20 border rounded">
+                        <div className="flex items-start gap-2">
+                          <Activity className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                          <p className="text-sm text-foreground leading-relaxed">{session.notes}</p>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           )}
         </div>
