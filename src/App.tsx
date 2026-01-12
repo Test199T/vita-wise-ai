@@ -114,6 +114,14 @@ const App = () => (
               }
             />
             <Route
+              path="/chat/:sessionId"
+              element={
+                <ProtectedRoute>
+                  <SquareChat />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/profile"
               element={
                 <ProtectedRoute>

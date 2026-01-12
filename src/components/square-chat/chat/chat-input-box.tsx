@@ -7,6 +7,7 @@ import {
     Mic,
     CircleDashedIcon,
     X,
+    Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,7 +19,8 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
+import { ImageData } from "@/store/chat-store";
 
 const aiModels = [
     { id: "square-3", label: "Square AI 3.0", icon: SparklesIcon },
@@ -30,11 +32,12 @@ const aiModels = [
 interface ChatInputBoxProps {
     message: string;
     onMessageChange: (value: string) => void;
-    onSend: (message?: string, file?: File) => void;
+    onSend: (message?: string, imageData?: ImageData) => void;
     selectedModel: string;
     onModelChange: (modelId: string) => void;
     showTools?: boolean;
     placeholder?: string;
+    isLoading?: boolean;
 }
 
 export function ChatInputBox({
@@ -45,31 +48,85 @@ export function ChatInputBox({
     onModelChange,
     showTools = true,
     placeholder = "Ask anything...",
+    isLoading = false,
 }: ChatInputBoxProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const cameraInputRef = useRef<HTMLInputElement>(null);
-    const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+    const fileMenuRef = useRef<HTMLDivElement>(null);
+    const [imageData, setImageData] = useState<ImageData | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [isListening, setIsListening] = useState(false);
     const [recognition, setRecognition] = useState<any>(null);
     const [showFileMenu, setShowFileMenu] = useState(false);
 
+    // Close file menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (fileMenuRef.current && !fileMenuRef.current.contains(event.target as Node)) {
+                setShowFileMenu(false);
+            }
+        };
+
+        if (showFileMenu) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showFileMenu]);
+
+    // Handle paste from clipboard - converts to base64 for API
+    const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+        console.log("Paste event detected", e.clipboardData?.items?.length);
+
+        const items = e.clipboardData?.items;
+        if (!items) return;
+
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            console.log("Paste item type:", item.type);
+
+            if (item.type.startsWith('image/')) {
+                e.preventDefault();
+                const file = item.getAsFile();
+                if (file) {
+                    console.log("Image pasted:", file.name);
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const base64 = event.target?.result as string;
+                        setImagePreview(base64);
+                        setImageData({
+                            type: 'base64',
+                            base64: base64,
+                            previewUrl: base64,
+                        });
+                    };
+                    reader.readAsDataURL(file);
+                }
+                break;
+            }
+        }
+    };
+
+    // Handle file select from input - keeps as File for upload
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             if (file.type.startsWith("image/")) {
-                setUploadedFile(file);
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    setImagePreview(e.target?.result as string);
-                };
-                reader.readAsDataURL(file);
+                const previewUrl = URL.createObjectURL(file);
+                setImagePreview(previewUrl);
+                setImageData({
+                    type: 'file',
+                    file: file,
+                    previewUrl: previewUrl,
+                });
             }
         }
     };
 
     const clearFile = () => {
-        setUploadedFile(null);
+        setImageData(null);
         setImagePreview(null);
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
@@ -77,8 +134,8 @@ export function ChatInputBox({
     };
 
     const handleSendClick = () => {
-        if (message.trim() || uploadedFile) {
-            onSend(message, uploadedFile || undefined);
+        if (message.trim() || imageData) {
+            onSend(message, imageData || undefined);
             clearFile();
         }
     };
@@ -157,146 +214,165 @@ export function ChatInputBox({
             <div className="group relative">
                 {/* Hover glow effect - appears on hover */}
                 <div className="absolute -inset-1 rounded-[36px] bg-gradient-to-r from-emerald-500/20 via-cyan-500/20 to-emerald-500/20 opacity-0 blur-xl transition-all duration-500 group-hover:opacity-100 group-focus-within:opacity-100" />
-                
+
                 {/* Glassmorphism container */}
                 <div className="relative flex items-end gap-2 bg-white/60 dark:bg-gray-900/60 backdrop-blur-2xl p-2 rounded-[32px] border border-white/30 dark:border-white/10 shadow-lg shadow-black/5 dark:shadow-black/20 transition-all duration-300 ease-out group-hover:bg-white/70 dark:group-hover:bg-gray-900/70 group-hover:border-emerald-500/30 group-hover:shadow-xl group-hover:shadow-emerald-500/10 group-focus-within:border-emerald-500/50 group-focus-within:shadow-emerald-500/20 group-focus-within:bg-white/80 dark:group-focus-within:bg-gray-900/80">
-                <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleFileSelect}
-                />
-                <input
-                    type="file"
-                    ref={cameraInputRef}
-                    className="hidden"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={handleFileSelect}
-                />
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                    />
+                    <input
+                        type="file"
+                        ref={cameraInputRef}
+                        className="hidden"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handleFileSelect}
+                    />
 
-                {/* Plus Button with Menu */}
-                <div className="relative">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-10 rounded-full shrink-0 text-muted-foreground hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20 hover:text-emerald-600 dark:hover:text-emerald-400 mb-0.5 ml-1 transition-all duration-300 ease-out hover:scale-110 hover:rotate-90 active:scale-95"
-                        onClick={() => setShowFileMenu(!showFileMenu)}
-                    >
-                        <PlusIcon className="size-5 transition-transform duration-300" />
-                    </Button>
+                    {/* Plus Button with Menu */}
+                    <div className="relative" ref={fileMenuRef}>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-10 rounded-full shrink-0 text-muted-foreground hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20 hover:text-emerald-600 dark:hover:text-emerald-400 mb-0.5 ml-1 transition-all duration-300 ease-out hover:scale-110 hover:rotate-90 active:scale-95"
+                            onClick={() => setShowFileMenu(!showFileMenu)}
+                        >
+                            <PlusIcon className="size-5 transition-transform duration-300" />
+                        </Button>
 
-                    {/* File Menu Dropdown - Glassmorphism */}
-                    {showFileMenu && (
-                        <div className="absolute bottom-full left-0 mb-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-xl shadow-xl shadow-black/10 dark:shadow-black/30 border border-white/30 dark:border-white/10 overflow-hidden min-w-[180px] z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                            <button
-                                onClick={() => {
-                                    fileInputRef.current?.click();
-                                    setShowFileMenu(false);
-                                }}
-                                className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 text-sm transition-colors"
+                        {/* File Menu Dropdown - Glassmorphism */}
+                        {showFileMenu && (
+                            <div className="absolute bottom-full left-0 mb-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-xl shadow-xl shadow-black/10 dark:shadow-black/30 border border-white/30 dark:border-white/10 overflow-hidden min-w-[180px] z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                                <button
+                                    onClick={() => {
+                                        fileInputRef.current?.click();
+                                        setShowFileMenu(false);
+                                    }}
+                                    className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 text-sm transition-colors"
+                                >
+                                    <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                    </svg>
+                                    <span>เพิ่มไฟล์</span>
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        cameraInputRef.current?.click();
+                                        setShowFileMenu(false);
+                                    }}
+                                    className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 text-sm transition-colors border-t border-border"
+                                >
+                                    <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    <span>กล้อง</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Input Area or Waveform */}
+                    {isListening ? (
+                        <div className="flex-1 flex items-center justify-center gap-0.5 px-4">
+                            {[...Array(60)].map((_, i) => (
+                                <div
+                                    key={i}
+                                    className="w-0.5 bg-red-500 rounded-full"
+                                    style={{
+                                        height: `${Math.sin(i * 0.5) * 15 + Math.random() * 25 + 5}px`,
+                                        animation: `pulse ${0.3 + Math.random() * 0.4}s ease-in-out infinite`,
+                                        animationDelay: `${i * 0.01}s`
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        <Textarea
+                            placeholder={isLoading ? "กำลังสร้างการสนทนา..." : placeholder}
+                            value={message}
+                            onChange={(e) => onMessageChange(e.target.value)}
+                            disabled={isLoading}
+                            className="min-h-[50px] max-h-[200px] w-full resize-none border-0 bg-transparent px-2 py-3.5 text-base font-normal focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/50 leading-relaxed disabled:opacity-50"
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey && !isLoading) {
+                                    e.preventDefault();
+                                    handleSendClick();
+                                }
+                            }}
+                            onPaste={handlePaste}
+                            rows={1}
+                            onInput={(e) => {
+                                const target = e.target as HTMLTextAreaElement;
+                                target.style.height = "auto";
+                                target.style.height = `${target.scrollHeight}px`;
+                            }}
+                        />
+                    )}
+
+                    {/* Action Buttons */}
+                    {isListening ? (
+                        <>
+                            {/* Cancel Button */}
+                            <Button
+                                size="icon"
+                                onClick={cancelListening}
+                                className="size-10 rounded-full shrink-0 mb-0.5 transition-all duration-300 shadow-md bg-gray-500 hover:bg-gray-600 text-white"
+                            >
+                                <X className="size-5" />
+                            </Button>
+                            {/* Confirm Button */}
+                            <Button
+                                size="icon"
+                                onClick={confirmListening}
+                                className="size-10 rounded-full shrink-0 mb-0.5 mr-1 transition-all duration-300 shadow-md bg-green-500 hover:bg-green-600 text-white"
                             >
                                 <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                 </svg>
-                                <span>เพิ่มไฟล์</span>
-                            </button>
-                            <button
-                                onClick={() => {
-                                    cameraInputRef.current?.click();
-                                    setShowFileMenu(false);
-                                }}
-                                className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 text-sm transition-colors border-t border-border"
+                            </Button>
+                        </>
+                    ) : (
+                        <div className="flex items-end gap-1 mb-0.5 mr-1">
+                            {/* Mic Button - Always visible unless loading */}
+                            {!isLoading && ('webkitSpeechRecognition' in window) && (
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={toggleListening}
+                                    className="size-10 rounded-full shrink-0 text-muted-foreground hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400"
+                                >
+                                    <Mic className="size-5" />
+                                </Button>
+                            )}
+
+                            {/* Send Button */}
+                            <Button
+                                size="icon"
+                                onClick={handleSendClick}
+                                disabled={isLoading || (!message.trim() && !imageData)}
+                                className={cn(
+                                    "size-10 rounded-full shrink-0 transition-all duration-300 ease-out shadow-lg",
+                                    isLoading
+                                        ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white"
+                                        : (message.trim() || imageData)
+                                            ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white hover:from-emerald-600 hover:to-cyan-600 hover:scale-110 hover:shadow-emerald-500/40 active:scale-95"
+                                            : "bg-gray-200 dark:bg-gray-700 text-muted-foreground cursor-not-allowed opacity-50"
+                                )}
                             >
-                                <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                                <span>กล้อง</span>
-                            </button>
+                                {isLoading ? (
+                                    <Loader2 className="size-5 animate-spin" />
+                                ) : (
+                                    <ArrowUpIcon className="size-5" />
+                                )}
+                            </Button>
                         </div>
                     )}
                 </div>
-
-                {/* Input Area or Waveform */}
-                {isListening ? (
-                    <div className="flex-1 flex items-center justify-center gap-0.5 px-4">
-                        {[...Array(60)].map((_, i) => (
-                            <div
-                                key={i}
-                                className="w-0.5 bg-red-500 rounded-full"
-                                style={{
-                                    height: `${Math.sin(i * 0.5) * 15 + Math.random() * 25 + 5}px`,
-                                    animation: `pulse ${0.3 + Math.random() * 0.4}s ease-in-out infinite`,
-                                    animationDelay: `${i * 0.01}s`
-                                }}
-                            />
-                        ))}
-                    </div>
-                ) : (
-                    <Textarea
-                        placeholder={placeholder}
-                        value={message}
-                        onChange={(e) => onMessageChange(e.target.value)}
-                        className="min-h-[50px] max-h-[200px] w-full resize-none border-0 bg-transparent px-2 py-3.5 text-lg focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/50 leading-relaxed font-light"
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter" && !e.shiftKey) {
-                                e.preventDefault();
-                                handleSendClick();
-                            }
-                        }}
-                        rows={1}
-                        onInput={(e) => {
-                            const target = e.target as HTMLTextAreaElement;
-                            target.style.height = "auto";
-                            target.style.height = `${target.scrollHeight}px`;
-                        }}
-                    />
-                )}
-
-                {/* Action Buttons */}
-                {isListening ? (
-                    <>
-                        {/* Cancel Button */}
-                        <Button
-                            size="icon"
-                            onClick={cancelListening}
-                            className="size-10 rounded-full shrink-0 mb-0.5 transition-all duration-300 shadow-md bg-gray-500 hover:bg-gray-600 text-white"
-                        >
-                            <X className="size-5" />
-                        </Button>
-                        {/* Confirm Button */}
-                        <Button
-                            size="icon"
-                            onClick={confirmListening}
-                            className="size-10 rounded-full shrink-0 mb-0.5 mr-1 transition-all duration-300 shadow-md bg-green-500 hover:bg-green-600 text-white"
-                        >
-                            <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                        </Button>
-                    </>
-                ) : (
-                    <Button
-                        size="icon"
-                        onClick={message.trim() || uploadedFile ? handleSendClick : toggleListening}
-                        disabled={!message.trim() && !uploadedFile && !isListening && !('webkitSpeechRecognition' in window)}
-                        className={cn(
-                            "size-10 rounded-full shrink-0 mb-0.5 mr-1 transition-all duration-300 ease-out shadow-lg",
-                            (message.trim() || uploadedFile)
-                                ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white hover:from-emerald-600 hover:to-cyan-600 hover:scale-110 hover:shadow-emerald-500/40 active:scale-95"
-                                : "bg-white/50 dark:bg-white/10 text-muted-foreground hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400 hover:scale-105"
-                        )}
-                    >
-                        {(message.trim() || uploadedFile) ? (
-                            <ArrowUpIcon className="size-5 transition-transform duration-200 group-hover:translate-y-[-2px]" />
-                        ) : (
-                            <Mic className="size-5" />
-                        )}
-                    </Button>
-                )}
-            </div>
             </div>
 
             {/* Bottom Tools & Model Selection (Optional) */}

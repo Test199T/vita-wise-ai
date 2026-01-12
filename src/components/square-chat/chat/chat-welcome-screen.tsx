@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { ChatInputBox } from "./chat-input-box";
 import DecryptedText from "@/components/DecryptedText";
+import { ImageData } from "@/store/chat-store";
 
 const suggestions = [
     {
@@ -40,11 +41,12 @@ const suggestions = [
 interface ChatWelcomeScreenProps {
     message: string;
     onMessageChange: (value: string) => void;
-    onSend: (message?: string, file?: File) => void;
+    onSend: (message?: string, imageData?: ImageData) => void;
     selectedMode: string;
     onModeChange: (modeId: string) => void;
     selectedModel: string;
     onModelChange: (modelId: string) => void;
+    isLoading?: boolean;
 }
 
 export function ChatWelcomeScreen({
@@ -55,6 +57,7 @@ export function ChatWelcomeScreen({
     onModeChange,
     selectedModel,
     onModelChange,
+    isLoading = false,
 }: ChatWelcomeScreenProps) {
     return (
         <div className="flex h-full flex-col items-center justify-center px-4 md:px-8">
@@ -99,6 +102,7 @@ export function ChatWelcomeScreen({
                     selectedModel={selectedModel}
                     onModelChange={onModelChange}
                     showTools={true}
+                    isLoading={isLoading}
                 />
 
                 <div className="flex flex-wrap items-center justify-center gap-2">
@@ -108,6 +112,7 @@ export function ChatWelcomeScreen({
                             variant="outline"
                             className="gap-2 bg-background/50 hover:bg-accent hover:text-accent-foreground border-border/50"
                             onClick={() => onSend(item.message)}
+                            disabled={isLoading}
                         >
                             <item.icon className="size-4 text-primary" />
                             <span>{item.label}</span>
