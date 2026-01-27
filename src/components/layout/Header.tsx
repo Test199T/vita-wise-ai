@@ -20,6 +20,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
+import { DarkModeToggle } from "@/components/DarkModeToggle";
 
 type NavItem =
   | { title: string; href: string }
@@ -323,6 +324,7 @@ export function Header() {
                 <NotificationBellIcon className="h-5 w-5" size={20} />
               </Link>
             </Button>
+            <DarkModeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-transparent px-2 py-1 rounded-lg">

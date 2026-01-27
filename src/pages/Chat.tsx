@@ -42,6 +42,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { NotificationBellIcon } from "@/components/ui/notification-bell-icon";
 import { StreamingText } from "@/components/chat/StreamingText";
+import { DarkModeToggle } from "@/components/DarkModeToggle";
 
 export default function Chat() {
   const navigate = useNavigate();
@@ -1241,6 +1242,9 @@ export default function Chat() {
               <span className="text-xs text-white font-medium">3</span>
             </div>
           </Link>
+
+          {/* Dark Mode Toggle */}
+          <DarkModeToggle variant="header" />
 
           {/* User Profile Dropdown */}
           <DropdownMenu>
