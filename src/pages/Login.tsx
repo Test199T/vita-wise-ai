@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import posthog from "posthog-js";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -122,7 +123,16 @@ export default function Login() {
           return;
         }
 
-        localStorage.setItem('user', JSON.stringify(data.user || {}));
+        const userData = data.user || {};
+        localStorage.setItem('user', JSON.stringify(userData));
+
+        // PostHog Identification
+        if (userData.id) {
+          posthog.identify(userData.id, {
+            email: userData.email,
+            name: userData.first_name ? `${userData.first_name} ${userData.last_name || ''}`.trim() : userData.username
+          });
+        }
         if (rememberMe) {
           localStorage.setItem('rememberMe_email', email);
         } else {

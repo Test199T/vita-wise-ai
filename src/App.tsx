@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { OnboardingProvider } from "./contexts/OnboardingContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import SmoothScroll from "./components/SmoothScroll";
+
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -29,136 +30,149 @@ import ChatAnalytics from "./pages/ChatAnalytics";
 
 const queryClient = new QueryClient();
 
+const AppContent = () => {
+  // Dark mode is now handled by DarkModeToggle component via localStorage
+  // No need for PostHog feature flag anymore
+
+  return (
+    <>
+      <SmoothScroll />
+      <OnboardingProvider>
+        <TooltipProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/demo/gradual-blur" element={<GradualBlurDemo />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route
+                path="/onboarding"
+                element={
+                  <ProtectedRoute>
+                    <Onboarding />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/health-goals"
+                element={
+                  <ProtectedRoute>
+                    <HealthGoals />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/exercise-log"
+                element={
+                  <ProtectedRoute>
+                    <ExerciseLog />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/food-log"
+                element={
+                  <ProtectedRoute>
+                    <FoodLog />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/sleep-log"
+                element={
+                  <ProtectedRoute>
+                    <SleepLog />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/water-log"
+                element={
+                  <ProtectedRoute>
+                    <WaterLog />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/ai-insights"
+                element={
+                  <ProtectedRoute>
+                    <AIInsights />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/chat"
+                element={
+                  <ProtectedRoute>
+                    <SquareChat />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/chat/:sessionId"
+                element={
+                  <ProtectedRoute>
+                    <SquareChat />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/chat/analytics"
+                element={
+                  <ProtectedRoute>
+                    <ChatAnalytics />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/notifications"
+                element={
+                  <ProtectedRoute>
+                    <Notifications />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/debug"
+                element={
+                  <ProtectedRoute>
+                    <Debug />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+          <Toaster />
+          <Sonner />
+        </TooltipProvider>
+      </OnboardingProvider>
+    </>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <SmoothScroll />
-    <OnboardingProvider>
-      <TooltipProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/demo/gradual-blur" element={<GradualBlurDemo />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route
-              path="/onboarding"
-              element={
-                <ProtectedRoute>
-                  <Onboarding />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/health-goals"
-              element={
-                <ProtectedRoute>
-                  <HealthGoals />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/exercise-log"
-              element={
-                <ProtectedRoute>
-                  <ExerciseLog />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/food-log"
-              element={
-                <ProtectedRoute>
-                  <FoodLog />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/sleep-log"
-              element={
-                <ProtectedRoute>
-                  <SleepLog />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/water-log"
-              element={
-                <ProtectedRoute>
-                  <WaterLog />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/ai-insights"
-              element={
-                <ProtectedRoute>
-                  <AIInsights />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/chat"
-              element={
-                <ProtectedRoute>
-                  <SquareChat />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/chat/:sessionId"
-              element={
-                <ProtectedRoute>
-                  <SquareChat />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/chat/analytics"
-              element={
-                <ProtectedRoute>
-                  <ChatAnalytics />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/notifications"
-              element={
-                <ProtectedRoute>
-                  <Notifications />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/debug"
-              element={
-                <ProtectedRoute>
-                  <Debug />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </OnboardingProvider>
+    <AppContent />
   </QueryClientProvider>
 );
 

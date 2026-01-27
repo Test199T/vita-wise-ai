@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { ChatSidebar } from "@/components/square-chat/chat/chat-sidebar";
 import { ChatMain } from "@/components/square-chat/chat/chat-main";
-import { ThemeToggle } from "@/components/square-chat/theme-toggle";
+// import { ThemeToggle } from "@/components/square-chat/theme-toggle";
 import { Sheet, SheetContent } from "@/components/square-chat/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { GridPattern } from "@/components/square-chat/ui/grid-pattern";
@@ -119,6 +119,16 @@ export default function ChatPage() {
         if (!id) return false;
         return UUID_REGEX.test(id);
     };
+
+    // Initialize theme from localStorage (match global DarkModeToggle logic)
+    useEffect(() => {
+        const isDarkMode = localStorage.getItem("darkMode") === "true";
+        if (isDarkMode) {
+            document.documentElement.classList.add("dark");
+        } else {
+            document.documentElement.classList.remove("dark");
+        }
+    }, []);
 
     // Fetch sessions only once on mount
     useEffect(() => {
@@ -257,12 +267,12 @@ export default function ChatPage() {
                     </Button>
 
                     <div className="flex items-center gap-2">
-                        <ThemeToggle />
+                        {/* ThemeToggle removed */}
                     </div>
                 </div>
 
                 <div className="hidden md:flex absolute top-4 right-4 gap-2 z-20">
-                    <ThemeToggle />
+                    {/* ThemeToggle removed */}
                 </div>
 
                 <div className="flex-1 min-h-0 overflow-hidden relative">
