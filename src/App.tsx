@@ -7,6 +7,8 @@ import { OnboardingProvider } from "./contexts/OnboardingContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import SmoothScroll from "./components/SmoothScroll";
 
+import AnimatedBackground from "./components/layout/AnimatedBackground";
+
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -36,6 +38,7 @@ const AppContent = () => {
 
   return (
     <>
+      <AnimatedBackground />
       <SmoothScroll />
       <OnboardingProvider>
         <TooltipProvider>

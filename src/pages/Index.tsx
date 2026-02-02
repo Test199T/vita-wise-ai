@@ -58,6 +58,7 @@ import { BentoCard, BentoGrid, FoodDemoModal, AIChatDemoModal, HealthDashboardDe
 import { Footer } from "@/components/footer";
 import { CallToAction } from "@/components/cta";
 import { NotificationBellIcon } from "@/components/ui/notification-bell-icon";
+import TextShimmer from "@/components/ui/text-shimmer";
 import { cn } from "@/lib/utils";
 import { LinearGridBackground } from "@/components/ui/linear-grid-background";
 import { HeroHighlight } from "@/components/ui/hero-highlight";
@@ -389,16 +390,9 @@ const InteractiveAIChatCard = () => {
                         {isTyping && !currentAIMessageId && (
                             <div className="self-start bg-gradient-to-br from-white to-slate-50 text-slate-700 px-4 py-3 rounded-2xl rounded-tl-sm border border-slate-300 shadow-md">
                                 <div className="flex items-center gap-1.5">
-                                    {[0, 150, 300].map((delay, i) => (
-                                        <div
-                                            key={i}
-                                            className="w-2 h-2 rounded-full bg-gradient-to-r from-sky-400 to-emerald-400 animate-bounce"
-                                            style={{
-                                                animationDelay: `${delay}ms`,
-                                                boxShadow: '0 0 8px rgba(14, 165, 233, 0.4)'
-                                            }}
-                                        />
-                                    ))}
+                                    <TextShimmer className="font-mono text-sm" duration={1}>
+                                        Thinking...
+                                    </TextShimmer>
                                 </div>
                             </div>
                         )}
@@ -995,7 +989,7 @@ const HeroSection = () => {
     }, { scope: containerRef }); // Scope to container for performance
 
     return (
-        <section className="relative min-h-[85vh] md:h-[900px] bg-gradient-to-b from-white via-slate-50 to-[#f9f9f9] overflow-hidden">
+        <section className="relative min-h-[85vh] md:h-[900px] overflow-hidden">
             {/* Light Theme Background Effects */}
             <div className="absolute inset-0 z-0">
                 {/* 🔥 Bold Premium Background - VitaWise Style */}
@@ -1446,7 +1440,7 @@ const Index = () => {
     }, [navigate]);
 
     return (
-        <div className="min-h-screen bg-background text-foreground font-prompt selection:bg-primary/20 scroll-smooth">
+        <div className="min-h-screen text-foreground font-prompt selection:bg-primary/20 scroll-smooth relative">
             <Header />
 
             <main>
@@ -1457,7 +1451,7 @@ const Index = () => {
                     <div className="absolute inset-0 bg-[linear-gradient(to_right,#00000008_1px,transparent_1px),linear-gradient(to_bottom,#00000008_1px,transparent_1px)] bg-[size:24px_24px] opacity-50 pointer-events-none" />
 
                     <div className="relative mx-auto flex w-full max-w-6xl flex-col justify-between border-x-dashed-wide py-16">
-                        <div className="-translate-x-1/2 -top-px pointer-events-none absolute left-1/2 w-screen border-t border-dashed border-slate-300" />
+                        <div className="-translate-x-1/2 -top-px pointer-events-none absolute left-1/2 w-full border-t border-dashed border-slate-300" />
 
                         <div className="container mx-auto px-4 py-8">
                             {/* Bento Grid - Magic UI Style Layout */}
@@ -1584,7 +1578,7 @@ const Index = () => {
                             </div>
                         </div>
 
-                        <div className="-translate-x-1/2 -bottom-px pointer-events-none absolute left-1/2 w-screen border-b border-dashed border-slate-300" />
+                        <div className="-translate-x-1/2 -bottom-px pointer-events-none absolute left-1/2 w-full border-b border-dashed border-slate-300" />
                     </div>
                 </div>
                 <CallToAction />

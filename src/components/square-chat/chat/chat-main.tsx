@@ -26,6 +26,8 @@ export function ChatMain() {
         updateSessionTitle,
         resetConversation,
         loadMoreMessages,
+        editMessage,
+        regenerateFromMessage,
     } = useChatStore();
 
     // Convert store messages to component format
@@ -94,9 +96,37 @@ export function ChatMain() {
     };
 
     const handleSendMessage = async (content: string, imageData?: ImageData) => {
-        // For conversation view, always have a session
         await sendMessageStream(content, imageData);
         setMessage("");
+    };
+
+    const handleEdit = (id: string, newContent: string) => {
+        // Edit and regenerate response
+        regenerateFromMessage(id, newContent);
+    };
+
+    const handleRegenerate = () => {
+        if (messages.length === 0) return;
+
+        const lastMsg = messages[messages.length - 1];
+        if (lastMsg.sender === 'ai') {
+            // Find previous user message
+            const prevUserMsg = messages[messages.length - 2];
+            if (prevUserMsg && prevUserMsg.sender === 'user') {
+                regenerateFromMessage(prevUserMsg.id);
+            }
+        } else if (lastMsg.sender === 'user' || lastMsg.id.startsWith('error-')) {
+            // Retry last user message (or if last was error)
+            // If last is error, find the user msg before it? 
+            // Usually error msg replaces AI msg. 
+            // If error is last, it has sender 'ai'. So it falls into first block.
+            // If sender is 'user' (stuck?), regenerate it.
+            regenerateFromMessage(lastMsg.id);
+        }
+    };
+
+    const handleFeedback = (id: string, feedback: 'like' | 'dislike') => {
+        console.log("Feedback:", id, feedback);
     };
 
     const handleLoadMore = async () => {
@@ -120,6 +150,9 @@ export function ChatMain() {
                     onLoadMore={handleLoadMore}
                     selectedModel={selectedModel}
                     onModelChange={setSelectedModel}
+                    onEdit={handleEdit}
+                    onRegenerate={handleRegenerate}
+                    onFeedback={handleFeedback}
                 />
             ) : (
                 <ChatWelcomeScreen

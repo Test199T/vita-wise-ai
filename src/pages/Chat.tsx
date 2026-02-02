@@ -43,6 +43,7 @@ import remarkGfm from "remark-gfm";
 import { NotificationBellIcon } from "@/components/ui/notification-bell-icon";
 import { StreamingText } from "@/components/chat/StreamingText";
 import { DarkModeToggle } from "@/components/DarkModeToggle";
+import TextShimmer from "@/components/ui/text-shimmer";
 
 export default function Chat() {
   const navigate = useNavigate();
@@ -1834,20 +1835,9 @@ export default function Chat() {
                       <div className="w-full py-6 bg-white">
                         <div className="max-w-4xl mx-auto px-8">
                           <div className="flex items-center space-x-2">
-                            <div className="flex space-x-1">
-                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                              <div
-                                className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                                style={{ animationDelay: "0.1s" }}
-                              />
-                              <div
-                                className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                                style={{ animationDelay: "0.2s" }}
-                              />
-                            </div>
-                            <span className="text-sm text-gray-500 ml-2">
-                              AI กำลังพิมพ์...
-                            </span>
+                            <TextShimmer className="font-mono text-sm" duration={1}>
+                              Thinking...
+                            </TextShimmer>
                           </div>
                         </div>
                       </div>

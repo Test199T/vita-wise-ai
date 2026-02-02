@@ -83,8 +83,8 @@ export function Header() {
   // ถ้าผู้ใช้ไม่ได้เข้าสู่ระบบ ให้แสดงเฉพาะโลโก้และปุ่มเข้าสู่ระบบ
   if (!isLoggedIn) {
     return (
-      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-sm border-b border-border shadow-soft">
-        <div className="container mx-auto px-4 py-3">
+      <header className="sticky top-4 z-[100] mx-4 md:mx-auto max-w-7xl transition-all duration-300">
+        <div className="bg-white/90 backdrop-blur-xl rounded-full border border-white/40 shadow-xl px-6 py-3">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <Link to="/" className="flex items-center gap-2">
@@ -98,10 +98,10 @@ export function Header() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button asChild variant="outline">
+              <Button asChild variant="outline" className="rounded-full">
                 <Link to="/login">เข้าสู่ระบบ</Link>
               </Button>
-              <Button asChild>
+              <Button asChild className="rounded-full">
                 <Link to="/register">สมัครสมาชิก</Link>
               </Button>
             </div>
@@ -116,8 +116,8 @@ export function Header() {
   const userInitial = userName.charAt(0);
 
   return (
-    <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-sm border-b border-border shadow-soft">
-      <div className="container mx-auto px-4 py-3">
+    <header className="sticky top-4 z-[100] mx-4 md:mx-auto max-w-7xl transition-all duration-300">
+      <div className="bg-white/90 backdrop-blur-xl rounded-full border border-white/40 shadow-xl px-6 py-3">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Link to="/dashboard" className="flex items-center gap-2">
