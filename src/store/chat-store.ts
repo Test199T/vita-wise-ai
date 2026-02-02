@@ -69,8 +69,10 @@ interface ChatState {
     loadMoreMessages: () => Promise<void>;
     sendMessage: (content: string, imageData?: ImageData) => Promise<void>;
     sendMessageStream: (content: string, imageData?: ImageData) => Promise<void>;
+    regenerateFromMessage: (messageId: string, newContent?: string) => Promise<void>;
     sendMessageStreamWithSession: (sessionId: string, content: string, imageData?: ImageData) => Promise<void>;
     updateStreamingText: (text: string) => void;
+    editMessage: (messageId: string, newContent: string) => void;
     resetConversation: () => void;
     clearSessionError: () => void;
 }
@@ -120,6 +122,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
     // Update streaming text (for real-time display)
     updateStreamingText: (text) => {
         set({ streamingText: text });
+    },
+
+    // Edit message locally
+    editMessage: (messageId, newContent) => {
+        set((state) => ({
+            messages: state.messages.map((msg) =>
+                msg.id === messageId ? { ...msg, content: newContent } : msg
+            ),
+        }));
     },
 
     // Clear session error
@@ -969,7 +980,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 buffer += decoder.decode(value, { stream: true });
                 const lines = buffer.split("\n");
 
-                // Keep the last incomplete line in buffer
                 buffer = lines.pop() || "";
 
                 for (const line of lines) {
@@ -983,12 +993,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
                             if (data.done) {
                                 // Stream complete
-                                console.log("Stream complete:", fullMessage);
                             } else if (data.token) {
-                                // Append token to message
                                 fullMessage += data.token;
 
-                                // Update streaming text and message in real-time
                                 set((s) => ({
                                     streamingText: fullMessage,
                                     messages: s.messages.map((msg) =>
@@ -998,12 +1005,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
                                     ),
                                 }));
                             } else if (data.error) {
-                                console.error("Stream error:", data.error);
                                 throw new Error(data.error);
                             }
-                        } catch (parseError) {
-                            // Skip invalid JSON lines
-                            console.warn("Failed to parse SSE data:", trimmedLine);
+                        } catch (e) {
+                            console.error("Error parsing stream data:", e);
                         }
                     }
                 }
@@ -1032,7 +1037,152 @@ export const useChatStore = create<ChatState>((set, get) => ({
         } catch (error) {
             console.error("Error in streaming message:", error);
 
-            // Update placeholder with error message
+            set((s) => ({
+                messages: s.messages.map((msg) =>
+                    msg.id === streamingMsgId
+                        ? {
+                            ...msg,
+                            id: `error-${Date.now()}`,
+                            content: `⚠️ ${error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการเชื่อมต่อ"} กรุณาลองใหม่อีกครั้ง`,
+                        }
+                        : msg
+                ),
+                streamingMessageId: null,
+                streamingText: "",
+            }));
+        } finally {
+            set({ isSending: false, isStreaming: false });
+        }
+    },
+
+    // Regenerate from specific message
+    regenerateFromMessage: async (messageId, newContent) => {
+        const token = tokenUtils.getValidToken();
+        if (!token) return;
+
+        const state = get();
+        const sessionId = state.selectedSessionId;
+        if (!sessionId) return;
+
+        const msgIndex = state.messages.findIndex(m => m.id === messageId);
+        if (msgIndex === -1) return;
+
+        const targetMessage = state.messages[msgIndex];
+        const contentToSend = newContent || targetMessage.content;
+
+        // Update content if newContent and remove subsequent messages
+        // We use slice(0, msgIndex + 1) to keep the target message and remove anything after it
+        const updatedMessages = state.messages.slice(0, msgIndex + 1).map((msg, idx) =>
+            idx === msgIndex && newContent ? { ...msg, content: newContent } : msg
+        );
+
+        const streamingMsgId = `streaming-${Date.now()}`;
+        const aiPlaceholder: Message = {
+            id: streamingMsgId,
+            content: "",
+            sender: "ai",
+            timestamp: new Date(),
+        };
+
+        set({
+            messages: [...updatedMessages, aiPlaceholder],
+            streamingMessageId: streamingMsgId,
+            isSending: true,
+            isStreaming: true,
+            streamingText: ""
+        });
+
+        try {
+            // Text only regeneration for now
+            const streamUrl = `${apiConfig.baseUrl}/api/chat/sessions/${sessionId}/messages/stream`;
+            const response = await fetch(streamUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    message: contentToSend,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const reader = response.body?.getReader();
+            if (!reader) {
+                throw new Error("No response body reader available");
+            }
+
+            const decoder = new TextDecoder();
+            let fullMessage = "";
+            let buffer = "";
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split("\n");
+
+                buffer = lines.pop() || "";
+
+                for (const line of lines) {
+                    const trimmedLine = line.trim();
+                    if (trimmedLine.startsWith("data: ")) {
+                        try {
+                            const jsonStr = trimmedLine.slice(6);
+                            if (!jsonStr) continue;
+
+                            const data = JSON.parse(jsonStr);
+
+                            if (data.done) {
+                                // Stream complete
+                            } else if (data.token) {
+                                fullMessage += data.token;
+
+                                set((s) => ({
+                                    streamingText: fullMessage,
+                                    messages: s.messages.map((msg) =>
+                                        msg.id === streamingMsgId
+                                            ? { ...msg, content: fullMessage }
+                                            : msg
+                                    ),
+                                }));
+                            } else if (data.error) {
+                                throw new Error(data.error);
+                            }
+                        } catch (e) {
+                            console.error("Error parsing stream data:", e);
+                        }
+                    }
+                }
+            }
+
+            // Finalize the message
+            set((s) => ({
+                messages: s.messages.map((msg) =>
+                    msg.id === streamingMsgId
+                        ? { ...msg, id: `ai-${Date.now()}`, content: fullMessage || "ขออภัย ไม่สามารถตอบกลับได้" }
+                        : msg
+                ),
+                streamingMessageId: null,
+                streamingText: "",
+            }));
+
+            // Update session last message
+            set((s) => ({
+                sessions: s.sessions.map((session) =>
+                    session.id === sessionId
+                        ? { ...session, lastMessage: contentToSend, updatedAt: new Date() }
+                        : session
+                ),
+            }));
+
+        } catch (error) {
+            console.error("Error in streaming message:", error);
+
             set((s) => ({
                 messages: s.messages.map((msg) =>
                     msg.id === streamingMsgId

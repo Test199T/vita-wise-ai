@@ -27,6 +27,9 @@ interface ChatConversationViewProps {
     onLoadMore?: () => void;
     selectedModel?: string;
     onModelChange?: (modelId: string) => void;
+    onRegenerate?: () => void;
+    onEdit?: (messageId: string, content: string) => void;
+    onFeedback?: (messageId: string, feedback: 'like' | 'dislike') => void;
 }
 
 export function ChatConversationView({
@@ -43,6 +46,9 @@ export function ChatConversationView({
     onLoadMore,
     selectedModel = "square-3",
     onModelChange = () => { },
+    onRegenerate,
+    onEdit,
+    onFeedback,
 }: ChatConversationViewProps) {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
@@ -136,11 +142,16 @@ export function ChatConversationView({
                         </div>
                     )}
 
-                    {messages.map((msg) => (
+                    {messages.map((msg, index) => (
                         <ChatMessage
                             key={msg.id}
                             message={msg}
                             isStreaming={isStreaming && msg.id === streamingMessageId}
+                            isLastMessage={index === messages.length - 1} // We need index here
+                            onRegenerate={index === messages.length - 1 && msg.sender === 'ai' ? onRegenerate : undefined}
+                            onEdit={onEdit}
+                            onFeedback={onFeedback}
+                            onSendPrompt={(prompt) => onSend(prompt)}
                         />
                     ))}
                     {isLoading && !isStreaming && (

@@ -210,13 +210,13 @@ export function ChatInputBox({
                 </div>
             )}
 
-            {/* Main Capsule Input - Glassmorphism with Micro-interactions */}
+            {/* Main Input Container - ChatGPT Style */}
             <div className="group relative">
-                {/* Hover glow effect - appears on hover */}
-                <div className="absolute -inset-1 rounded-[36px] bg-gradient-to-r from-emerald-500/20 via-cyan-500/20 to-emerald-500/20 opacity-0 blur-xl transition-all duration-500 group-hover:opacity-100 group-focus-within:opacity-100" />
-
-                {/* Glassmorphism container */}
-                <div className="relative flex items-end gap-2 bg-white/60 dark:bg-gray-900/60 backdrop-blur-2xl p-2 rounded-[32px] border border-white/30 dark:border-white/10 shadow-lg shadow-black/5 dark:shadow-black/20 transition-all duration-300 ease-out group-hover:bg-white/70 dark:group-hover:bg-gray-900/70 group-hover:border-emerald-500/30 group-hover:shadow-xl group-hover:shadow-emerald-500/10 group-focus-within:border-emerald-500/50 group-focus-within:shadow-emerald-500/20 group-focus-within:bg-white/80 dark:group-focus-within:bg-gray-900/80">
+                {/* ChatGPT-style container */}
+                <div
+                    className="relative flex items-end gap-2 bg-white dark:bg-[#303030] p-2 shadow-md transition-all duration-200 ease-in-out"
+                    style={{ borderRadius: '26px' }}
+                >
                     <input
                         type="file"
                         ref={fileInputRef}
@@ -238,15 +238,15 @@ export function ChatInputBox({
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="size-10 rounded-full shrink-0 text-muted-foreground hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20 hover:text-emerald-600 dark:hover:text-emerald-400 mb-0.5 ml-1 transition-all duration-300 ease-out hover:scale-110 hover:rotate-90 active:scale-95"
+                            className="size-9 rounded-full shrink-0 text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-foreground transition-all duration-200"
                             onClick={() => setShowFileMenu(!showFileMenu)}
                         >
-                            <PlusIcon className="size-5 transition-transform duration-300" />
+                            <PlusIcon className="size-5" />
                         </Button>
 
-                        {/* File Menu Dropdown - Glassmorphism */}
+                        {/* File Menu Dropdown */}
                         {showFileMenu && (
-                            <div className="absolute bottom-full left-0 mb-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-xl shadow-xl shadow-black/10 dark:shadow-black/30 border border-white/30 dark:border-white/10 overflow-hidden min-w-[180px] z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                            <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-[#303030] rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden min-w-[180px] z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
                                 <button
                                     onClick={() => {
                                         fileInputRef.current?.click();
@@ -264,7 +264,7 @@ export function ChatInputBox({
                                         cameraInputRef.current?.click();
                                         setShowFileMenu(false);
                                     }}
-                                    className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 text-sm transition-colors border-t border-border"
+                                    className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 text-sm transition-colors border-t border-gray-200 dark:border-gray-700"
                                 >
                                     <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -278,7 +278,7 @@ export function ChatInputBox({
 
                     {/* Input Area or Waveform */}
                     {isListening ? (
-                        <div className="flex-1 flex items-center justify-center gap-0.5 px-4">
+                        <div className="flex-1 flex items-center justify-center gap-0.5 min-h-[40px] px-4">
                             {[...Array(60)].map((_, i) => (
                                 <div
                                     key={i}
@@ -297,7 +297,7 @@ export function ChatInputBox({
                             value={message}
                             onChange={(e) => onMessageChange(e.target.value)}
                             disabled={isLoading}
-                            className="min-h-[50px] max-h-[200px] w-full resize-none border-0 bg-transparent px-2 py-3.5 text-base font-normal focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/50 leading-relaxed disabled:opacity-50"
+                            className="min-h-[40px] max-h-[200px] w-full resize-none border-0 bg-transparent px-2 py-2 text-base font-normal focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 leading-relaxed disabled:opacity-50"
                             onKeyDown={(e) => {
                                 if (e.key === "Enter" && !e.shiftKey && !isLoading) {
                                     e.preventDefault();
@@ -321,7 +321,7 @@ export function ChatInputBox({
                             <Button
                                 size="icon"
                                 onClick={cancelListening}
-                                className="size-10 rounded-full shrink-0 mb-0.5 transition-all duration-300 shadow-md bg-gray-500 hover:bg-gray-600 text-white"
+                                className="size-9 rounded-full shrink-0 transition-all duration-200 bg-gray-500 hover:bg-gray-600 text-white"
                             >
                                 <X className="size-5" />
                             </Button>
@@ -329,7 +329,7 @@ export function ChatInputBox({
                             <Button
                                 size="icon"
                                 onClick={confirmListening}
-                                className="size-10 rounded-full shrink-0 mb-0.5 mr-1 transition-all duration-300 shadow-md bg-green-500 hover:bg-green-600 text-white"
+                                className="size-9 rounded-full shrink-0 transition-all duration-200 bg-green-500 hover:bg-green-600 text-white"
                             >
                                 <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -337,14 +337,14 @@ export function ChatInputBox({
                             </Button>
                         </>
                     ) : (
-                        <div className="flex items-end gap-1 mb-0.5 mr-1">
-                            {/* Mic Button - Always visible unless loading */}
+                        <div className="flex items-center gap-1.5">
+                            {/* Mic Button */}
                             {!isLoading && ('webkitSpeechRecognition' in window) && (
                                 <Button
                                     variant="ghost"
                                     size="icon"
                                     onClick={toggleListening}
-                                    className="size-10 rounded-full shrink-0 text-muted-foreground hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400"
+                                    className="size-9 rounded-full shrink-0 text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-foreground"
                                 >
                                     <Mic className="size-5" />
                                 </Button>
@@ -356,12 +356,12 @@ export function ChatInputBox({
                                 onClick={handleSendClick}
                                 disabled={isLoading || (!message.trim() && !imageData)}
                                 className={cn(
-                                    "size-10 rounded-full shrink-0 transition-all duration-300 ease-out shadow-lg",
+                                    "size-9 rounded-full shrink-0 transition-all duration-200",
                                     isLoading
-                                        ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white"
+                                        ? "bg-foreground text-background"
                                         : (message.trim() || imageData)
-                                            ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white hover:from-emerald-600 hover:to-cyan-600 hover:scale-110 hover:shadow-emerald-500/40 active:scale-95"
-                                            : "bg-gray-200 dark:bg-gray-700 text-muted-foreground cursor-not-allowed opacity-50"
+                                            ? "bg-foreground text-background hover:opacity-70"
+                                            : "bg-gray-300 dark:bg-gray-600 text-muted-foreground cursor-not-allowed opacity-30"
                                 )}
                             >
                                 {isLoading ? (
@@ -375,25 +375,46 @@ export function ChatInputBox({
                 </div>
             </div>
 
-            {/* Bottom Tools & Model Selection (Optional) */}
+            {/* Bottom Tools & Health Quick Actions */}
             {showTools && (
-                <div className="flex items-center justify-between px-2 opacity-70 hover:opacity-100 transition-opacity duration-200">
+                <div className="flex items-center justify-between px-2 opacity-80 hover:opacity-100 transition-opacity duration-200">
+                    {/* Health Quick Actions */}
                     <div className="flex items-center gap-2">
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="gap-1.5 h-8 rounded-full bg-secondary/30 hover:bg-secondary/50 text-xs px-3 font-normal backdrop-blur-sm"
+                            onClick={() => onSend("บันทึกอาหารวันนี้")}
+                            className="gap-1.5 h-8 rounded-full bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/40 text-orange-600 dark:text-orange-400 text-xs px-3 font-medium border border-orange-200 dark:border-orange-800"
                         >
-                            <CircleDashedIcon className="size-3.5" />
-                            <span>Deep Search</span>
+                            <span>🍎</span>
+                            <span>อาหาร</span>
                         </Button>
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="gap-1.5 h-8 rounded-full bg-secondary/30 hover:bg-secondary/50 text-xs px-3 font-normal backdrop-blur-sm"
+                            onClick={() => onSend("บันทึกการดื่มน้ำวันนี้")}
+                            className="gap-1.5 h-8 rounded-full bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-xs px-3 font-medium border border-blue-200 dark:border-blue-800"
                         >
-                            <SparklesIcon className="size-3.5" />
-                            <span>Think</span>
+                            <span>💧</span>
+                            <span>น้ำ</span>
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onSend("บันทึกการนอนหลับ")}
+                            className="gap-1.5 h-8 rounded-full bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40 text-purple-600 dark:text-purple-400 text-xs px-3 font-medium border border-purple-200 dark:border-purple-800"
+                        >
+                            <span>😴</span>
+                            <span>การนอน</span>
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onSend("สรุปสุขภาพวันนี้")}
+                            className="gap-1.5 h-8 rounded-full bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 text-xs px-3 font-medium border border-emerald-200 dark:border-emerald-800"
+                        >
+                            <span>📊</span>
+                            <span>สรุป</span>
                         </Button>
                     </div>
 

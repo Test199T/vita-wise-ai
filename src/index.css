@@ -134,6 +134,10 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    width: 100%;
+    max-width: 100vw;
+    min-height: 100%;
+    overflow-x: hidden;
   }
 
   * {
@@ -141,7 +145,13 @@
   }
 
   body {
-    @apply bg-background text-foreground font-prompt;
+    @apply text-foreground font-prompt;
+    background-color: transparent;
+    width: 100%;
+    max-width: 100vw;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    /* Ensure transparent background */
   }
 
   a {
@@ -428,7 +438,7 @@
   /* ================================================
      AI Message Content Styles - Professional Formatting
      ================================================ */
-  
+
   .ai-message-content {
     @apply text-gray-700 dark:text-gray-300;
   }
@@ -603,10 +613,14 @@
 
 /* Cursor blink animation for streaming */
 @keyframes cursor-blink {
-  0%, 50% {
+
+  0%,
+  50% {
     opacity: 1;
   }
-  51%, 100% {
+
+  51%,
+  100% {
     opacity: 0;
   }
 }
@@ -617,10 +631,13 @@
 
 /* Smooth bounce for thinking indicator */
 @keyframes thinking-bounce {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0);
     opacity: 0.5;
   }
+
   50% {
     transform: translateY(-4px);
     opacity: 1;
@@ -758,4 +775,38 @@
 
 .animate-bling {
   animation: bling 0.8s ease-in-out;
+}
+
+/* Animated Background */
+@keyframes bg-breathe {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+    /* Subtle zoom */
+  }
+}
+
+@keyframes bg-float {
+
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1.05);
+  }
+
+  33% {
+    transform: translate(-1%, 1%) scale(1.05);
+  }
+
+  66% {
+    transform: translate(1%, -1%) scale(1.05);
+  }
+}
+
+.animate-bg-motion {
+  animation: bg-float 20s ease-in-out infinite alternate;
 }
