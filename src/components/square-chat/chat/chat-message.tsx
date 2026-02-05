@@ -12,7 +12,7 @@ import {
     Volume2, VolumeX, Pencil, Clock
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { detectMessageType, MESSAGE_EMOJIS, type MessageType } from "@/utils/aiMessageFormatter";
+import { detectMessageType, type MessageType } from "@/utils/aiMessageFormatter";
 import DecryptedText from "@/components/DecryptedText";
 
 interface Message {
@@ -31,6 +31,23 @@ interface ChatMessageProps {
     onEdit?: (messageId: string, newContent: string) => void;
     onFeedback?: (messageId: string, feedback: 'like' | 'dislike') => void;
     onSendPrompt?: (prompt: string) => void;
+}
+
+function getMessageTypeMeta(type: MessageType): { label: string; icon: React.ReactNode } | null {
+    switch (type) {
+        case "health_advice":
+            return { label: "คำแนะนำสุขภาพ", icon: <Sparkles className="h-3.5 w-3.5" /> };
+        case "analysis":
+            return { label: "การวิเคราะห์", icon: <Brain className="h-3.5 w-3.5" /> };
+        case "warning":
+            return { label: "ข้อควรระวัง", icon: <AlertTriangle className="h-3.5 w-3.5" /> };
+        case "recommendation":
+            return { label: "คำแนะนำ", icon: <Lightbulb className="h-3.5 w-3.5" /> };
+        case "summary":
+            return { label: "สรุป", icon: <CheckCircle2 className="h-3.5 w-3.5" /> };
+        default:
+            return null;
+    }
 }
 
 // Message Actions Component - Like/Dislike, Copy, Regenerate, TTS
@@ -90,15 +107,15 @@ function MessageActions({
     };
 
     return (
-        <div className="flex items-center gap-1 mt-3 pt-2 border-t border-gray-100 dark:border-gray-700/50">
+        <div className="flex items-center gap-1.5 mt-4 pt-3 border-t border-border/70">
             {/* Like */}
             <button
                 onClick={() => handleFeedback('like')}
                 className={cn(
-                    "p-1.5 rounded-lg transition-all duration-200",
+                    "p-1.5 rounded-md transition-colors",
                     feedback === 'like'
-                        ? "text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10"
-                        : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-500/15"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
                 )}
                 title="ชอบคำตอบนี้"
             >
@@ -109,26 +126,26 @@ function MessageActions({
             <button
                 onClick={() => handleFeedback('dislike')}
                 className={cn(
-                    "p-1.5 rounded-lg transition-all duration-200",
+                    "p-1.5 rounded-md transition-colors",
                     feedback === 'dislike'
-                        ? "text-red-500 bg-red-50 dark:bg-red-500/10"
-                        : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        ? "text-red-600 bg-red-50 dark:bg-red-500/15"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
                 )}
                 title="ไม่ชอบคำตอบนี้"
             >
                 <ThumbsDown className="w-4 h-4" />
             </button>
 
-            <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1" />
+            <div className="w-px h-4 bg-border mx-0.5" />
 
             {/* Copy */}
             <button
                 onClick={handleCopy}
                 className={cn(
-                    "p-1.5 rounded-lg transition-all duration-200",
+                    "p-1.5 rounded-md transition-colors",
                     copied
-                        ? "text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10"
-                        : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-500/15"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
                 )}
                 title="คัดลอก"
             >
@@ -139,7 +156,7 @@ function MessageActions({
             {onRegenerate && (
                 <button
                     onClick={onRegenerate}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+                    className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-colors"
                     title="สร้างคำตอบใหม่"
                 >
                     <RefreshCw className="w-4 h-4" />
@@ -150,10 +167,10 @@ function MessageActions({
             <button
                 onClick={handleSpeak}
                 className={cn(
-                    "p-1.5 rounded-lg transition-all duration-200",
+                    "p-1.5 rounded-md transition-colors",
                     isSpeaking
-                        ? "text-blue-500 bg-blue-50 dark:bg-blue-500/10"
-                        : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        ? "text-blue-600 bg-blue-50 dark:bg-blue-500/15"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
                 )}
                 title={isSpeaking ? "หยุดอ่าน" : "อ่านออกเสียง"}
             >
@@ -261,14 +278,10 @@ function SuggestedPrompts({
                 <button
                     key={idx}
                     onClick={() => onSendPrompt(suggestion)}
-                    className="px-3 py-1.5 text-xs font-medium rounded-full 
-                        bg-gray-100 dark:bg-gray-700 
-                        text-gray-600 dark:text-gray-300
-                        hover:bg-emerald-100 dark:hover:bg-emerald-900/30
-                        hover:text-emerald-700 dark:hover:text-emerald-400
-                        border border-gray-200 dark:border-gray-600
-                        hover:border-emerald-300 dark:hover:border-emerald-700
-                        transition-all duration-200"
+                    className="px-3 py-1.5 text-xs font-medium rounded-md
+                        bg-background text-muted-foreground border border-border
+                        hover:text-foreground hover:bg-muted/50 hover:border-border/80
+                        transition-colors"
                 >
                     {suggestion}
                 </button>
@@ -429,65 +442,55 @@ function StreamingContent({
 const createMarkdownComponents = (messageType: MessageType): Partial<Components> => ({
     // Headings with visual hierarchy
     h1: ({ children }) => (
-        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 mt-6 pb-2 border-b border-gray-200 dark:border-gray-700 first:mt-0">
+        <h1 className="text-base font-semibold text-foreground mb-3 mt-5 pb-1.5 border-b border-border first:mt-0">
             {children}
         </h1>
     ),
     h2: ({ children }) => (
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3 mt-5 flex items-center gap-2 first:mt-0">
-            <span className="w-1 h-5 bg-emerald-500 rounded-full flex-shrink-0"></span>
+        <h2 className="text-[15px] font-semibold text-foreground mb-2.5 mt-4 first:mt-0 flex items-center gap-2">
+            <span className="w-0.5 h-4 bg-muted-foreground/40 rounded-full flex-shrink-0"></span>
             {children}
         </h2>
     ),
     h3: ({ children }) => (
-        <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-2 mt-4 first:mt-0">
+        <h3 className="text-sm font-semibold text-foreground mb-2 mt-3.5 first:mt-0">
             {children}
         </h3>
     ),
 
     // Paragraphs with proper spacing
     p: ({ children }) => (
-        <p className="my-2 leading-relaxed text-gray-700 dark:text-gray-300 first:mt-0 last:mb-0">
+        <p className="my-2 leading-7 text-[15px] text-foreground/90 first:mt-0 last:mb-0">
             {children}
         </p>
     ),
 
     // Enhanced unordered lists
     ul: ({ children }) => (
-        <ul className="my-3 space-y-2 first:mt-0 last:mb-0">
+        <ul className="my-3 list-disc pl-5 space-y-1.5 marker:text-muted-foreground/70 first:mt-0 last:mb-0">
             {children}
         </ul>
     ),
 
     // Enhanced ordered lists
     ol: ({ children }) => (
-        <ol className="my-3 space-y-2 list-none first:mt-0 last:mb-0 counter-reset-item">
+        <ol className="my-3 list-decimal pl-5 space-y-1.5 marker:text-muted-foreground/70 first:mt-0 last:mb-0">
             {children}
         </ol>
     ),
 
-    // List items with custom bullets
-    li: ({ children, ...props }) => {
-        // Check if it's inside an ordered list by looking at parent context
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const node: any = props.node;
-        const isOrdered = node?.position?.start?.column === 1 &&
-            /^\d+\./.test(node?.value || '');
-
-        return (
-            <li className="flex items-start gap-2 text-gray-700 dark:text-gray-300">
-                <span className="w-2 h-2 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></span>
-                <div className="flex-1">{children}</div>
-            </li>
-        );
-    },
+    li: ({ children }) => (
+        <li className="text-[15px] leading-7 text-foreground/90">
+            {children}
+        </li>
+    ),
 
     // Inline code
     code: ({ children, className, ...props }) => {
         const isInline = !className;
         if (isInline) {
             return (
-                <code className="bg-gray-100 dark:bg-gray-800 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded text-sm font-mono border border-gray-200 dark:border-gray-700">
+                <code className="bg-muted/70 text-foreground px-1.5 py-0.5 rounded-md text-[13px] font-mono border border-border">
                     {children}
                 </code>
             );
@@ -501,7 +504,7 @@ const createMarkdownComponents = (messageType: MessageType): Partial<Components>
 
     // Code blocks
     pre: ({ children }) => (
-        <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-3 text-sm border border-gray-700 first:mt-0 last:mb-0">
+        <pre className="bg-slate-950 text-slate-100 p-4 rounded-xl overflow-x-auto my-3 text-sm border border-slate-800 first:mt-0 last:mb-0">
             {children}
         </pre>
     ),
@@ -511,26 +514,26 @@ const createMarkdownComponents = (messageType: MessageType): Partial<Components>
         // Parse content to detect callout type
         const content = String(children);
         let icon = <Info className="w-4 h-4 text-blue-500 flex-shrink-0" />;
-        let bgClass = "bg-blue-50 dark:bg-blue-950/30 border-blue-400";
+        let bgClass = "bg-blue-50/70 dark:bg-blue-950/25 border-blue-300 dark:border-blue-900/60";
 
         if (content.includes('⚠️') || content.includes('คำเตือน') || content.includes('warning')) {
             icon = <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />;
-            bgClass = "bg-amber-50 dark:bg-amber-950/30 border-amber-400";
+            bgClass = "bg-amber-50/70 dark:bg-amber-950/25 border-amber-300 dark:border-amber-900/60";
         } else if (content.includes('💡') || content.includes('เคล็ดลับ') || content.includes('tip')) {
             icon = <Lightbulb className="w-4 h-4 text-yellow-500 flex-shrink-0" />;
-            bgClass = "bg-yellow-50 dark:bg-yellow-950/30 border-yellow-400";
+            bgClass = "bg-yellow-50/70 dark:bg-yellow-950/25 border-yellow-300 dark:border-yellow-900/60";
         } else if (content.includes('✅') || content.includes('สำเร็จ') || content.includes('success')) {
             icon = <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />;
-            bgClass = "bg-green-50 dark:bg-green-950/30 border-green-400";
+            bgClass = "bg-green-50/70 dark:bg-green-950/25 border-green-300 dark:border-green-900/60";
         }
 
         return (
             <blockquote className={cn(
-                "border-l-4 pl-4 pr-3 py-3 my-3 rounded-r-lg flex items-start gap-2 first:mt-0 last:mb-0",
+                "border-l-2 pl-3.5 pr-3 py-2.5 my-3 rounded-r-lg flex items-start gap-2 first:mt-0 last:mb-0",
                 bgClass
             )}>
                 {icon}
-                <div className="flex-1 text-sm">{children}</div>
+                <div className="flex-1 text-sm text-foreground/90">{children}</div>
             </blockquote>
         );
     },
@@ -541,7 +544,7 @@ const createMarkdownComponents = (messageType: MessageType): Partial<Components>
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-emerald-600 dark:text-emerald-400 hover:underline font-medium"
+            className="text-primary hover:underline font-medium"
         >
             {children}
         </a>
@@ -549,38 +552,38 @@ const createMarkdownComponents = (messageType: MessageType): Partial<Components>
 
     // Strong/Bold text
     strong: ({ children }) => (
-        <strong className="font-semibold text-gray-900 dark:text-gray-100">
+        <strong className="font-semibold text-foreground">
             {children}
         </strong>
     ),
 
     // Emphasis/Italic
     em: ({ children }) => (
-        <em className="italic text-gray-600 dark:text-gray-400">
+        <em className="italic text-muted-foreground">
             {children}
         </em>
     ),
 
     // Horizontal rule as section divider
     hr: () => (
-        <hr className="my-4 border-gray-200 dark:border-gray-700" />
+        <hr className="my-4 border-border" />
     ),
 
     // Tables
     table: ({ children }) => (
-        <div className="overflow-x-auto my-3 rounded-lg border border-gray-200 dark:border-gray-700 first:mt-0 last:mb-0">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <div className="overflow-x-auto my-3 rounded-xl border border-border first:mt-0 last:mb-0">
+            <table className="min-w-full divide-y divide-border">
                 {children}
             </table>
         </div>
     ),
     thead: ({ children }) => (
-        <thead className="bg-gray-50 dark:bg-gray-800">
+        <thead className="bg-muted/40">
             {children}
         </thead>
     ),
     tbody: ({ children }) => (
-        <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+        <tbody className="bg-background divide-y divide-border">
             {children}
         </tbody>
     ),
@@ -588,12 +591,12 @@ const createMarkdownComponents = (messageType: MessageType): Partial<Components>
         <tr>{children}</tr>
     ),
     th: ({ children }) => (
-        <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+        <th className="px-4 py-2 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             {children}
         </th>
     ),
     td: ({ children }) => (
-        <td className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
+        <td className="px-4 py-2 text-sm text-foreground/90">
             {children}
         </td>
     ),
@@ -644,6 +647,7 @@ export function ChatMessage({
     onSendPrompt
 }: ChatMessageProps) {
     const isAi = message.sender === "ai";
+    const isUser = message.sender === "user";
     const [isEditing, setIsEditing] = useState(false);
     const [editedContent, setEditedContent] = useState(message.content);
 
@@ -665,6 +669,7 @@ export function ChatMessage({
 
     // Use mainContent for message type detection
     const messageType = isAi ? detectMessageType(mainContent || "") : 'general';
+    const typeMeta = isAi ? getMessageTypeMeta(messageType) : null;
     const markdownComponents = createMarkdownComponents(messageType);
 
     // Check if message is "new" (created within last 5 seconds) to apply animation
@@ -678,30 +683,30 @@ export function ChatMessage({
         <div
             className={cn(
                 "flex gap-3 items-start group",
-                message.sender === "user" ? "justify-end" : "justify-start"
+                isUser ? "justify-end" : "justify-start"
             )}
         >
             {/* Message Bubble */}
             <div
                 className={cn(
                     "relative rounded-2xl max-w-[80%]",
-                    message.sender === "user"
-                        ? "bg-blue-500 text-white rounded-[24px] px-5 py-3 shadow-sm"
+                    isUser
+                        ? isEditing
+                            ? "w-full max-w-[min(620px,92vw)] bg-transparent text-foreground p-0 shadow-none"
+                            : "bg-blue-500 text-white rounded-[24px] px-5 py-3 shadow-sm"
                         : isStreaming && !message.content
                             ? "px-3 py-2" // Minimal padding, no border for thinking state
-                            : "bg-white dark:bg-gray-800 text-foreground rounded-tl-md border border-gray-100 dark:border-gray-700 px-5 py-4 shadow-sm"
+                            : "bg-background/95 dark:bg-slate-900/70 text-foreground rounded-2xl border border-border px-5 py-4 shadow-sm"
                 )}
             >
                 {/* Message Type Indicator for AI messages */}
-                {isAi && messageType !== 'general' && messageType !== 'greeting' && !isStreaming && message.content && (
-                    <div className="flex items-center gap-1.5 mb-2 pb-2 border-b border-gray-100 dark:border-gray-700">
-                        <span className="text-sm">{MESSAGE_EMOJIS[messageType]}</span>
-                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                            {messageType === 'health_advice' && 'คำแนะนำสุขภาพ'}
-                            {messageType === 'analysis' && 'การวิเคราะห์'}
-                            {messageType === 'warning' && 'ข้อควรระวัง'}
-                            {messageType === 'recommendation' && 'คำแนะนำ'}
-                            {messageType === 'summary' && 'สรุป'}
+                {isAi && typeMeta && !isStreaming && message.content && (
+                    <div className="flex items-center gap-2 mb-3 pb-3 border-b border-border/80">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                            {typeMeta.icon}
+                        </div>
+                        <span className="text-xs font-medium text-muted-foreground tracking-wide">
+                            {typeMeta.label}
                         </span>
                     </div>
                 )}
@@ -745,29 +750,44 @@ export function ChatMessage({
                         )}
                     </div>
                 ) : isEditing ? (
-                    <div className="w-full min-w-[300px] bg-[#373737] p-4 rounded-[26px] shadow-lg border border-white/5 relative z-10">
+                    <div className="w-full rounded-2xl border border-border/70 bg-background/95 dark:bg-slate-900/80 p-3.5 shadow-sm relative z-10">
                         <Textarea
                             value={editedContent}
                             onChange={(e) => setEditedContent(e.target.value)}
-                            className="bg-transparent text-white border-0 focus-visible:ring-0 resize-none mb-3 min-h-[60px] p-0 text-base shadow-none placeholder:text-gray-500"
+                            onKeyDown={(e) => {
+                                if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                                    e.preventDefault();
+                                    handleSaveEdit();
+                                }
+                            }}
+                            className="min-h-[84px] w-full resize-none rounded-xl border border-border bg-background px-3 py-2.5 text-sm leading-relaxed shadow-none focus-visible:ring-1 focus-visible:ring-primary/40 placeholder:text-muted-foreground/70"
                             placeholder="แก้ไขข้อความ..."
                         />
-                        <div className="flex justify-end gap-2 items-center">
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => setIsEditing(false)}
-                                className="bg-[#505050] hover:bg-[#606060] text-white rounded-full px-5 h-9 font-normal transition-colors border-0"
-                            >
-                                ยกเลิก
-                            </Button>
-                            <Button
-                                size="sm"
-                                onClick={handleSaveEdit}
-                                className="bg-white hover:bg-gray-200 text-black rounded-full px-5 h-9 font-medium transition-colors border-0"
-                            >
-                                ส่ง
-                            </Button>
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <span className="px-1 text-[11px] text-muted-foreground/80">
+                                Ctrl/⌘ + Enter เพื่อบันทึก
+                            </span>
+                            <div className="flex items-center gap-2 self-end sm:self-auto">
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => {
+                                        setEditedContent(message.content);
+                                        setIsEditing(false);
+                                    }}
+                                    className="h-8 rounded-full px-4 text-muted-foreground hover:text-foreground hover:bg-muted"
+                                >
+                                    ยกเลิก
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    onClick={handleSaveEdit}
+                                    disabled={!editedContent.trim() || editedContent === message.content}
+                                    className="h-8 rounded-full px-4 font-medium"
+                                >
+                                    บันทึก
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 ) : (

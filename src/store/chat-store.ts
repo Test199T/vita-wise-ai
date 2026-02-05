@@ -50,6 +50,7 @@ interface ChatState {
     isStreaming: boolean;
     streamingMessageId: string | null;
     streamingText: string;
+    streamAbortController: AbortController | null;
 
     // Error state
     sessionError: SessionError | null;
@@ -72,6 +73,7 @@ interface ChatState {
     regenerateFromMessage: (messageId: string, newContent?: string) => Promise<void>;
     sendMessageStreamWithSession: (sessionId: string, content: string, imageData?: ImageData) => Promise<void>;
     updateStreamingText: (text: string) => void;
+    stopStreaming: () => void;
     editMessage: (messageId: string, newContent: string) => void;
     resetConversation: () => void;
     clearSessionError: () => void;
@@ -116,12 +118,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
     isStreaming: false,
     streamingMessageId: null,
     streamingText: "",
+    streamAbortController: null,
     sessionError: null,
     messagePagination: null,
 
     // Update streaming text (for real-time display)
     updateStreamingText: (text) => {
         set({ streamingText: text });
+    },
+
+    stopStreaming: () => {
+        const controller = get().streamAbortController;
+        if (controller) {
+            controller.abort();
+        }
     },
 
     // Edit message locally
@@ -677,11 +687,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
             }));
         }
 
+        const abortController = new AbortController();
+
         set({
             isSending: true,
             isStreaming: true,
             streamingText: "",
             selectedSessionId: sessionId,
+            streamAbortController: abortController,
         });
 
         // Add user message optimistically
@@ -723,6 +736,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
+                    signal: abortController.signal,
                     body: JSON.stringify({
                         message: content,
                         image_base64: imageData.base64,
@@ -741,6 +755,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
+                    signal: abortController.signal,
                     body: formData,
                 });
             } else {
@@ -752,6 +767,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
+                    signal: abortController.signal,
                     body: JSON.stringify({
                         message: content,
                     }),
@@ -833,6 +849,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 ),
                 streamingMessageId: null,
                 streamingText: "",
+                streamAbortController: null,
             }));
 
             // Update session last message
@@ -845,6 +862,24 @@ export const useChatStore = create<ChatState>((set, get) => ({
             }));
 
         } catch (error) {
+            if (error instanceof DOMException && error.name === "AbortError") {
+                set((s) => ({
+                    messages: s.messages.map((msg) => {
+                        if (msg.id !== streamingMsgId) return msg;
+                        const partialContent = msg.content?.trim() || "";
+                        return {
+                            ...msg,
+                            id: `ai-${Date.now()}`,
+                            content: partialContent || "หยุดการตอบแล้ว",
+                        };
+                    }),
+                    streamingMessageId: null,
+                    streamingText: "",
+                    streamAbortController: null,
+                }));
+                return;
+            }
+
             console.error("Error in streaming message:", error);
 
             set((s) => ({
@@ -859,9 +894,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 ),
                 streamingMessageId: null,
                 streamingText: "",
+                streamAbortController: null,
             }));
         } finally {
-            set({ isSending: false, isStreaming: false });
+            set({ isSending: false, isStreaming: false, streamAbortController: null });
         }
     },
 
@@ -879,7 +915,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
             if (!sessionId) return;
         }
 
-        set({ isSending: true, isStreaming: true, streamingText: "" });
+        const abortController = new AbortController();
+
+        set({
+            isSending: true,
+            isStreaming: true,
+            streamingText: "",
+            streamAbortController: abortController,
+        });
 
         // Add user message optimistically
         const userMessage: Message = {
@@ -925,6 +968,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
+                    signal: abortController.signal,
                     body: JSON.stringify({
                         message: content,
                         image_base64: imageData.base64,
@@ -943,6 +987,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
+                    signal: abortController.signal,
                     body: formData,
                 });
             } else {
@@ -954,6 +999,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
+                    signal: abortController.signal,
                     body: JSON.stringify({
                         message: content,
                     }),
@@ -1023,6 +1069,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 ),
                 streamingMessageId: null,
                 streamingText: "",
+                streamAbortController: null,
             }));
 
             // Update session last message
@@ -1035,6 +1082,24 @@ export const useChatStore = create<ChatState>((set, get) => ({
             }));
 
         } catch (error) {
+            if (error instanceof DOMException && error.name === "AbortError") {
+                set((s) => ({
+                    messages: s.messages.map((msg) => {
+                        if (msg.id !== streamingMsgId) return msg;
+                        const partialContent = msg.content?.trim() || "";
+                        return {
+                            ...msg,
+                            id: `ai-${Date.now()}`,
+                            content: partialContent || "หยุดการตอบแล้ว",
+                        };
+                    }),
+                    streamingMessageId: null,
+                    streamingText: "",
+                    streamAbortController: null,
+                }));
+                return;
+            }
+
             console.error("Error in streaming message:", error);
 
             set((s) => ({
@@ -1049,9 +1114,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 ),
                 streamingMessageId: null,
                 streamingText: "",
+                streamAbortController: null,
             }));
         } finally {
-            set({ isSending: false, isStreaming: false });
+            set({ isSending: false, isStreaming: false, streamAbortController: null });
         }
     },
 
@@ -1084,12 +1150,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
             timestamp: new Date(),
         };
 
+        const abortController = new AbortController();
+
         set({
             messages: [...updatedMessages, aiPlaceholder],
             streamingMessageId: streamingMsgId,
             isSending: true,
             isStreaming: true,
-            streamingText: ""
+            streamingText: "",
+            streamAbortController: abortController,
         });
 
         try {
@@ -1101,6 +1170,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                 },
+                signal: abortController.signal,
                 body: JSON.stringify({
                     message: contentToSend,
                 }),
@@ -1169,6 +1239,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 ),
                 streamingMessageId: null,
                 streamingText: "",
+                streamAbortController: null,
             }));
 
             // Update session last message
@@ -1181,6 +1252,24 @@ export const useChatStore = create<ChatState>((set, get) => ({
             }));
 
         } catch (error) {
+            if (error instanceof DOMException && error.name === "AbortError") {
+                set((s) => ({
+                    messages: s.messages.map((msg) => {
+                        if (msg.id !== streamingMsgId) return msg;
+                        const partialContent = msg.content?.trim() || "";
+                        return {
+                            ...msg,
+                            id: `ai-${Date.now()}`,
+                            content: partialContent || "หยุดการตอบแล้ว",
+                        };
+                    }),
+                    streamingMessageId: null,
+                    streamingText: "",
+                    streamAbortController: null,
+                }));
+                return;
+            }
+
             console.error("Error in streaming message:", error);
 
             set((s) => ({
@@ -1195,9 +1284,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 ),
                 streamingMessageId: null,
                 streamingText: "",
+                streamAbortController: null,
             }));
         } finally {
-            set({ isSending: false, isStreaming: false });
+            set({ isSending: false, isStreaming: false, streamAbortController: null });
         }
     },
 }));

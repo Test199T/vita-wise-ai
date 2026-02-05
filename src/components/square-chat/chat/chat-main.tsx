@@ -22,6 +22,7 @@ export function ChatMain() {
         messagePagination,
         sendMessageStream,
         sendMessageStreamWithSession,
+        stopStreaming,
         createSessionOnly,
         updateSessionTitle,
         resetConversation,
@@ -133,6 +134,10 @@ export function ChatMain() {
         await loadMoreMessages();
     };
 
+    const handleStopStreaming = () => {
+        stopStreaming();
+    };
+
     return (
         <div className="h-full min-h-0 overflow-hidden">
             {isConversationStarted ? (
@@ -141,6 +146,7 @@ export function ChatMain() {
                     message={message}
                     onMessageChange={setMessage}
                     onSend={handleSendMessage}
+                    onStopStreaming={handleStopStreaming}
                     onReset={handleReset}
                     isLoading={isSending}
                     isStreaming={isStreaming}

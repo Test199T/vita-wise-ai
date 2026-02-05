@@ -18,6 +18,7 @@ interface ChatConversationViewProps {
     message: string;
     onMessageChange: (value: string) => void;
     onSend: (content: string, imageData?: ImageData) => void;
+    onStopStreaming?: () => void;
     onReset: () => void;
     isLoading?: boolean;
     isStreaming?: boolean;
@@ -37,6 +38,7 @@ export function ChatConversationView({
     message,
     onMessageChange,
     onSend,
+    onStopStreaming,
     onReset,
     isLoading = false,
     isStreaming = false,
@@ -176,6 +178,8 @@ export function ChatConversationView({
                         selectedModel={selectedModel}
                         onModelChange={onModelChange}
                         isLoading={isLoading}
+                        isStreaming={isStreaming}
+                        onStop={onStopStreaming}
                         showTools={false}
                         placeholder="Message Square AI..."
                     />

@@ -8,6 +8,7 @@ import {
     CircleDashedIcon,
     X,
     Loader2,
+    SquareIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,6 +39,8 @@ interface ChatInputBoxProps {
     showTools?: boolean;
     placeholder?: string;
     isLoading?: boolean;
+    isStreaming?: boolean;
+    onStop?: () => void;
 }
 
 export function ChatInputBox({
@@ -49,6 +52,8 @@ export function ChatInputBox({
     showTools = true,
     placeholder = "Ask anything...",
     isLoading = false,
+    isStreaming = false,
+    onStop,
 }: ChatInputBoxProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -293,7 +298,13 @@ export function ChatInputBox({
                         </div>
                     ) : (
                         <Textarea
-                            placeholder={isLoading ? "กำลังสร้างการสนทนา..." : placeholder}
+                            placeholder={
+                                isStreaming
+                                    ? "กำลังตอบ... กด Stop เพื่อหยุด"
+                                    : isLoading
+                                        ? "กำลังสร้างการสนทนา..."
+                                        : placeholder
+                            }
                             value={message}
                             onChange={(e) => onMessageChange(e.target.value)}
                             disabled={isLoading}
@@ -351,25 +362,36 @@ export function ChatInputBox({
                             )}
 
                             {/* Send Button */}
-                            <Button
-                                size="icon"
-                                onClick={handleSendClick}
-                                disabled={isLoading || (!message.trim() && !imageData)}
-                                className={cn(
-                                    "size-9 rounded-full shrink-0 transition-all duration-200",
-                                    isLoading
-                                        ? "bg-foreground text-background"
-                                        : (message.trim() || imageData)
-                                            ? "bg-foreground text-background hover:opacity-70"
-                                            : "bg-gray-300 dark:bg-gray-600 text-muted-foreground cursor-not-allowed opacity-30"
-                                )}
-                            >
-                                {isLoading ? (
-                                    <Loader2 className="size-5 animate-spin" />
-                                ) : (
-                                    <ArrowUpIcon className="size-5" />
-                                )}
-                            </Button>
+                            {isStreaming && onStop ? (
+                                <Button
+                                    size="icon"
+                                    onClick={onStop}
+                                    className="size-9 rounded-full shrink-0 transition-all duration-200 bg-red-500 text-white hover:bg-red-600"
+                                    aria-label="Stop generating"
+                                >
+                                    <SquareIcon className="size-4 fill-current" />
+                                </Button>
+                            ) : (
+                                <Button
+                                    size="icon"
+                                    onClick={handleSendClick}
+                                    disabled={isLoading || (!message.trim() && !imageData)}
+                                    className={cn(
+                                        "size-9 rounded-full shrink-0 transition-all duration-200",
+                                        isLoading
+                                            ? "bg-foreground text-background"
+                                            : (message.trim() || imageData)
+                                                ? "bg-foreground text-background hover:opacity-70"
+                                                : "bg-gray-300 dark:bg-gray-600 text-muted-foreground cursor-not-allowed opacity-30"
+                                    )}
+                                >
+                                    {isLoading ? (
+                                        <Loader2 className="size-5 animate-spin" />
+                                    ) : (
+                                        <ArrowUpIcon className="size-5" />
+                                    )}
+                                </Button>
+                            )}
                         </div>
                     )}
                 </div>
