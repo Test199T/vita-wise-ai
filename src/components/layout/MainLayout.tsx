@@ -50,7 +50,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       <Header />
 
       {/* Main Content - Full width */}
-      <main className="flex-1 min-h-[calc(100vh-73px)]">
+      <main className="flex-1 min-h-[calc(100vh-73px)] pt-24">
         <div className="container mx-auto px-4 py-6">
           {children}
         </div>
