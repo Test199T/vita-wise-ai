@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
     SearchIcon,
@@ -19,6 +19,8 @@ import {
     Plus,
     LogOut,
     User,
+    MoonIcon,
+    DropletsIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,19 +58,12 @@ export function ChatSidebar() {
         selectedSessionId,
         isLoadingSessions,
         selectSession,
-        fetchSessions,
-        createSession,
         deleteSession,
     } = useChatStore();
 
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isChatsCollapsed, setIsChatsCollapsed] = useState(false);
     const [isNavCollapsed, setIsNavCollapsed] = useState(false);
-
-    // Fetch sessions on mount
-    useEffect(() => {
-        fetchSessions();
-    }, []);
 
     const handleNewChat = async () => {
         selectSession(null); // Reset to welcome screen
@@ -211,6 +206,18 @@ export function ChatSidebar() {
                             <Link to="/food-log">
                                 <Apple className="size-4" />
                                 <span className="text-sm">Food Log</span>
+                            </Link>
+                        </Button>
+                        <Button variant="ghost" className="w-full justify-start gap-2 px-2" asChild>
+                            <Link to="/sleep-log">
+                                <MoonIcon className="size-4" />
+                                <span className="text-sm">Sleep Log</span>
+                            </Link>
+                        </Button>
+                        <Button variant="ghost" className="w-full justify-start gap-2 px-2" asChild>
+                            <Link to="/water-log">
+                                <DropletsIcon className="size-4" />
+                                <span className="text-sm">Water Log</span>
                             </Link>
                         </Button>
                     </div>

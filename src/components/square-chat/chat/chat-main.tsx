@@ -38,6 +38,8 @@ export function ChatMain() {
         sender: msg.sender,
         timestamp: msg.timestamp,
         image: msg.image,
+        deliveryStatus: msg.deliveryStatus,
+        errorMessage: msg.errorMessage,
     }));
 
     // Conversation is started if we have a session ID (from URL or store) or messages
@@ -138,6 +140,13 @@ export function ChatMain() {
         stopStreaming();
     };
 
+    const handleRetryMessage = async (messageId: string) => {
+        if (isSending || isStreaming) return;
+        const targetMessage = messages.find((msg) => msg.id === messageId);
+        if (!targetMessage || targetMessage.sender !== "user") return;
+        await regenerateFromMessage(messageId);
+    };
+
     return (
         <div className="h-full min-h-0 overflow-hidden">
             {isConversationStarted ? (
@@ -159,6 +168,7 @@ export function ChatMain() {
                     onEdit={handleEdit}
                     onRegenerate={handleRegenerate}
                     onFeedback={handleFeedback}
+                    onRetry={handleRetryMessage}
                 />
             ) : (
                 <ChatWelcomeScreen

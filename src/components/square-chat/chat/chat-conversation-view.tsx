@@ -11,6 +11,8 @@ interface Message {
     sender: "user" | "ai";
     timestamp: Date;
     image?: string | null;
+    deliveryStatus?: "sending" | "sent" | "failed";
+    errorMessage?: string;
 }
 
 interface ChatConversationViewProps {
@@ -31,6 +33,7 @@ interface ChatConversationViewProps {
     onRegenerate?: () => void;
     onEdit?: (messageId: string, content: string) => void;
     onFeedback?: (messageId: string, feedback: 'like' | 'dislike') => void;
+    onRetry?: (messageId: string) => void;
 }
 
 export function ChatConversationView({
@@ -51,6 +54,7 @@ export function ChatConversationView({
     onRegenerate,
     onEdit,
     onFeedback,
+    onRetry,
 }: ChatConversationViewProps) {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
@@ -153,6 +157,7 @@ export function ChatConversationView({
                             onRegenerate={index === messages.length - 1 && msg.sender === 'ai' ? onRegenerate : undefined}
                             onEdit={onEdit}
                             onFeedback={onFeedback}
+                            onRetry={onRetry}
                             onSendPrompt={(prompt) => onSend(prompt)}
                         />
                     ))}

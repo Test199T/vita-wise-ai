@@ -9,6 +9,8 @@ export interface Message {
     sender: "user" | "ai";
     timestamp: Date;
     image?: string | null;
+    deliveryStatus?: "sending" | "sent" | "failed";
+    errorMessage?: string;
 }
 
 export interface ChatSession {
@@ -38,6 +40,12 @@ export interface SessionError {
     message: string;
 }
 
+interface SessionMessageCacheEntry {
+    messages: Message[];
+    pagination: MessagePagination | null;
+    lastFetchedAt: number;
+}
+
 interface ChatState {
     // State
     sessions: ChatSession[];
@@ -57,6 +65,7 @@ interface ChatState {
 
     // Pagination state
     messagePagination: MessagePagination | null;
+    messageCache: Record<string, SessionMessageCacheEntry>;
 
     // Actions
     selectSession: (sessionId: string | null) => void;
@@ -106,6 +115,61 @@ const generateTitleFromMessage = (message: string): string => {
     return truncated + '...';
 };
 
+const extractHttpStatus = (error: unknown): number | null => {
+    if (!(error instanceof Error)) return null;
+    const match = error.message.match(/HTTP\s+(\d{3})/i);
+    return match ? Number(match[1]) : null;
+};
+
+const getReadableErrorMessage = (error: unknown): string => {
+    if (error instanceof DOMException && error.name === "AbortError") {
+        return "ยกเลิกการตอบแล้ว";
+    }
+
+    const status = extractHttpStatus(error);
+    if (status === 401 || status === 403) {
+        return "เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่";
+    }
+    if (status === 404) {
+        return "ไม่พบบริการแชต กรุณารีเฟรชแล้วลองใหม่";
+    }
+    if (status === 408 || status === 504) {
+        return "การเชื่อมต่อหมดเวลา กรุณาลองใหม่";
+    }
+    if (status === 429) {
+        return "คุณส่งคำขอเร็วเกินไป กรุณารอสักครู่";
+    }
+    if (status !== null && status >= 500) {
+        return "เซิร์ฟเวอร์มีปัญหาชั่วคราว กรุณาลองใหม่";
+    }
+
+    if (error instanceof TypeError) {
+        return "ไม่สามารถเชื่อมต่ออินเทอร์เน็ตได้";
+    }
+
+    if (error instanceof Error && error.message.includes("No response body reader")) {
+        return "ระบบตอบกลับไม่สมบูรณ์ กรุณาลองใหม่";
+    }
+
+    return "เกิดข้อผิดพลาดในการส่งข้อความ";
+};
+
+const markMessageDeliveryStatus = (
+    messages: Message[],
+    messageId: string,
+    status: "sending" | "sent" | "failed",
+    errorMessage?: string
+): Message[] =>
+    messages.map((msg) =>
+        msg.id === messageId
+            ? {
+                ...msg,
+                deliveryStatus: status,
+                errorMessage: status === "failed" ? errorMessage : undefined,
+            }
+            : msg
+    );
+
 export const useChatStore = create<ChatState>((set, get) => ({
     // Initial state
     sessions: [],
@@ -121,6 +185,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     streamAbortController: null,
     sessionError: null,
     messagePagination: null,
+    messageCache: {},
 
     // Update streaming text (for real-time display)
     updateStreamingText: (text) => {
@@ -160,7 +225,38 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     // Set session from URL (doesn't fetch messages, that's handled separately)
     setSessionFromUrl: (sessionId) => {
-        set({ selectedSessionId: sessionId });
+        const currentState = get();
+        const prevSessionId = currentState.selectedSessionId;
+        const nextCache = { ...currentState.messageCache };
+
+        // Keep latest in-memory messages of previous session before switching.
+        if (prevSessionId) {
+            nextCache[prevSessionId] = {
+                messages: currentState.messages,
+                pagination: currentState.messagePagination,
+                lastFetchedAt: Date.now(),
+            };
+        }
+
+        if (!sessionId) {
+            set({
+                selectedSessionId: null,
+                messages: [],
+                messagePagination: null,
+                sessionError: null,
+                messageCache: nextCache,
+            });
+            return;
+        }
+
+        const cached = nextCache[sessionId];
+        set({
+            selectedSessionId: sessionId,
+            messages: cached?.messages ?? [],
+            messagePagination: cached?.pagination ?? null,
+            sessionError: null,
+            messageCache: nextCache,
+        });
     },
 
     // Fetch all sessions
@@ -353,7 +449,27 @@ export const useChatStore = create<ChatState>((set, get) => ({
         const token = tokenUtils.getValidToken();
         if (!token) return 'server_error';
 
-        set({ isLoadingMessages: true, sessionError: null });
+        const state = get();
+        const cached = page === 1 ? state.messageCache[sessionId] : undefined;
+        const hasCachedData = !!cached;
+        const CACHE_TTL_MS = 60 * 1000;
+        const isCacheFresh = !!cached && (Date.now() - cached.lastFetchedAt) < CACHE_TTL_MS;
+
+        if (cached && page === 1) {
+            set({
+                messages: cached.messages,
+                messagePagination: cached.pagination,
+                sessionError: null,
+                isLoadingMessages: false,
+            });
+
+            if (isCacheFresh) {
+                return null;
+            }
+        } else {
+            set({ isLoadingMessages: true, sessionError: null });
+        }
+
         try {
             const response = await fetch(
                 `${apiConfig.baseUrl}/api/chat/sessions/${sessionId}/messages?page=${page}&limit=${limit}`,
@@ -379,6 +495,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 } else if (response.status === 500) {
                     errorType = 'server_error';
                     errorMessage = 'เกิดข้อผิดพลาดจากเซิร์ฟเวอร์ กรุณาลองใหม่';
+                }
+
+                if (hasCachedData && page === 1) {
+                    return null;
                 }
 
                 set({
@@ -420,12 +540,29 @@ export const useChatStore = create<ChatState>((set, get) => ({
                     hasMore: false, // No pagination info means no more
                 };
 
-                set({ messages, messagePagination: pagination, sessionError: null });
+                set((s) => ({
+                    messages,
+                    messagePagination: pagination,
+                    sessionError: null,
+                    messageCache: {
+                        ...s.messageCache,
+                        [sessionId]: {
+                            messages,
+                            pagination,
+                            lastFetchedAt: Date.now(),
+                        },
+                    },
+                }));
                 return null;
             }
             return null;
         } catch (error) {
             console.error("Error fetching messages:", error);
+
+            if (hasCachedData && page === 1) {
+                return null;
+            }
+
             set({
                 sessionError: {
                     type: 'server_error',
@@ -497,10 +634,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
                         hasMore: false,
                     };
 
-                    set({
+                    set((s) => ({
                         messages: [...olderMessages, ...messages],
                         messagePagination: newPagination,
-                    });
+                        messageCache: {
+                            ...s.messageCache,
+                            [selectedSessionId]: {
+                                messages: [...olderMessages, ...messages],
+                                pagination: newPagination,
+                                lastFetchedAt: Date.now(),
+                            },
+                        },
+                    }));
                 }
             }
         } catch (error) {
@@ -527,12 +672,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
         set({ isSending: true });
 
         // Add user message optimistically
+        const userMessageId = `temp-${Date.now()}`;
         const userMessage: Message = {
-            id: `temp-${Date.now()}`,
+            id: userMessageId,
             content,
             sender: "user",
             timestamp: new Date(),
             image: imageData?.previewUrl || null,
+            deliveryStatus: "sending",
         };
         set((s) => ({ messages: [...s.messages, userMessage] }));
 
@@ -612,7 +759,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
                     sender: "ai",
                     timestamp: new Date(),
                 };
-                set((s) => ({ messages: [...s.messages, aiMessage] }));
+                set((s) => ({
+                    messages: [...markMessageDeliveryStatus(s.messages, userMessageId, "sent"), aiMessage],
+                }));
 
                 // Update session last message
                 set((s) => ({
@@ -625,23 +774,35 @@ export const useChatStore = create<ChatState>((set, get) => ({
             } else {
                 // Handle error
                 const errorMessage = data?.message || "เกิดข้อผิดพลาดในการส่งข้อความ";
+                const readableError = getReadableErrorMessage(new Error(errorMessage));
                 const aiMessage: Message = {
                     id: `error-${Date.now()}`,
-                    content: `⚠️ ${errorMessage} กรุณาลองใหม่อีกครั้ง`,
+                    content: `⚠️ ${readableError} กรุณากดลองใหม่อีกครั้ง`,
                     sender: "ai",
                     timestamp: new Date(),
                 };
-                set((s) => ({ messages: [...s.messages, aiMessage] }));
+                set((s) => ({
+                    messages: [
+                        ...markMessageDeliveryStatus(s.messages, userMessageId, "failed", readableError),
+                        aiMessage,
+                    ],
+                }));
             }
         } catch (error) {
             console.error("Error sending message:", error);
+            const readableError = getReadableErrorMessage(error);
             const aiMessage: Message = {
                 id: `error-${Date.now()}`,
-                content: "⚠️ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง",
+                content: `⚠️ ${readableError} กรุณากดลองใหม่อีกครั้ง`,
                 sender: "ai",
                 timestamp: new Date(),
             };
-            set((s) => ({ messages: [...s.messages, aiMessage] }));
+            set((s) => ({
+                messages: [
+                    ...markMessageDeliveryStatus(s.messages, userMessageId, "failed", readableError),
+                    aiMessage,
+                ],
+            }));
         } finally {
             set({ isSending: false });
         }
@@ -698,12 +859,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
         });
 
         // Add user message optimistically
+        const userMessageId = `temp-${Date.now()}`;
         const userMessage: Message = {
-            id: `temp-${Date.now()}`,
+            id: userMessageId,
             content,
             sender: "user",
             timestamp: new Date(),
             image: imageData?.previewUrl || null,
+            deliveryStatus: "sending",
         };
 
         // Create placeholder for AI streaming message
@@ -799,30 +962,32 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 for (const line of lines) {
                     const trimmedLine = line.trim();
                     if (trimmedLine.startsWith("data: ")) {
+                        const jsonStr = trimmedLine.slice(6);
+                        if (!jsonStr) continue;
+
+                        let data: any;
                         try {
-                            const jsonStr = trimmedLine.slice(6);
-                            if (!jsonStr) continue;
-
-                            const data = JSON.parse(jsonStr);
-
-                            if (data.done) {
-                                // Stream complete
-                            } else if (data.token) {
-                                fullMessage += data.token;
-
-                                set((s) => ({
-                                    streamingText: fullMessage,
-                                    messages: s.messages.map((msg) =>
-                                        msg.id === streamingMsgId
-                                            ? { ...msg, content: fullMessage }
-                                            : msg
-                                    ),
-                                }));
-                            } else if (data.error) {
-                                throw new Error(data.error);
-                            }
+                            data = JSON.parse(jsonStr);
                         } catch (e) {
                             console.error("Error parsing stream data:", e);
+                            continue;
+                        }
+
+                        if (data.done) {
+                            // Stream complete
+                        } else if (data.token) {
+                            fullMessage += data.token;
+
+                            set((s) => ({
+                                streamingText: fullMessage,
+                                messages: s.messages.map((msg) =>
+                                    msg.id === streamingMsgId
+                                        ? { ...msg, content: fullMessage }
+                                        : msg
+                                ),
+                            }));
+                        } else if (data.error) {
+                            throw new Error(data.error);
                         }
                     }
                 }
@@ -845,7 +1010,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 messages: s.messages.map((msg) =>
                     msg.id === streamingMsgId
                         ? { ...msg, id: `ai-${Date.now()}`, content: fullMessage || "ขออภัย ไม่สามารถตอบกลับได้" }
-                        : msg
+                        : msg.id === userMessageId
+                            ? { ...msg, deliveryStatus: "sent", errorMessage: undefined }
+                            : msg
                 ),
                 streamingMessageId: null,
                 streamingText: "",
@@ -865,13 +1032,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
             if (error instanceof DOMException && error.name === "AbortError") {
                 set((s) => ({
                     messages: s.messages.map((msg) => {
-                        if (msg.id !== streamingMsgId) return msg;
-                        const partialContent = msg.content?.trim() || "";
-                        return {
-                            ...msg,
-                            id: `ai-${Date.now()}`,
-                            content: partialContent || "หยุดการตอบแล้ว",
-                        };
+                        if (msg.id === streamingMsgId) {
+                            const partialContent = msg.content?.trim() || "";
+                            return {
+                                ...msg,
+                                id: `ai-${Date.now()}`,
+                                content: partialContent || "หยุดการตอบแล้ว",
+                            };
+                        }
+                        if (msg.id === userMessageId) {
+                            return { ...msg, deliveryStatus: "sent", errorMessage: undefined };
+                        }
+                        return msg;
                     }),
                     streamingMessageId: null,
                     streamingText: "",
@@ -881,6 +1053,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             }
 
             console.error("Error in streaming message:", error);
+            const readableError = getReadableErrorMessage(error);
 
             set((s) => ({
                 messages: s.messages.map((msg) =>
@@ -888,8 +1061,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
                         ? {
                             ...msg,
                             id: `error-${Date.now()}`,
-                            content: `⚠️ ${error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการเชื่อมต่อ"} กรุณาลองใหม่อีกครั้ง`,
+                            content: `⚠️ ${readableError} กรุณากดลองใหม่อีกครั้ง`,
                         }
+                        : msg.id === userMessageId
+                            ? {
+                                ...msg,
+                                deliveryStatus: "failed",
+                                errorMessage: readableError,
+                            }
                         : msg
                 ),
                 streamingMessageId: null,
@@ -925,12 +1104,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
         });
 
         // Add user message optimistically
+        const userMessageId = `temp-${Date.now()}`;
         const userMessage: Message = {
-            id: `temp-${Date.now()}`,
+            id: userMessageId,
             content,
             sender: "user",
             timestamp: new Date(),
             image: imageData?.previewUrl || null,
+            deliveryStatus: "sending",
         };
 
         // Create placeholder for AI streaming message
@@ -1031,30 +1212,32 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 for (const line of lines) {
                     const trimmedLine = line.trim();
                     if (trimmedLine.startsWith("data: ")) {
+                        const jsonStr = trimmedLine.slice(6);
+                        if (!jsonStr) continue;
+
+                        let data: any;
                         try {
-                            const jsonStr = trimmedLine.slice(6);
-                            if (!jsonStr) continue;
-
-                            const data = JSON.parse(jsonStr);
-
-                            if (data.done) {
-                                // Stream complete
-                            } else if (data.token) {
-                                fullMessage += data.token;
-
-                                set((s) => ({
-                                    streamingText: fullMessage,
-                                    messages: s.messages.map((msg) =>
-                                        msg.id === streamingMsgId
-                                            ? { ...msg, content: fullMessage }
-                                            : msg
-                                    ),
-                                }));
-                            } else if (data.error) {
-                                throw new Error(data.error);
-                            }
+                            data = JSON.parse(jsonStr);
                         } catch (e) {
                             console.error("Error parsing stream data:", e);
+                            continue;
+                        }
+
+                        if (data.done) {
+                            // Stream complete
+                        } else if (data.token) {
+                            fullMessage += data.token;
+
+                            set((s) => ({
+                                streamingText: fullMessage,
+                                messages: s.messages.map((msg) =>
+                                    msg.id === streamingMsgId
+                                        ? { ...msg, content: fullMessage }
+                                        : msg
+                                ),
+                            }));
+                        } else if (data.error) {
+                            throw new Error(data.error);
                         }
                     }
                 }
@@ -1065,7 +1248,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 messages: s.messages.map((msg) =>
                     msg.id === streamingMsgId
                         ? { ...msg, id: `ai-${Date.now()}`, content: fullMessage || "ขออภัย ไม่สามารถตอบกลับได้" }
-                        : msg
+                        : msg.id === userMessageId
+                            ? { ...msg, deliveryStatus: "sent", errorMessage: undefined }
+                            : msg
                 ),
                 streamingMessageId: null,
                 streamingText: "",
@@ -1085,13 +1270,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
             if (error instanceof DOMException && error.name === "AbortError") {
                 set((s) => ({
                     messages: s.messages.map((msg) => {
-                        if (msg.id !== streamingMsgId) return msg;
-                        const partialContent = msg.content?.trim() || "";
-                        return {
-                            ...msg,
-                            id: `ai-${Date.now()}`,
-                            content: partialContent || "หยุดการตอบแล้ว",
-                        };
+                        if (msg.id === streamingMsgId) {
+                            const partialContent = msg.content?.trim() || "";
+                            return {
+                                ...msg,
+                                id: `ai-${Date.now()}`,
+                                content: partialContent || "หยุดการตอบแล้ว",
+                            };
+                        }
+                        if (msg.id === userMessageId) {
+                            return { ...msg, deliveryStatus: "sent", errorMessage: undefined };
+                        }
+                        return msg;
                     }),
                     streamingMessageId: null,
                     streamingText: "",
@@ -1101,6 +1291,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             }
 
             console.error("Error in streaming message:", error);
+            const readableError = getReadableErrorMessage(error);
 
             set((s) => ({
                 messages: s.messages.map((msg) =>
@@ -1108,8 +1299,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
                         ? {
                             ...msg,
                             id: `error-${Date.now()}`,
-                            content: `⚠️ ${error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการเชื่อมต่อ"} กรุณาลองใหม่อีกครั้ง`,
+                            content: `⚠️ ${readableError} กรุณากดลองใหม่อีกครั้ง`,
                         }
+                        : msg.id === userMessageId
+                            ? {
+                                ...msg,
+                                deliveryStatus: "failed",
+                                errorMessage: readableError,
+                            }
                         : msg
                 ),
                 streamingMessageId: null,
@@ -1138,9 +1335,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
         // Update content if newContent and remove subsequent messages
         // We use slice(0, msgIndex + 1) to keep the target message and remove anything after it
-        const updatedMessages = state.messages.slice(0, msgIndex + 1).map((msg, idx) =>
-            idx === msgIndex && newContent ? { ...msg, content: newContent } : msg
-        );
+        const updatedMessages = state.messages.slice(0, msgIndex + 1).map((msg, idx) => {
+            if (idx !== msgIndex) return msg;
+
+            if (msg.sender === "user") {
+                return {
+                    ...msg,
+                    content: newContent ?? msg.content,
+                    deliveryStatus: "sending" as const,
+                    errorMessage: undefined,
+                };
+            }
+
+            return newContent ? { ...msg, content: newContent } : msg;
+        });
 
         const streamingMsgId = `streaming-${Date.now()}`;
         const aiPlaceholder: Message = {
@@ -1201,30 +1409,32 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 for (const line of lines) {
                     const trimmedLine = line.trim();
                     if (trimmedLine.startsWith("data: ")) {
+                        const jsonStr = trimmedLine.slice(6);
+                        if (!jsonStr) continue;
+
+                        let data: any;
                         try {
-                            const jsonStr = trimmedLine.slice(6);
-                            if (!jsonStr) continue;
-
-                            const data = JSON.parse(jsonStr);
-
-                            if (data.done) {
-                                // Stream complete
-                            } else if (data.token) {
-                                fullMessage += data.token;
-
-                                set((s) => ({
-                                    streamingText: fullMessage,
-                                    messages: s.messages.map((msg) =>
-                                        msg.id === streamingMsgId
-                                            ? { ...msg, content: fullMessage }
-                                            : msg
-                                    ),
-                                }));
-                            } else if (data.error) {
-                                throw new Error(data.error);
-                            }
+                            data = JSON.parse(jsonStr);
                         } catch (e) {
                             console.error("Error parsing stream data:", e);
+                            continue;
+                        }
+
+                        if (data.done) {
+                            // Stream complete
+                        } else if (data.token) {
+                            fullMessage += data.token;
+
+                            set((s) => ({
+                                streamingText: fullMessage,
+                                messages: s.messages.map((msg) =>
+                                    msg.id === streamingMsgId
+                                        ? { ...msg, content: fullMessage }
+                                        : msg
+                                ),
+                            }));
+                        } else if (data.error) {
+                            throw new Error(data.error);
                         }
                     }
                 }
@@ -1235,7 +1445,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 messages: s.messages.map((msg) =>
                     msg.id === streamingMsgId
                         ? { ...msg, id: `ai-${Date.now()}`, content: fullMessage || "ขออภัย ไม่สามารถตอบกลับได้" }
-                        : msg
+                        : msg.id === messageId
+                            ? { ...msg, deliveryStatus: "sent", errorMessage: undefined }
+                            : msg
                 ),
                 streamingMessageId: null,
                 streamingText: "",
@@ -1255,13 +1467,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
             if (error instanceof DOMException && error.name === "AbortError") {
                 set((s) => ({
                     messages: s.messages.map((msg) => {
-                        if (msg.id !== streamingMsgId) return msg;
-                        const partialContent = msg.content?.trim() || "";
-                        return {
-                            ...msg,
-                            id: `ai-${Date.now()}`,
-                            content: partialContent || "หยุดการตอบแล้ว",
-                        };
+                        if (msg.id === streamingMsgId) {
+                            const partialContent = msg.content?.trim() || "";
+                            return {
+                                ...msg,
+                                id: `ai-${Date.now()}`,
+                                content: partialContent || "หยุดการตอบแล้ว",
+                            };
+                        }
+                        if (msg.id === messageId) {
+                            return { ...msg, deliveryStatus: "sent", errorMessage: undefined };
+                        }
+                        return msg;
                     }),
                     streamingMessageId: null,
                     streamingText: "",
@@ -1271,6 +1488,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             }
 
             console.error("Error in streaming message:", error);
+            const readableError = getReadableErrorMessage(error);
 
             set((s) => ({
                 messages: s.messages.map((msg) =>
@@ -1278,8 +1496,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
                         ? {
                             ...msg,
                             id: `error-${Date.now()}`,
-                            content: `⚠️ ${error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการเชื่อมต่อ"} กรุณาลองใหม่อีกครั้ง`,
+                            content: `⚠️ ${readableError} กรุณากดลองใหม่อีกครั้ง`,
                         }
+                        : msg.id === messageId
+                            ? {
+                                ...msg,
+                                deliveryStatus: "failed",
+                                errorMessage: readableError,
+                            }
                         : msg
                 ),
                 streamingMessageId: null,

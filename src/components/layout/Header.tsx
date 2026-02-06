@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Activity, ChevronDown, MessageCircle, User, Settings, LogOut, Menu, X, UtensilsCrossed, Dumbbell, Moon, Target, Brain, BarChart3, Bell } from "lucide-react";
+import { Activity, ChevronDown, MessageCircle, User, Settings, LogOut, Menu, X, UtensilsCrossed, Dumbbell, Moon, Target, Brain, BarChart3, Bell, Droplets } from "lucide-react";
 import { NotificationBellIcon } from "@/components/ui/notification-bell-icon";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "react-router-dom";
@@ -62,10 +62,16 @@ const healthTrackingCards = [
     icon: Dumbbell,
   },
   {
-    title: "บันทึกการนอน & น้ำดื่ม",
-    description: "ติดตามชั่วโมงนอนและปริมาณน้ำ",
+    title: "บันทึกการนอน",
+    description: "ติดตามชั่วโมงการนอนและคุณภาพการพักผ่อน",
     href: "/sleep-log",
     icon: Moon,
+  },
+  {
+    title: "บันทึกน้ำดื่ม",
+    description: "ติดตามปริมาณน้ำในแต่ละวันให้ถึงเป้าหมาย",
+    href: "/water-log",
+    icon: Droplets,
   },
   {
     title: "ตั้งเป้าหมายสุขภาพ",

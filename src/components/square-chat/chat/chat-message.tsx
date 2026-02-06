@@ -8,7 +8,7 @@ import remarkGfm from "remark-gfm";
 import { useState, useEffect, useRef, useMemo } from "react";
 import {
     Check, Copy, AlertTriangle, Info, Lightbulb, CheckCircle2, Sparkles,
-    ChevronDown, ChevronRight, Brain, ThumbsUp, ThumbsDown, RefreshCw,
+    ChevronDown, ChevronRight, Brain, ThumbsUp, ThumbsDown, RefreshCw, Loader2,
     Volume2, VolumeX, Pencil, Clock
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,6 +21,8 @@ interface Message {
     sender: "user" | "ai";
     timestamp: Date;
     image?: string | null;
+    deliveryStatus?: "sending" | "sent" | "failed";
+    errorMessage?: string;
 }
 
 interface ChatMessageProps {
@@ -31,6 +33,7 @@ interface ChatMessageProps {
     onEdit?: (messageId: string, newContent: string) => void;
     onFeedback?: (messageId: string, feedback: 'like' | 'dislike') => void;
     onSendPrompt?: (prompt: string) => void;
+    onRetry?: (messageId: string) => void;
 }
 
 function getMessageTypeMeta(type: MessageType): { label: string; icon: React.ReactNode } | null {
@@ -644,7 +647,8 @@ export function ChatMessage({
     onRegenerate,
     onEdit,
     onFeedback,
-    onSendPrompt
+    onSendPrompt,
+    onRetry
 }: ChatMessageProps) {
     const isAi = message.sender === "ai";
     const isUser = message.sender === "user";
@@ -678,6 +682,10 @@ export function ChatMessage({
     // Don't animate if this is a streaming message (we handle that differently)
     const isNewMessage = useRef(new Date().getTime() - new Date(message.timestamp).getTime() < 5000).current;
     const shouldAnimate = isAi && isNewMessage && !isStreaming && !isThinking;
+    const showUserDeliveryState =
+        isUser &&
+        !!message.deliveryStatus &&
+        (message.deliveryStatus !== "sent" || isLastMessage);
 
     return (
         <div
@@ -793,6 +801,39 @@ export function ChatMessage({
                 ) : (
                     <>
                         <p className="text-sm leading-relaxed">{message.content}</p>
+                        {showUserDeliveryState && (
+                            <div className="mt-2 flex flex-wrap items-center justify-end gap-2 text-[11px] text-white/85">
+                                {message.deliveryStatus === "sending" && (
+                                    <>
+                                        <Loader2 className="h-3 w-3 animate-spin text-white/80" />
+                                        <span>กำลังส่ง...</span>
+                                    </>
+                                )}
+                                {message.deliveryStatus === "sent" && (
+                                    <>
+                                        <Check className="h-3 w-3 text-white/80" />
+                                        <span>ส่งแล้ว</span>
+                                    </>
+                                )}
+                                {message.deliveryStatus === "failed" && (
+                                    <>
+                                        <AlertTriangle className="h-3.5 w-3.5 text-red-200" />
+                                        <span className="text-red-100">
+                                            {message.errorMessage || "ส่งไม่สำเร็จ"}
+                                        </span>
+                                        {onRetry && (
+                                            <button
+                                                onClick={() => onRetry(message.id)}
+                                                className="inline-flex items-center gap-1 rounded-full border border-white/35 bg-white/10 px-2 py-0.5 text-white transition-colors hover:bg-white/20"
+                                            >
+                                                <RefreshCw className="h-3 w-3" />
+                                                ลองใหม่
+                                            </button>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        )}
                         <div className="absolute -bottom-8 right-0">
                             <UserMessageActions
                                 content={message.content}
